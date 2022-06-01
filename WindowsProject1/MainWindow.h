@@ -8,6 +8,7 @@
 #include "BaseWindow.h"
 #include "AbstractMessageHandler.h"
 #include "MouseMessageHandler.h"
+#include "KeyboardMessageHandler.h"
 
 class MainWindow : public BaseWindow<MainWindow>
 {

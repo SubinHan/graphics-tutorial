@@ -50,6 +50,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 void MainWindow::InitMessageHandlers()
 {
     pMessageHandler = new MouseMessageHandler(m_hwnd);
+    pMessageHandler->SetNext(new KeyboardMessageHandler(m_hwnd));
 }
 
 void MainWindow::DestroyMessageHandlers()
