@@ -8,7 +8,7 @@ LRESULT MouseMessageHandler::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lPar
 	{
 		int xPos = GET_X_LPARAM(lParam);
 		int yPos = GET_Y_LPARAM(lParam);
-		DXGILogger::LogAdapters();
+		DxgiLogger::LogAdapters();
 		break;
 	}
 	case WM_LBUTTONUP:

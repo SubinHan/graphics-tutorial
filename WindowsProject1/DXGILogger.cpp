@@ -1,6 +1,6 @@
-#include "DXGILogger.h"
+#include "DxgiLogger.h"
 
-void DXGILogger::LogAdapters()
+void DxgiLogger::LogAdapters()
 {
 	IDXGIFactory* factory = nullptr;
 	CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);
@@ -29,7 +29,7 @@ void DXGILogger::LogAdapters()
 	}
 }
 
-void DXGILogger::LogAdapterOutputs(IDXGIAdapter* adapter)
+void DxgiLogger::LogAdapterOutputs(IDXGIAdapter* adapter)
 {
 	UINT i = 0;
 	IDXGIOutput* output = nullptr;
@@ -49,7 +49,7 @@ void DXGILogger::LogAdapterOutputs(IDXGIAdapter* adapter)
 	}
 }
 
-void DXGILogger::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
+void DxgiLogger::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
 {
 	UINT count = 0;
 	UINT flags = 0;

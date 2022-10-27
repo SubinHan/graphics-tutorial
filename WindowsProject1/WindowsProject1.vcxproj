@@ -142,8 +142,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BaseWindow.h" />
-    <ClInclude Include="DxException.h" />
-    <ClInclude Include="DXGILogger.h" />
+    <ClInclude Include="DxDebug.h" />
+    <ClInclude Include="DxgiLogger.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="KeyboardMessageHandler.h" />
     <ClInclude Include="MainWindow.h" />

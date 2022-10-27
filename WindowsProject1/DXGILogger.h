@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-class DXGILogger 
+class DxgiLogger 
 {
 public:
 	static void LogAdapters();

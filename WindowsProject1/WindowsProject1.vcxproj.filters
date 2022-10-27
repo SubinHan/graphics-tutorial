@@ -42,10 +42,10 @@
     <ClInclude Include="KeyboardMessageHandler.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DXGILogger.h">
+    <ClInclude Include="DxgiLogger.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DxException.h">
+    <ClInclude Include="DxDebug.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

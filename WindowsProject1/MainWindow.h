@@ -9,6 +9,7 @@
 #include "MouseMessageHandler.h"
 #include "KeyboardMessageHandler.h"
 #include "DXGILogger.h"
+#include "DxDebug.h"
 
 class MainWindow : public BaseWindow<MainWindow>
 {
