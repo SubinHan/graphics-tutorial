@@ -9,6 +9,8 @@ DxDevice::DxDevice()
 void DxDevice::Init()
 {
 	CreateDevice();
+    CreateFence();
+
 }
 
 void DxDevice::CreateDevice()
@@ -20,7 +22,6 @@ void DxDevice::CreateDevice()
         D3D_FEATURE_LEVEL_11_0,
         IID_PPV_ARGS(&pD3dDevice)
     );
-
 }
 
 void DxDevice::CreateFence()
@@ -30,4 +31,19 @@ void DxDevice::CreateFence()
     rtvDescriptorSize = pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     dsvDescriptorSize = pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
     cbvDescriptorSize = pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
+void DxDevice::CheckMsaa()
+{
+    backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
+    msQualityLevels.Format = backBufferFormat;
+    msQualityLevels.SampleCount = 4;
+    msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+    msQualityLevels.NumQualityLevels = 0;
+    ThrowIfFailed(pD3dDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+
+    msaaQuality = msQualityLevels.NumQualityLevels;
+    assert(msaaQuality > 0 && "Unexpected MSAA quality level.");
 }

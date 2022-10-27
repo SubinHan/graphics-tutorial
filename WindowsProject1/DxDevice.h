@@ -17,6 +17,9 @@ class DxDevice
 	UINT dsvDescriptorSize;
 	UINT cbvDescriptorSize;
 
+	UINT msaaQuality;
+	DXGI_FORMAT backBufferFormat;
+
 public:
 	DxDevice();
 
@@ -24,4 +27,5 @@ private:
 	void Init();
 	void CreateDevice();
 	void CreateFence();
+	void CheckMsaa();
 };
