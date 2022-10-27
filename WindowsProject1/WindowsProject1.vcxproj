@@ -142,6 +142,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BaseWindow.h" />
+    <ClInclude Include="DxException.h" />
     <ClInclude Include="DXGILogger.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="KeyboardMessageHandler.h" />
@@ -153,6 +154,7 @@
     <ClInclude Include="WindowsProject1.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DxException.cpp" />
     <ClCompile Include="DXGILogger.cpp" />
     <ClCompile Include="KeyboardMessageHandler.cpp" />
     <ClCompile Include="MainWindow.cpp" />

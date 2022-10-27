@@ -45,6 +45,9 @@
     <ClInclude Include="DXGILogger.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="DxException.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -60,6 +63,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="DXGILogger.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DxException.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

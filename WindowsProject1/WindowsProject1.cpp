@@ -4,55 +4,64 @@
 
 #include <windows.h>
 #include "MainWindow.h"
+#include "DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
-    MainWindow win;
+    try {
 
-    if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
-    {
-        return 0;
-    }
+        MainWindow win;
 
-    ShowWindow(win.Window(), nCmdShow);
-
-    // Run the message loop.
-    bool bGotMsg;
-    MSG  msg;
-    msg.message = WM_NULL;
-    PeekMessage(&msg, NULL, 0U, 0U, PM_NOREMOVE);
-
-    while (WM_QUIT != msg.message)
-    {
-        // Process window events.
-        // Use PeekMessage() so we can use idle time to render the scene. 
-        bGotMsg = (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE) != 0);
-
-        if (bGotMsg)
+        if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
         {
-            // Translate and dispatch the message
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            return 0;
         }
-        else
+
+        ShowWindow(win.Window(), nCmdShow);
+
+        // Run the message loop.
+        bool bGotMsg;
+        MSG  msg;
+        msg.message = WM_NULL;
+        PeekMessage(&msg, NULL, 0U, 0U, PM_NOREMOVE);
+
+        while (WM_QUIT != msg.message)
         {
-            //// Update the scene.
-            //renderer->Update();
+            // Process window events.
+            // Use PeekMessage() so we can use idle time to render the scene. 
+            bGotMsg = (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE) != 0);
 
-            //// Render frames during idle time (when no messages are waiting).
-            //renderer->Render();
+            if (bGotMsg)
+            {
+                // Translate and dispatch the message
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+            else
+            {
+                //// Update the scene.
+                //renderer->Update();
 
-            //// Present the frame to the screen.
-            //deviceResources->Present();
+                //// Render frames during idle time (when no messages are waiting).
+                //renderer->Render();
+
+                //// Present the frame to the screen.
+                //deviceResources->Present();
+            }
         }
-    }
 
-    //MSG msg = { };
-    //while (GetMessage(&msg, NULL, 0, 0))
-    //{
-    //    TranslateMessage(&msg);
-    //    DispatchMessage(&msg);
-    //}
+        //MSG msg = { };
+        //while (GetMessage(&msg, NULL, 0, 0))
+        //{
+        //    TranslateMessage(&msg);
+        //    DispatchMessage(&msg);
+        //}
+
+    }
+    catch (DxException& e)
+    {
+        MessageBox(nullptr, e.ToString().c_str(), L"HR Failed", MB_OK);
+    }
 
     return 0;
 }
