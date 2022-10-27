@@ -48,8 +48,14 @@ public:
 	{
 		WNDCLASS wc = { 0 };
 
+		wc.style = CS_DBLCLKS;
 		wc.lpfnWndProc = DERIVED_TYPE::WindowProc;
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = 0;
 		wc.hInstance = GetModuleHandle(NULL);
+		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+		wc.lpszMenuName = NULL;
 		wc.lpszClassName = ClassName();
 
 		RegisterClass(&wc);

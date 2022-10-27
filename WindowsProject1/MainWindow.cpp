@@ -25,6 +25,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
             return -1;
         }
+        InitMessageHandlers();
         return 0;
 
     case WM_DESTROY:

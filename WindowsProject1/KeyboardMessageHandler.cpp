@@ -1,5 +1,4 @@
 #include "KeyboardMessageHandler.h"
-#include <Winuser.h>
 
 LRESULT KeyboardMessageHandler::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
