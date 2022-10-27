@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Windows.h>
-#include <dxgi.h>
+#include <dxgi1_6.h>
 #include <vector>
 #include <string>
 
