@@ -2,6 +2,7 @@
 
 #include <WindowsX.h>
 #include "AbstractMessageHandler.h"
+#include "DXGILogger.h"
 
 class MouseMessageHandler : public AbstractMessageHandler
 {

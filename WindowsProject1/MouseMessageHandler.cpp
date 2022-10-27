@@ -5,9 +5,12 @@ LRESULT MouseMessageHandler::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lPar
 	switch (uMsg)
 	{
 	case WM_LBUTTONDOWN:
+	{
 		int xPos = GET_X_LPARAM(lParam);
 		int yPos = GET_Y_LPARAM(lParam);
+		DXGILogger::LogAdapters();
 		break;
+	}
 	case WM_LBUTTONUP:
 		break;
 	case WM_MBUTTONDOWN:

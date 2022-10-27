@@ -2,13 +2,13 @@
 
 #include <Windows.h>
 #include <d2d1.h>
-#pragma comment(lib, "d2d1")
 
 #include <memory>
 #include "BaseWindow.h"
 #include "AbstractMessageHandler.h"
 #include "MouseMessageHandler.h"
 #include "KeyboardMessageHandler.h"
+#include "DXGILogger.h"
 
 class MainWindow : public BaseWindow<MainWindow>
 {
