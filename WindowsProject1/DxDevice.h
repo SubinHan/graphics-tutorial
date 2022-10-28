@@ -7,6 +7,8 @@
 #include <wrl\wrappers\corewrappers.h>
 #include <wrl\client.h>
 
+using Microsoft::WRL::ComPtr;
+
 class DxDevice
 {
 	IDXGIFactory* pDxgiFactory;
@@ -19,6 +21,10 @@ class DxDevice
 
 	UINT msaaQuality;
 	DXGI_FORMAT backBufferFormat;
+	ComPtr<ID3D12CommandQueue> commandQueue;
+	ComPtr<ID3D12CommandAllocator> commandListAllocator;
+	ComPtr<ID3D12GraphicsCommandList> commandList;
+
 
 public:
 	DxDevice();
@@ -28,4 +34,5 @@ private:
 	void CreateDevice();
 	void CreateFence();
 	void CheckMsaa();
+	void CreateCommandQueueAndList();
 };

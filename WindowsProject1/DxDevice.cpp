@@ -47,3 +47,14 @@ void DxDevice::CheckMsaa()
     msaaQuality = msQualityLevels.NumQualityLevels;
     assert(msaaQuality > 0 && "Unexpected MSAA quality level.");
 }
+
+void DxDevice::CreateCommandQueueAndList()
+{
+    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    ThrowIfFailed(pD3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue)));
+    ThrowIfFailed(pD3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(commandListAllocator.GetAddressOf())));
+    ThrowIfFailed(pD3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandListAllocator.Get(), nullptr, IID_PPV_ARGS(commandList.GetAddressOf())));
+    commandList->Close();
+}
