@@ -60,17 +60,6 @@ void MainWindow::DestroyMessageHandlers()
     pMessageHandler = nullptr;
 }
 
-void MainWindow::CreateDevice()
-{
-    ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
-
-    HRESULT hardwareResult = D3D12CreateDevice(
-        nullptr,
-        D3D_FEATURE_LEVEL_11_0,
-        IID_PPV_ARGS(&pD3dDevice)
-    );
-}
-
 HRESULT MainWindow::CreateGraphicsResources()
 {
     HRESULT hr = S_OK;
