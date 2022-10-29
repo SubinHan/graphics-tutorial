@@ -10,7 +10,6 @@ void DxDevice::Init()
 {
 	CreateDevice();
     CreateFence();
-
 }
 
 void DxDevice::CreateDevice()
@@ -37,7 +36,7 @@ void DxDevice::CheckMsaa()
 {
     backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
+    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels = {};
     msQualityLevels.Format = backBufferFormat;
     msQualityLevels.SampleCount = 4;
     msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
@@ -63,7 +62,7 @@ void DxDevice::CreateSwapChain()
 {
     swapChain.Reset();
 
-    DXGI_SWAP_CHAIN_DESC sd;
+    DXGI_SWAP_CHAIN_DESC sd = {};
     sd.BufferDesc.Width = clientWidth;
     sd.BufferDesc.Height = clientHeight;
     sd.BufferDesc.RefreshRate.Numerator = clientRefreshRate;
@@ -85,19 +84,31 @@ void DxDevice::CreateSwapChain()
 
 void DxDevice::CreateRtvAndDsvDescriptorHeaps()
 {
-    D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
+    D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
     rtvHeapDesc.NumDescriptors = swapChainBufferCount;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     rtvHeapDesc.NodeMask = 0;
     ThrowIfFailed(pD3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(rtvHeap.GetAddressOf())));
 
-    D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
+    D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
     dsvHeapDesc.NumDescriptors = 1;
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     dsvHeapDesc.NodeMask = 0;
     ThrowIfFailed(pD3dDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(dsvHeap.GetAddressOf())));
+}
 
+void DxDevice::CreateRenderTargetView()
+{
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
+    for (UINT i = 0; i < swapChainBufferCount; i++)
+    {
+        ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&swapChainBuffer[i])));
+        pD3dDevice->CreateRenderTargetView(swapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
+        
+        // rtvHeapHandle.Offset(1, rtvDescriptorSize) of a type CD3DX12_CPU_DESCRIPTOR_HANDLE
+        rtvHeapHandle.ptr = SIZE_T(INT64(rtvHeapHandle.ptr) + INT64(1) * INT64(rtvDescriptorSize));
+    }
 }
 

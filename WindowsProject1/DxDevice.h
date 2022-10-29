@@ -11,6 +11,8 @@ using Microsoft::WRL::ComPtr;
 
 class DxDevice
 {
+	static const UINT swapChainBufferCount = 2;
+
 	IDXGIFactory* pDxgiFactory;
 	ID3D12Device* pD3dDevice;
 	ID3D12Fence* fence;
@@ -25,6 +27,7 @@ class DxDevice
 	ComPtr<IDXGISwapChain> swapChain;
 	ComPtr<ID3D12DescriptorHeap> rtvHeap;
 	ComPtr<ID3D12DescriptorHeap> dsvHeap;
+	ComPtr<ID3D12Resource> swapChainBuffer[swapChainBufferCount];
 
 	UINT msaaQuality;
 	bool msaaState;
@@ -35,7 +38,6 @@ class DxDevice
 	UINT clientHeight;
 	UINT clientRefreshRate;
 
-	static const UINT swapChainBufferCount = 2;
 	UINT currentBackBuffer = 0;
 
 public:
@@ -49,4 +51,5 @@ private:
 	void CreateCommandQueueAndList();
 	void CreateSwapChain();
 	void CreateRtvAndDsvDescriptorHeaps();
+	void CreateRenderTargetView();
 };
