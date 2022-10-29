@@ -23,6 +23,8 @@ class DxDevice
 	ComPtr<ID3D12CommandAllocator> commandListAllocator;
 	ComPtr<ID3D12GraphicsCommandList> commandList;
 	ComPtr<IDXGISwapChain> swapChain;
+	ComPtr<ID3D12DescriptorHeap> rtvHeap;
+	ComPtr<ID3D12DescriptorHeap> dsvHeap;
 
 	UINT msaaQuality;
 	bool msaaState;
@@ -33,7 +35,8 @@ class DxDevice
 	UINT clientHeight;
 	UINT clientRefreshRate;
 
-	UINT swapChainBufferCount;
+	static const UINT swapChainBufferCount = 2;
+	UINT currentBackBuffer = 0;
 
 public:
 	DxDevice();
@@ -45,4 +48,5 @@ private:
 	void CheckMsaa();
 	void CreateCommandQueueAndList();
 	void CreateSwapChain();
+	void CreateRtvAndDsvDescriptorHeaps();
 };
