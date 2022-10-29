@@ -58,3 +58,27 @@ void DxDevice::CreateCommandQueueAndList()
     ThrowIfFailed(pD3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandListAllocator.Get(), nullptr, IID_PPV_ARGS(commandList.GetAddressOf())));
     commandList->Close();
 }
+
+void DxDevice::CreateSwapChain()
+{
+    swapChain.Reset();
+
+    DXGI_SWAP_CHAIN_DESC sd;
+    sd.BufferDesc.Width = clientWidth;
+    sd.BufferDesc.Height = clientHeight;
+    sd.BufferDesc.RefreshRate.Numerator = clientRefreshRate;
+    sd.BufferDesc.RefreshRate.Denominator = 1;
+    sd.BufferDesc.Format = backBufferFormat;
+    sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+    sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+    sd.SampleDesc.Count = msaaState ? 4 : 1;
+    sd.SampleDesc.Quality = msaaState ? (msaaQuality - 1) : 0;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.BufferCount = swapChainBufferCount;
+    sd.OutputWindow = mainWindow;
+    sd.Windowed = true;
+    sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+    ThrowIfFailed(pDxgiFactory->CreateSwapChain(commandQueue.Get(), &sd, swapChain.GetAddressOf()));
+}

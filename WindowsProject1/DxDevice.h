@@ -19,12 +19,21 @@ class DxDevice
 	UINT dsvDescriptorSize;
 	UINT cbvDescriptorSize;
 
-	UINT msaaQuality;
-	DXGI_FORMAT backBufferFormat;
 	ComPtr<ID3D12CommandQueue> commandQueue;
 	ComPtr<ID3D12CommandAllocator> commandListAllocator;
 	ComPtr<ID3D12GraphicsCommandList> commandList;
+	ComPtr<IDXGISwapChain> swapChain;
 
+	UINT msaaQuality;
+	bool msaaState;
+	DXGI_FORMAT backBufferFormat;
+
+	HWND mainWindow;
+	UINT clientWidth;
+	UINT clientHeight;
+	UINT clientRefreshRate;
+
+	UINT swapChainBufferCount;
 
 public:
 	DxDevice();
@@ -35,4 +44,5 @@ private:
 	void CreateFence();
 	void CheckMsaa();
 	void CreateCommandQueueAndList();
+	void CreateSwapChain();
 };
