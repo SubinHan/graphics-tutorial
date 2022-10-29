@@ -112,3 +112,54 @@ void DxDevice::CreateRenderTargetView()
     }
 }
 
+void DxDevice::CreateDepthStencilView()
+{
+    D3D12_RESOURCE_DESC depthStencilDesc = {};
+    depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    depthStencilDesc.Alignment = 0;
+    depthStencilDesc.Width = clientWidth;
+    depthStencilDesc.Height = clientHeight;
+    depthStencilDesc.DepthOrArraySize = 1;
+    depthStencilDesc.MipLevels = 1;
+    depthStencilDesc.Format = depthStencilFormat;
+    depthStencilDesc.SampleDesc.Count = msaaState ? 4 : 1;
+    depthStencilDesc.SampleDesc.Quality = msaaState ? (msaaQuality - 1) : 0;
+    depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    D3D12_CLEAR_VALUE optClear = {};
+    optClear.Format = depthStencilFormat;
+    optClear.DepthStencil.Depth = 1.0f;
+    optClear.DepthStencil.Stencil = 0;
+
+    D3D12_HEAP_PROPERTIES heapProperties;
+    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProperties.CreationNodeMask = 1;
+    heapProperties.VisibleNodeMask = 1;
+
+    ThrowIfFailed(pD3dDevice->CreateCommittedResource(
+        &heapProperties,
+        D3D12_HEAP_FLAG_NONE,
+        &depthStencilDesc,
+        D3D12_RESOURCE_STATE_COMMON,
+        &optClear,
+        IID_PPV_ARGS(depthStencilBuffer.GetAddressOf())
+    ));
+
+    pD3dDevice->CreateDepthStencilView(depthStencilBuffer.Get(), nullptr, dsvHeap->GetCPUDescriptorHandleForHeapStart());
+
+    D3D12_RESOURCE_BARRIER barrier;
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = depthStencilBuffer.Get();
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    commandList->ResourceBarrier(
+        1,
+        &barrier
+    );
+}
+

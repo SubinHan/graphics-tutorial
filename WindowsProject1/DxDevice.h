@@ -28,10 +28,12 @@ class DxDevice
 	ComPtr<ID3D12DescriptorHeap> rtvHeap;
 	ComPtr<ID3D12DescriptorHeap> dsvHeap;
 	ComPtr<ID3D12Resource> swapChainBuffer[swapChainBufferCount];
+	ComPtr<ID3D12Resource> depthStencilBuffer;
 
 	UINT msaaQuality;
 	bool msaaState;
 	DXGI_FORMAT backBufferFormat;
+	DXGI_FORMAT depthStencilFormat;
 
 	HWND mainWindow;
 	UINT clientWidth;
@@ -52,4 +54,5 @@ private:
 	void CreateSwapChain();
 	void CreateRtvAndDsvDescriptorHeaps();
 	void CreateRenderTargetView();
+	void CreateDepthStencilView();
 };
