@@ -15,6 +15,7 @@
 #include "KeyboardMessageHandler.h"
 #include "DXGILogger.h"
 #include "DxDebug.h"
+#include "DxDevice.h"
 
 class MainWindow : public BaseWindow<MainWindow>
 {
@@ -24,6 +25,8 @@ class MainWindow : public BaseWindow<MainWindow>
 	ID2D1SolidColorBrush* pBrush;
 	D2D1_ELLIPSE ellipse;
 
+	DxDevice* device;
+
 public:
 	PCWSTR ClassName() const;
 	LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -32,9 +35,8 @@ public:
 	void DestroyMessageHandlers();
 
 	void CreateDevice();
+	void ReleaseDevice();
 
-	HRESULT CreateGraphicsResources();
-	void DiscardGraphicsResources();
 	void CalculateLayout();
 	void OnPaint();
 

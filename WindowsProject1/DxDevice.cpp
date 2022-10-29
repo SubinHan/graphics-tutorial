@@ -1,8 +1,18 @@
 #include "DxDevice.h"
 #include "DxDebug.h"
 
-DxDevice::DxDevice()
+DxDevice::DxDevice(HWND window)
 {
+    mainWindow = window;
+
+    RECT windowRect;
+    if (GetWindowRect(window, &windowRect))
+    {
+        clientWidth = windowRect.right - windowRect.left;
+        clientHeight = windowRect.bottom - windowRect.top;
+    }
+    clientRefreshRate = 165;
+
 	Init();
 }
 
@@ -10,6 +20,12 @@ void DxDevice::Init()
 {
 	CreateDevice();
     CreateFence();
+    CheckMsaa();
+    CreateCommandQueueAndList();
+    CreateSwapChain();
+    CreateRtvAndDsvDescriptorHeaps();
+    CreateRenderTargetView();
+    CreateDepthStencilView();
 }
 
 void DxDevice::CreateDevice()
@@ -34,8 +50,6 @@ void DxDevice::CreateFence()
 
 void DxDevice::CheckMsaa()
 {
-    backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-
     D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels = {};
     msQualityLevels.Format = backBufferFormat;
     msQualityLevels.SampleCount = 4;
@@ -114,6 +128,13 @@ void DxDevice::CreateRenderTargetView()
 
 void DxDevice::CreateDepthStencilView()
 {
+    D3D12_HEAP_PROPERTIES heapProperties;
+    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProperties.CreationNodeMask = 1;
+    heapProperties.VisibleNodeMask = 1;
+
     D3D12_RESOURCE_DESC depthStencilDesc = {};
     depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
     depthStencilDesc.Alignment = 0;
@@ -131,13 +152,6 @@ void DxDevice::CreateDepthStencilView()
     optClear.Format = depthStencilFormat;
     optClear.DepthStencil.Depth = 1.0f;
     optClear.DepthStencil.Stencil = 0;
-
-    D3D12_HEAP_PROPERTIES heapProperties;
-    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-    heapProperties.CreationNodeMask = 1;
-    heapProperties.VisibleNodeMask = 1;
 
     ThrowIfFailed(pD3dDevice->CreateCommittedResource(
         &heapProperties,

@@ -32,8 +32,8 @@ class DxDevice
 
 	UINT msaaQuality;
 	bool msaaState;
-	DXGI_FORMAT backBufferFormat;
-	DXGI_FORMAT depthStencilFormat;
+	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	HWND mainWindow;
 	UINT clientWidth;
@@ -43,7 +43,7 @@ class DxDevice
 	UINT currentBackBuffer = 0;
 
 public:
-	DxDevice();
+	DxDevice(HWND mainWindow);
 
 private:
 	void Init();

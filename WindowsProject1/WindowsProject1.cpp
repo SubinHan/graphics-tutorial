@@ -60,6 +60,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
     }
     catch (DxException& e)
     {
+        OutputDebugString(L"Exception:");
+        OutputDebugString(e.ToString().c_str());
         MessageBox(nullptr, e.ToString().c_str(), L"HR Failed", MB_OK);
     }
 
