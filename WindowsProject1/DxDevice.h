@@ -1,11 +1,13 @@
 #pragma once
 
 #include <Windows.h>
+#include <directx/d3dx12.h>
 #include <dxgi1_6.h>
 #include <d3d12.h>
 #include <windows.foundation.h>
 #include <wrl\wrappers\corewrappers.h>
 #include <wrl\client.h>
+#include <DirectXColors.h>
 
 using Microsoft::WRL::ComPtr;
 
@@ -13,9 +15,9 @@ class DxDevice
 {
 	static const UINT swapChainBufferCount = 2;
 
-	IDXGIFactory* pDxgiFactory;
-	ID3D12Device* pD3dDevice;
-	ID3D12Fence* fence;
+	ComPtr<IDXGIFactory> pDxgiFactory;
+	ComPtr<ID3D12Device> pD3dDevice;
+	ComPtr<ID3D12Fence> fence;
 
 	UINT rtvDescriptorSize;
 	UINT dsvDescriptorSize;
@@ -41,9 +43,19 @@ class DxDevice
 	UINT clientRefreshRate;
 
 	UINT currentBackBuffer = 0;
+	UINT currentFence = 0;
+
+	D3D12_VIEWPORT screenViewport;
+	tagRECT scissorRect;
 
 public:
 	DxDevice(HWND mainWindow);
+
+	void ResetCommandList();
+	ID3D12Resource* CurrentBackBuffer();
+	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView();
+	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView();
+	void FlushCommandQueue();
 
 private:
 	void Init();
@@ -55,4 +67,6 @@ private:
 	void CreateRtvAndDsvDescriptorHeaps();
 	void CreateRenderTargetView();
 	void CreateDepthStencilView();
+	void InitScreenViewport();
+	void InitScissorRect();
 };

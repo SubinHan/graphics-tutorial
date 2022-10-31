@@ -1,5 +1,6 @@
 #include "DxDevice.h"
 #include "DxDebug.h"
+#include <DirectXColors.h>
 
 DxDevice::DxDevice(HWND window)
 {
@@ -14,6 +15,98 @@ DxDevice::DxDevice(HWND window)
     clientRefreshRate = 165;
 
 	Init();
+}
+
+void DxDevice::ResetCommandList()
+{
+    ThrowIfFailed(commandListAllocator->Reset());
+    ThrowIfFailed(commandList->Reset(commandListAllocator.Get(), nullptr));
+
+    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+        CurrentBackBuffer(),
+        D3D12_RESOURCE_STATE_PRESENT,
+        D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+    commandList->ResourceBarrier(1, &barrier);
+
+    commandList->RSSetViewports(1, &screenViewport);
+    commandList->RSSetScissorRects(1, &scissorRect);
+
+
+    commandList->ClearRenderTargetView(
+        CurrentBackBufferView(),
+        DirectX::Colors::Black, 0, nullptr);
+    commandList->ClearDepthStencilView(
+        DepthStencilView(), 
+        D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
+        1.0f,
+        0,
+        0,
+        nullptr);
+
+    auto currentBackBufferView = CurrentBackBufferView();
+    auto depthStencilView = DepthStencilView();
+
+    commandList->OMSetRenderTargets(1, &currentBackBufferView,
+        true, &depthStencilView);
+
+    auto barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(
+        CurrentBackBuffer(),
+        D3D12_RESOURCE_STATE_RENDER_TARGET,
+        D3D12_RESOURCE_STATE_PRESENT
+    );
+
+    commandList->ResourceBarrier(
+        1,
+        &barrier2
+    );
+
+    ThrowIfFailed(commandList->Close());
+
+    ID3D12CommandList* commandLists[] = { commandList.Get() }; 
+    commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+
+    ThrowIfFailed(swapChain->Present(0, 0));
+    currentBackBuffer = (currentBackBuffer + 1) % swapChainBufferCount;
+
+    FlushCommandQueue();
+
+}
+
+ID3D12Resource* DxDevice::CurrentBackBuffer()
+{
+    return swapChainBuffer[currentBackBuffer].Get();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE DxDevice::CurrentBackBufferView()
+{
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(
+        rtvHeap->GetCPUDescriptorHandleForHeapStart(),
+        currentBackBuffer,
+        rtvDescriptorSize);
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE DxDevice::DepthStencilView()
+{
+    return dsvHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
+void DxDevice::FlushCommandQueue()
+{
+    currentFence++;
+
+    ThrowIfFailed(commandQueue->Signal(fence.Get(), currentFence));
+
+    if (fence->GetCompletedValue() < currentFence)
+    {
+        HANDLE eventHandle = CreateEventEx(nullptr, 
+            FALSE, false, EVENT_ALL_ACCESS);
+        ThrowIfFailed(fence->SetEventOnCompletion(currentFence, eventHandle));
+
+        WaitForSingleObject(eventHandle, INFINITE);
+        CloseHandle(eventHandle);
+    }
+
 }
 
 void DxDevice::Init()
@@ -42,7 +135,7 @@ void DxDevice::CreateDevice()
 void DxDevice::CreateFence()
 {
     ThrowIfFailed(pD3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
-
+    
     rtvDescriptorSize = pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     dsvDescriptorSize = pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
     cbvDescriptorSize = pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -175,5 +268,20 @@ void DxDevice::CreateDepthStencilView()
         1,
         &barrier
     );
+}
+
+void DxDevice::InitScreenViewport()
+{
+    screenViewport.TopLeftX = 0.0f;
+    screenViewport.TopLeftY = 0.0f;
+    screenViewport.Width = static_cast<float>(clientWidth);
+    screenViewport.Height = static_cast<float>(clientHeight);
+    screenViewport.MinDepth = 0.0f;
+    screenViewport.MaxDepth = 1.0f;
+}
+
+void DxDevice::InitScissorRect()
+{
+    scissorRect = { 0, 0, (LONG)(clientWidth / 2), (LONG)(clientHeight / 2) };
 }
 

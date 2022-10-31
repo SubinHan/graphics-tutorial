@@ -86,5 +86,5 @@ void MainWindow::CalculateLayout()
 
 void MainWindow::OnPaint()
 {
-
+    device->ResetCommandList();
 }
