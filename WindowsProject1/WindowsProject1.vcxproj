@@ -148,6 +148,7 @@
     <ClInclude Include="DxDevice.h" />
     <ClInclude Include="DxgiLogger.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="GameTimer.h" />
     <ClInclude Include="KeyboardMessageHandler.h" />
     <ClInclude Include="MainWindow.h" />
     <ClInclude Include="AbstractMessageHandler.h" />
@@ -160,6 +161,7 @@
     <ClCompile Include="DxDevice.cpp" />
     <ClCompile Include="DxException.cpp" />
     <ClCompile Include="DXGILogger.cpp" />
+    <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="KeyboardMessageHandler.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="MouseMessageHandler.cpp" />

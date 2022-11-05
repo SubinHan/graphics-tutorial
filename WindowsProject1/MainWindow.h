@@ -16,9 +16,16 @@
 #include "DXGILogger.h"
 #include "DxDebug.h"
 #include "DxDevice.h"
+#include "GameTimer.h"
 
 class MainWindow : public BaseWindow<MainWindow>
 {
+	bool isPaused = false;
+	bool isMinimized = false;
+	bool isMaximized = false;
+	bool isResizing = false;
+	bool isFullscreenActivated = false;
+
 	AbstractMessageHandler* pMessageHandler;
 	ID2D1Factory* pFactory;
 	ID2D1HwndRenderTarget* pRenderTarget;
@@ -26,6 +33,7 @@ class MainWindow : public BaseWindow<MainWindow>
 	D2D1_ELLIPSE ellipse;
 
 	DxDevice* device;
+	GameTimer timer;
 
 public:
 	PCWSTR ClassName() const;
@@ -39,5 +47,8 @@ public:
 
 	void CalculateLayout();
 	void OnPaint();
+	void OnResize();
+
+	void CalculateFrameStats();
 
 };
