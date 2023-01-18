@@ -21,6 +21,7 @@ public:
 		{
 			pThis = (DERIVED_TYPE*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 		}
+
 		if (pThis)
 		{
 			return pThis->HandleMessage(uMsg, wParam, lParam);
@@ -31,7 +32,7 @@ public:
 		}
 	}
 
-	BaseWindow() : m_hwnd(NULL) { }
+	BaseWindow(HINSTANCE hInstance) : m_hwnd(NULL), m_hInstance(hInstance) { }
 	~BaseWindow() { CoUninitialize(); }
 
 	BOOL Create(
@@ -76,4 +77,5 @@ protected:
 	virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
 
 	HWND m_hwnd;
+	HINSTANCE m_hInstance;
 };

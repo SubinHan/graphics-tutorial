@@ -28,27 +28,34 @@ class MainWindow : public BaseWindow<MainWindow>
 
 	AbstractMessageHandler* pMessageHandler;
 	ID2D1Factory* pFactory;
-	ID2D1HwndRenderTarget* pRenderTarget;
-	ID2D1SolidColorBrush* pBrush;
-	D2D1_ELLIPSE ellipse;
 
-	DxDevice* device;
 	GameTimer timer;
 
+protected:
+	DxDevice* device;
+
 public:
+	MainWindow(HINSTANCE hInstance);
+
+	float AspectRatio() const;
+
+	int Run();
+
+	virtual bool Initialize();
+
 	PCWSTR ClassName() const;
 	LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-	void InitMessageHandlers();
+	void AddMessageHandler(AbstractMessageHandler* handler);
+	virtual void InitMessageHandlers() = 0;
 	void DestroyMessageHandlers();
 
 	void CreateDevice();
 	void ReleaseDevice();
 
-	void CalculateLayout();
-	void OnPaint();
-	void OnResize();
+	virtual void OnResize();
+	virtual void Update(const GameTimer& gt) = 0;
+	virtual void Draw(const GameTimer& gt) = 0;
 
 	void CalculateFrameStats();
-
 };

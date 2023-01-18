@@ -15,6 +15,10 @@ DxDevice::DxDevice(HWND window)
     clientRefreshRate = 165;
 
 	Init();
+
+    assert(pD3dDevice);
+    assert(swapChain);
+    assert(commandListAllocator);
 }
 
 void DxDevice::ResetCommandList()
@@ -62,7 +66,6 @@ void DxDevice::ResetCommandList()
     );
 
     ThrowIfFailed(commandList->Close());
-
     ID3D12CommandList* commandLists[] = { commandList.Get() }; 
     commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
@@ -108,6 +111,122 @@ void DxDevice::FlushCommandQueue()
     }
 
 }
+
+void DxDevice::ResetAllSwapChainBuffers()
+{
+    for (int i = 0; i < swapChainBufferCount; i++)
+    {
+        swapChainBuffer[i].Reset();
+    }
+}
+
+void DxDevice::ResetDepthStencilBuffer()
+{
+    depthStencilBuffer.Reset();
+}
+
+void DxDevice::ResizeBuffers()
+{
+    ThrowIfFailed(swapChain->ResizeBuffers(
+        swapChainBufferCount,
+        clientWidth,
+        clientHeight,
+        backBufferFormat,
+        DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
+    ));
+
+    currentBackBuffer = 0;
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
+    for (UINT i = 0; i < swapChainBufferCount; i++)
+    {
+        ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&swapChainBuffer[i])));
+        pD3dDevice->CreateRenderTargetView(swapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
+        rtvHeapHandle.Offset(1, rtvDescriptorSize);
+    }
+}
+
+ComPtr<ID3D12Device>& DxDevice::GetD3DDevice()
+{
+    return pD3dDevice;
+}
+
+ComPtr<ID3D12CommandQueue>& DxDevice::GetCommandQueue()
+{
+    return commandQueue;
+}
+
+ComPtr<ID3D12CommandAllocator>& DxDevice::GetCommandListAllocator()
+{
+    return commandListAllocator;
+}
+
+ComPtr<ID3D12GraphicsCommandList>& DxDevice::GetCommandList()
+{
+    return commandList;
+}
+
+void DxDevice::RSSetViewports(UINT numViewports)
+{
+    commandList->RSSetViewports(numViewports, &screenViewport);
+}
+
+void DxDevice::RSSetScissorRects(UINT numRects)
+{
+    commandList->RSSetScissorRects(numRects, &scissorRect);
+}
+
+void DxDevice::SwapBuffers()
+{
+    ThrowIfFailed(swapChain->Present(0, 0));
+    currentBackBuffer = (currentBackBuffer + 1) % swapChainBufferCount;
+}
+
+DXGI_FORMAT DxDevice::GetBackBufferFormat()
+{
+    return backBufferFormat;
+}
+
+DXGI_FORMAT DxDevice::GetDepthStencilFormat()
+{
+    return depthStencilFormat;
+}
+
+bool DxDevice::GetMsaaState()
+{
+    return msaaState;
+}
+
+UINT DxDevice::GetMsaaQuality()
+{
+    return msaaQuality;
+}
+
+UINT DxDevice::GetClientWidth()
+{
+    return clientWidth;
+}
+
+UINT DxDevice::GetClientHeight()
+{
+    return clientHeight;
+}
+
+void DxDevice::SetClientWidth(UINT width)
+{
+    clientWidth = width;
+}
+
+void DxDevice::SetClientHeight(UINT height)
+{
+    clientHeight = height;
+}
+
+UINT DxDevice::GetSwapChainBufferCount()
+{
+    return swapChainBufferCount;
+}
+
 
 void DxDevice::Init()
 {
@@ -257,13 +376,12 @@ void DxDevice::CreateDepthStencilView()
 
     pD3dDevice->CreateDepthStencilView(depthStencilBuffer.Get(), nullptr, dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-    D3D12_RESOURCE_BARRIER barrier;
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = depthStencilBuffer.Get();
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+        depthStencilBuffer.Get(),
+        D3D12_RESOURCE_STATE_COMMON,
+        D3D12_RESOURCE_STATE_DEPTH_WRITE
+    );
+
     commandList->ResourceBarrier(
         1,
         &barrier
@@ -282,6 +400,6 @@ void DxDevice::InitScreenViewport()
 
 void DxDevice::InitScissorRect()
 {
-    scissorRect = { 0, 0, (LONG)(clientWidth / 2), (LONG)(clientHeight / 2) };
+    scissorRect = { 0, 0, static_cast<long>(clientWidth), static_cast<long>(clientHeight) };
 }
 

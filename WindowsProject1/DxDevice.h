@@ -51,11 +51,37 @@ class DxDevice
 public:
 	DxDevice(HWND mainWindow);
 
+	void CreateDepthStencilView();
+	void InitScreenViewport();
+	void InitScissorRect();
+
 	void ResetCommandList();
 	ID3D12Resource* CurrentBackBuffer();
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView();
 	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView();
 	void FlushCommandQueue();
+	void ResetAllSwapChainBuffers();
+	void ResetDepthStencilBuffer();
+	void ResizeBuffers();
+
+	ComPtr<ID3D12Device>& GetD3DDevice();
+	ComPtr<ID3D12CommandQueue>& GetCommandQueue();
+	ComPtr<ID3D12CommandAllocator>& GetCommandListAllocator();
+	ComPtr<ID3D12GraphicsCommandList>& GetCommandList();
+	void RSSetViewports(UINT numViewports);
+	void RSSetScissorRects(UINT numRects);
+	void SwapBuffers();
+
+	DXGI_FORMAT GetBackBufferFormat();
+	DXGI_FORMAT GetDepthStencilFormat();
+	bool GetMsaaState();
+	UINT GetMsaaQuality();
+
+	UINT GetClientWidth();
+	UINT GetClientHeight();
+	void SetClientWidth(UINT width);
+	void SetClientHeight(UINT height);
+	UINT GetSwapChainBufferCount();
 
 private:
 	void Init();
@@ -66,7 +92,4 @@ private:
 	void CreateSwapChain();
 	void CreateRtvAndDsvDescriptorHeaps();
 	void CreateRenderTargetView();
-	void CreateDepthStencilView();
-	void InitScreenViewport();
-	void InitScissorRect();
 };

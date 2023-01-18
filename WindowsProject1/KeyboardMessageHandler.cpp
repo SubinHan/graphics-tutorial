@@ -5,16 +5,16 @@ LRESULT KeyboardMessageHandler::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM l
 	switch (uMsg)
 	{
 	case WM_SYSKEYDOWN:
-		if (wParam == VK_ESCAPE)
-		{
-			;
-		}
+		SysKeyDown(wParam);
 		break;
 	case WM_KEYDOWN:
+		KeyDown(wParam);
 		break;
 	case WM_SYSKEYUP:
+		SysKeyUp(wParam);
 		break;
 	case WM_KEYUP:
+		KeyUp(wParam);
 		break;
 	default:
 		return PassNext(uMsg, wParam, lParam);

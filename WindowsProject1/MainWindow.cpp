@@ -11,6 +11,80 @@ template <class T> void SafeRelease(T** ppT)
     }
 }
 
+MainWindow::MainWindow(HINSTANCE hInstance) : BaseWindow(hInstance),
+    pMessageHandler(nullptr),
+    pFactory(nullptr),
+    device(nullptr)
+{
+}
+
+float MainWindow::AspectRatio() const
+{
+    return static_cast<float>(device->GetClientWidth()) / device->GetClientHeight();
+}
+
+int MainWindow::Run()
+{
+    ShowWindow(Window(), SW_SHOWNORMAL);
+
+    // Run the message loop.
+    bool bGotMsg;
+    MSG  msg;
+    timer.Reset();
+    msg.message = WM_NULL;
+    PeekMessage(&msg, NULL, 0U, 0U, PM_NOREMOVE);
+
+    while (WM_QUIT != msg.message)
+    {
+        // Process window events.
+        // Use PeekMessage() so we can use idle time to render the scene. 
+        bGotMsg = PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE);
+
+        if (bGotMsg)
+        {
+            // Translate and dispatch the message
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+            continue;
+        }
+
+		//// Update the scene.
+		//renderer->Update();
+
+		//// Render frames during idle time (when no messages are waiting).
+		//renderer->Render();
+
+		//// Present the frame to the screen.
+		//deviceResources->Present();
+
+		timer.Tick();
+
+        if (isPaused)
+        {
+            Sleep(100);
+            continue;
+        }
+
+		CalculateFrameStats();
+		Update(timer);
+		Draw(timer);
+    }
+
+    return 0;
+}
+
+bool MainWindow::Initialize()
+{
+    if (FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &pFactory)))
+    {
+        return false;
+    }
+    InitMessageHandlers();
+    CreateDevice();
+    
+    return true;
+}
+
 PCWSTR MainWindow::ClassName() const
 {
     return L"Sample Window Class";
@@ -21,12 +95,8 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
     switch (uMsg)
     {
     case WM_CREATE:
-        if (FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &pFactory)))
-        {
+        if (!Initialize())
             return -1;
-        }
-        InitMessageHandlers();
-        CreateDevice();
         return 0;
 
     case WM_DESTROY:
@@ -34,12 +104,6 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         ReleaseDevice();
         PostQuitMessage(0);
         return 0;
-
-    case WM_PAINT:
-    {
-        OnPaint();
-        return 0;
-    }
 
     case WM_ACTIVATE:
         if (LOWORD(wParam) == WA_INACTIVE)
@@ -51,6 +115,62 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
         isPaused = false;
         timer.Start();
+        return 0;
+
+    case WM_SIZE:
+        // Save the new client area dimensions.
+        device->SetClientWidth(LOWORD(lParam));
+        device->SetClientHeight(HIWORD(lParam));
+        if (device->GetD3DDevice())
+        {
+            if (wParam == SIZE_MINIMIZED)
+            {
+                isPaused = true;
+                isMinimized = true;
+                isMaximized = false;
+            }
+            else if (wParam == SIZE_MAXIMIZED)
+            {
+                isPaused = false;
+                isMinimized = false;
+                isMaximized = true;
+                OnResize();
+            }
+            else if (wParam == SIZE_RESTORED)
+            {
+
+                // Restoring from minimized state?
+                if (isMinimized)
+                {
+                    isPaused = false;
+                    isMinimized = false;
+                    OnResize();
+                }
+
+                // Restoring from maximized state?
+                else if (isMaximized)
+                {
+                    isPaused = false;
+                    isMaximized = false;
+                    OnResize();
+                }
+                else if (isResizing)
+                {
+                    // If user is dragging the resize bars, we do not resize 
+                    // the buffers here because as the user continuously 
+                    // drags the resize bars, a stream of WM_SIZE messages are
+                    // sent to the window, and it would be pointless (and slow)
+                    // to resize for each WM_SIZE message received from dragging
+                    // the resize bars.  So instead, we reset after the user is 
+                    // done resizing the window and releases the resize bars, which 
+                    // sends a WM_EXITSIZEMOVE message.
+                }
+                else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
+                {
+                    OnResize();
+                }
+            }
+        }
         return 0;
 
     case WM_ENTERSIZEMOVE:
@@ -81,10 +201,15 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
     return TRUE;
 }
 
-void MainWindow::InitMessageHandlers()
+void MainWindow::AddMessageHandler(AbstractMessageHandler* handler)
 {
-    pMessageHandler = new MouseMessageHandler(m_hwnd);
-    pMessageHandler->SetNext(new KeyboardMessageHandler(m_hwnd));
+    if (!pMessageHandler)
+    {
+        pMessageHandler = handler;
+        return;
+    }
+    
+    pMessageHandler->SetNext(handler);
 }
 
 void MainWindow::DestroyMessageHandlers()
@@ -96,6 +221,7 @@ void MainWindow::DestroyMessageHandlers()
 void MainWindow::CreateDevice()
 {
     device = new DxDevice(Window());
+    OnResize();
 }
 
 void MainWindow::ReleaseDevice()
@@ -103,26 +229,27 @@ void MainWindow::ReleaseDevice()
     delete device;
 }
 
-void MainWindow::CalculateLayout()
-{
-    if (pRenderTarget != NULL)
-    {
-        D2D1_SIZE_F size = pRenderTarget->GetSize();
-        const float x = size.width / 2;
-        const float y = size.height / 2;
-        const float radius = min(x, y);
-        ellipse = D2D1::Ellipse(D2D1::Point2F(x, y), radius, radius);
-    }
-}
-
-void MainWindow::OnPaint()
-{
-    device->ResetCommandList();
-}
-
 void MainWindow::OnResize()
 {
-    // TODO
+    device->FlushCommandQueue();
+    auto commandList = device->GetCommandList();
+    auto commandQueue = device->GetCommandQueue();
+
+    ThrowIfFailed(device->GetCommandList()->Reset(device->GetCommandListAllocator().Get(), nullptr));
+
+    device->ResetAllSwapChainBuffers();
+    device->ResetDepthStencilBuffer();
+    device->ResizeBuffers();
+    device->CreateDepthStencilView();
+
+    ThrowIfFailed(commandList->Close());
+    ID3D12CommandList* cmdsLists[] = { commandList.Get() };
+    commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+    device->FlushCommandQueue();
+
+    device->InitScreenViewport();
+    device->InitScissorRect();
 }
 
 void MainWindow::CalculateFrameStats()
