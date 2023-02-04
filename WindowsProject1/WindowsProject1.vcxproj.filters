@@ -33,13 +33,7 @@
     <ClInclude Include="MainWindow.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="MouseMessageHandler.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="AbstractMessageHandler.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="KeyboardMessageHandler.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="DxgiLogger.h">
@@ -75,12 +69,6 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="MainWindow.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="MouseMessageHandler.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="KeyboardMessageHandler.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="DXGILogger.cpp">

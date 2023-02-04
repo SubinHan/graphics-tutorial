@@ -11,8 +11,6 @@
 #include <memory>
 #include "BaseWindow.h"
 #include "AbstractMessageHandler.h"
-#include "MouseMessageHandler.h"
-#include "KeyboardMessageHandler.h"
 #include "DXGILogger.h"
 #include "DxDebug.h"
 #include "DxDevice.h"
@@ -46,16 +44,25 @@ public:
 	PCWSTR ClassName() const;
 	LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-	void AddMessageHandler(AbstractMessageHandler* handler);
-	virtual void InitMessageHandlers() = 0;
-	void DestroyMessageHandlers();
-
 	void CreateDevice();
 	void ReleaseDevice();
 
 	virtual void OnResize();
 	virtual void Update(const GameTimer& gt) = 0;
 	virtual void Draw(const GameTimer& gt) = 0;
+
+	virtual void LeftDown(int x, int y, short keyState) {};
+	virtual void LeftUp(int x, int y, short keyState) {};
+	virtual void MiddleDown(int x, int y, short keyState) {};
+	virtual void MiddleUp(int x, int y, short keyState) {};
+	virtual void RightDown(int x, int y, short keyState) {};
+	virtual void RightUp(int x, int y, short keyState) {};
+	virtual void XDown(int x, int y, short keyState) {};
+	virtual void XUp(int x, int y, short keyState) {};
+	virtual void MouseWheel(short delta, short keyState) {}
+	virtual void MouseHover(int x, int y) {}
+	virtual void MouseLeave() {}
+	virtual void MouseMove(int x, int y, short keyState) {}
 
 	void CalculateFrameStats();
 };

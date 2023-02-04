@@ -37,10 +37,6 @@ bool BoxApp::Initialize()
 	return true;
 }
 
-void BoxApp::InitMessageHandlers()
-{
-}
-
 void BoxApp::OnResize()
 {
 	MainWindow::OnResize();
@@ -333,4 +329,43 @@ void BoxApp::BuildPSO()
 	psoDesc.SampleDesc.Quality = msaaState ? device->GetMsaaQuality() - 1 : 0;
 	psoDesc.DSVFormat = device->GetDepthStencilFormat();
 	ThrowIfFailed(device->GetD3DDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso)));
+}
+
+void BoxApp::LeftDown(int x, int y, short keyState)
+{
+	lastMousePos.x = x;
+	lastMousePos.y = y;
+
+	SetCapture(m_hwnd);
+}
+
+void BoxApp::LeftUp(int x, int y, short keyState)
+{
+	ReleaseCapture();
+}
+
+void BoxApp::MouseMove(int x, int y, short keyState)
+{
+	if ((keyState & MK_LBUTTON) != 0)
+	{
+		float dx = XMConvertToRadians(0.25 * static_cast<float>(x - lastMousePos.x));
+		float dy = XMConvertToRadians(0.25f * static_cast<float>(y - lastMousePos.y));
+
+		theta += dx;
+		phi += dy;
+
+		phi = MathHelper::Clamp(phi, 0.1f, MathHelper::Pi - 0.1f);
+	}
+	else if((keyState & MK_RBUTTON) != 0)
+	{
+		float dx = 0.005f * static_cast<float>(x - lastMousePos.x);
+		float dy = 0.005f * static_cast<float>(y - lastMousePos.y);
+
+		radius += dx - dy;
+
+		radius = MathHelper::Clamp(radius, 3.0f, 15.0f);
+	}
+
+	lastMousePos.x = x;
+	lastMousePos.y = y;
 }

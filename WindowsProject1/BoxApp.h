@@ -27,7 +27,6 @@ public:
 	virtual bool Initialize() override;
 
 private:
-	virtual void InitMessageHandlers() override;
 	virtual void OnResize() override;
 	virtual void Update(const GameTimer& gt) override;
 	virtual void Draw(const GameTimer& gt) override;
@@ -38,6 +37,11 @@ private:
 	void BuildShadersAndInputLayout();
 	void BuildBoxGeometry();
 	void BuildPSO();
+
+public:
+	void LeftDown(int x, int y, short keyState) override;
+	void LeftUp(int x, int y, short keyState) override;
+	void MouseMove(int x, int y, short keyState) override;
 
 private:
 	ComPtr<ID3D12RootSignature> rootSignature = nullptr;

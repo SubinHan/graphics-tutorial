@@ -1,5 +1,7 @@
 #include "MainWindow.h"
 
+#include <WindowsX.h>
+
 using namespace std;
 
 template <class T> void SafeRelease(T** ppT)
@@ -79,7 +81,6 @@ bool MainWindow::Initialize()
     {
         return false;
     }
-    InitMessageHandlers();
     CreateDevice();
     
     return true;
@@ -100,7 +101,6 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_DESTROY:
-        DestroyMessageHandlers();
         ReleaseDevice();
         PostQuitMessage(0);
         return 0;
@@ -191,31 +191,108 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         ((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
         return 0;
 
+    case WM_LBUTTONDOWN:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        LeftDown(xPos, yPos, keyState);
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        LeftUp(xPos, yPos, keyState);
+        break;
+    }
+    case WM_MBUTTONDOWN:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        MiddleDown(xPos, yPos, keyState);
+        break;
+    }
+    case WM_MBUTTONUP:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        MiddleUp(xPos, yPos, keyState);
+        break;
+    }
+    case WM_RBUTTONDOWN:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        RightDown(xPos, yPos, keyState);
+        break;
+    }
+    case WM_RBUTTONUP:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        RightUp(xPos, yPos, keyState);
+        break;
+    }
+    case WM_XBUTTONDOWN:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        XDown(xPos, yPos, keyState);
+        break;
+    }
+    case WM_XBUTTONUP:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        XUp(xPos, yPos, keyState);
+        break;
+    }
+    case WM_MOUSEWHEEL:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        MouseWheel(GET_WHEEL_DELTA_WPARAM(wParam), keyState);
+        break;
+}
+    case WM_MOUSEHOVER:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        MouseHover(xPos, yPos);
+        break;
+    }
+    case WM_MOUSELEAVE:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        MouseLeave();
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int keyState = GET_KEYSTATE_WPARAM(wParam);
+        MouseMove(xPos, yPos, keyState);
+        break;
+    }
 
     default:
-        if (pMessageHandler)
-            return pMessageHandler->HandleMessage(uMsg, wParam, lParam);
-        else
-            return DefWindowProc(m_hwnd, uMsg, wParam, lParam);
+        return DefWindowProc(m_hwnd, uMsg, wParam, lParam);
     }
+
     return TRUE;
-}
-
-void MainWindow::AddMessageHandler(AbstractMessageHandler* handler)
-{
-    if (!pMessageHandler)
-    {
-        pMessageHandler = handler;
-        return;
-    }
-    
-    pMessageHandler->SetNext(handler);
-}
-
-void MainWindow::DestroyMessageHandlers()
-{
-    delete pMessageHandler;
-    pMessageHandler = nullptr;
 }
 
 void MainWindow::CreateDevice()
