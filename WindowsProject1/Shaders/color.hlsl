@@ -6,12 +6,12 @@ cbuffer cbPerObject : register(b0)
 
 struct VPosData
 {
-	float3 Pos;
+	float3 Pos : POSITION;
 };
 
 struct VColorData
 {
-	float4 Color;
+	float4 Color : COLOR;
 };
 
 
