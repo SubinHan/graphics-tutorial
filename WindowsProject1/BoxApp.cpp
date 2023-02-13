@@ -275,7 +275,7 @@ void BoxApp::BuildBoxGeometry()
 	};
 	
 	const UINT vbPosByteSize = (UINT)vertices.size() * sizeof(VertexPos);
-	const UINT vbColorByteSize = (UINT)vertices.size() * sizeof(VertexColor);
+	const UINT vbColorByteSize = (UINT)colors.size() * sizeof(VertexColor);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	boxGeometry = std::make_unique<MeshGeometry>();
