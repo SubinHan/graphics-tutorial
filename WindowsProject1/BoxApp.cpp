@@ -104,10 +104,12 @@ void BoxApp::Draw(const GameTimer& gt)
 	
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 
-	auto vertexBuffers = boxGeometry->VertexBufferView();
+	auto vertexPosBuffers = boxGeometry->VertexPosBufferView();
+	auto vertexColorBuffers = boxGeometry->VertexColorBufferView();
 	auto indexBuffer = boxGeometry->IndexBufferView();
 
-	commandList->IASetVertexBuffers(0, 1, &vertexBuffers);
+	commandList->IASetVertexBuffers(0, 1, &vertexPosBuffers);
+	commandList->IASetVertexBuffers(1, 1, &vertexColorBuffers);
 	commandList->IASetIndexBuffer(&indexBuffer);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -220,23 +222,35 @@ void BoxApp::BuildShadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
 		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12,
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0,
 		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 }
 
 void BoxApp::BuildBoxGeometry()
 {
-	std::array<Vertex, 8> vertices =
+	std::array<VertexPos, 8> vertices =
 	{
-		Vertex({XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White)}),
-		Vertex({XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black)}),
-		Vertex({XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red)}),
-		Vertex({XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green)}),
-		Vertex({XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue)}),
-		Vertex({XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow)}),
-		Vertex({XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan)}),
-		Vertex({XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta)})
+		VertexPos({XMFLOAT3(-1.0f, -1.0f, -1.0f)}),
+		VertexPos({XMFLOAT3(-1.0f, +1.0f, -1.0f)}),
+		VertexPos({XMFLOAT3(+1.0f, +1.0f, -1.0f)}),
+		VertexPos({XMFLOAT3(+1.0f, -1.0f, -1.0f)}),
+		VertexPos({XMFLOAT3(-1.0f, -1.0f, +1.0f)}),
+		VertexPos({XMFLOAT3(-1.0f, +1.0f, +1.0f)}),
+		VertexPos({XMFLOAT3(+1.0f, +1.0f, +1.0f)}),
+		VertexPos({XMFLOAT3(+1.0f, -1.0f, +1.0f)})
+	};
+
+	std::array<VertexColor, 8> colors =
+	{
+		VertexColor{XMFLOAT4(Colors::White)},
+		VertexColor{XMFLOAT4(Colors::Black)},
+		VertexColor{XMFLOAT4(Colors::Red)},
+		VertexColor{ XMFLOAT4(Colors::Green)},
+		VertexColor{ XMFLOAT4(Colors::Blue)},
+		VertexColor{ XMFLOAT4(Colors::Yellow)},
+		VertexColor{ XMFLOAT4(Colors::Cyan)},
+		VertexColor{ XMFLOAT4(Colors::Magenta)}
 	};
 
 	std::array<std::uint16_t, 36> indices =
@@ -259,24 +273,36 @@ void BoxApp::BuildBoxGeometry()
 		4, 0, 3,
 		4, 3, 7
 	};
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	
+	const UINT vbPosByteSize = (UINT)vertices.size() * sizeof(VertexPos);
+	const UINT vbColorByteSize = (UINT)vertices.size() * sizeof(VertexColor);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	boxGeometry = std::make_unique<MeshGeometry>();
 	boxGeometry->Name = "boxGeo";
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &boxGeometry->VertexBufferCPU));
-	CopyMemory(boxGeometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbPosByteSize, &boxGeometry->VertexPosBufferCPU));
+	CopyMemory(boxGeometry->VertexPosBufferCPU->GetBufferPointer(), vertices.data(), vbPosByteSize);
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &boxGeometry->IndexBufferCPU));
+	ThrowIfFailed(D3DCreateBlob(vbColorByteSize, &boxGeometry->VertexColorBufferCPU));
+	CopyMemory(boxGeometry->VertexColorBufferCPU->GetBufferPointer(), colors.data(), vbColorByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(vbPosByteSize + vbColorByteSize, &boxGeometry->IndexBufferCPU));
 	CopyMemory(boxGeometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-	boxGeometry->VertexBufferGPU = DxUtil::CreateDefaultBuffer(
+	boxGeometry->VertexPosBufferGPU = DxUtil::CreateDefaultBuffer(
 		device->GetD3DDevice().Get(),
 		device->GetCommandList().Get(),
 		vertices.data(),
-		vbByteSize,
+		vbPosByteSize,
+		boxGeometry->VertexBufferUploader
+	);
+
+	boxGeometry->VertexColorBufferGPU = DxUtil::CreateDefaultBuffer(
+		device->GetD3DDevice().Get(),
+		device->GetCommandList().Get(),
+		colors.data(),
+		vbColorByteSize,
 		boxGeometry->VertexBufferUploader
 	);
 
@@ -288,8 +314,10 @@ void BoxApp::BuildBoxGeometry()
 		boxGeometry->IndexBufferUploader
 	);
 
-	boxGeometry->VertexByteStride = sizeof(Vertex);
-	boxGeometry->VertexBufferByteSize = vbByteSize;
+	boxGeometry->VertexPosByteStride = sizeof(VertexPos);
+	boxGeometry->VertexColorByteStride = sizeof(VertexColor);
+	boxGeometry->VertexPosBufferByteSize = vbPosByteSize;
+	boxGeometry->VertexColorBufferByteSize = vbColorByteSize;
 	boxGeometry->IndexFormat = DXGI_FORMAT_R16_UINT;
 	boxGeometry->IndexBufferByteSize = ibByteSize;
 
@@ -348,7 +376,7 @@ void BoxApp::MouseMove(int x, int y, short keyState)
 {
 	if ((keyState & MK_LBUTTON) != 0)
 	{
-		float dx = XMConvertToRadians(0.25 * static_cast<float>(x - lastMousePos.x));
+		float dx = XMConvertToRadians(0.25f * static_cast<float>(x - lastMousePos.x));
 		float dy = XMConvertToRadians(0.25f * static_cast<float>(y - lastMousePos.y));
 
 		theta += dx;

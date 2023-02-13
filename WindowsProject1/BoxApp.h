@@ -5,11 +5,16 @@
 #include "DxUtil.h"
 #include "UploadBuffer.h"
 
-struct Vertex
+struct VertexPos
 {
 	DirectX::XMFLOAT3 Pos;
+};
+
+struct VertexColor
+{
 	DirectX::XMFLOAT4 Color;
 };
+
 
 struct ObjectConstants
 {

@@ -1,8 +1,8 @@
 struct Vertex
 {
-	XMFLOAT3 Pos;
-	XMFLOAT3 Normal;
-	XMFLOAT2 Tex0;
+	DirectX::XMFLOAT3 Pos;
+	DirectX::XMFLOAT3 Normal;
+	DirectX::XMFLOAT2 Tex0;
 };
 
 D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
