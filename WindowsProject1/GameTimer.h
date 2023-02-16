@@ -6,7 +6,7 @@ class GameTimer
 public:
 	GameTimer();
 
-	float GameTime() const;
+	float TotalTime() const;
 	float DeltaTime() const;
 
 	void Reset();
