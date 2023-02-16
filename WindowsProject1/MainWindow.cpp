@@ -335,7 +335,7 @@ void MainWindow::CalculateFrameStats()
     static float timeElapsed = 0.0f;
 
     frameCnt++;
-    if (timer.GameTime() - timeElapsed >= 1.0f)
+    if (timer.TotalTime() - timeElapsed >= 1.0f)
     {
         float fps = (float)frameCnt;
         float mspf = 1000.0f / fps;

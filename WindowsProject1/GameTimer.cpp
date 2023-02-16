@@ -8,7 +8,7 @@ pausedTime(0), stopTime(0), prevTime(0), currentTime(0), isStopped(false)
 	secondsPerCount = 1.0 / (double)countsPerSec;
 }
 
-float GameTimer::GameTime() const
+float GameTimer::TotalTime() const
 {
 	if (isStopped)
 	{
