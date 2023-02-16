@@ -4,6 +4,7 @@
 #include "MathHelper.h"
 #include "DxUtil.h"
 #include "UploadBuffer.h"
+#include "GameTimer.h"
 
 struct Vertex
 {
@@ -14,6 +15,7 @@ struct Vertex
 struct ObjectConstants
 {
 	DirectX::XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
+	float gTime = 0.0f;
 };
 
 class BoxApp : public MainWindow
