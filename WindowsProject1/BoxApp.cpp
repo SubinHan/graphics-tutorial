@@ -109,7 +109,7 @@ void BoxApp::Draw(const GameTimer& gt)
 
 	commandList->IASetVertexBuffers(0, 1, &vertexBuffers);
 	commandList->IASetIndexBuffer(&indexBuffer);
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
 
 	commandList->SetGraphicsRootDescriptorTable(
 		0, cbvHeap->GetGPUDescriptorHandleForHeapStart());
@@ -230,34 +230,18 @@ void BoxApp::BuildBoxGeometry()
 	std::array<Vertex, 8> vertices =
 	{
 		Vertex({XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White)}),
-		Vertex({XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black)}),
-		Vertex({XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red)}),
-		Vertex({XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green)}),
-		Vertex({XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue)}),
-		Vertex({XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow)}),
-		Vertex({XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan)}),
-		Vertex({XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta)})
+		Vertex({XMFLOAT3(+0.7f, -0.7f, -0.8f), XMFLOAT4(Colors::Black)}),
+		Vertex({XMFLOAT3(-0.6f, -0.4f, -0.6f), XMFLOAT4(Colors::Red)}),
+		Vertex({XMFLOAT3(+0.3f, 0.2f, -0.3f), XMFLOAT4(Colors::Green)}),
+		Vertex({XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT4(Colors::Blue)}),
+		Vertex({XMFLOAT3(-0.4f, +0.3f, +0.2f), XMFLOAT4(Colors::Yellow)}),
+		Vertex({XMFLOAT3(+0.3f, +0.6f, +0.6f), XMFLOAT4(Colors::Cyan)}),
+		Vertex({XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Magenta)})
 	};
 
-	std::array<std::uint16_t, 36> indices =
+	std::array<std::uint16_t, 8> indices =
 	{
-		0, 1, 2,
-		0, 2, 3,
-
-		4, 6, 5,
-		4, 7, 6,
-
-		4, 5, 1,
-		4, 1, 0,
-
-		3, 2, 6,
-		3, 6, 7,
-		
-		1, 5, 6,
-		1, 6, 2,
-
-		4, 0, 3,
-		4, 3, 7
+		0, 1, 2, 3, 4, 5, 6, 7
 	};
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
