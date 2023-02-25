@@ -1,6 +1,7 @@
 cbuffer cbPerObject : register(b0)
 {
 	float4x4 gWorldViewProj;
+	float gTime;
 };
 
 struct VertexIn
@@ -23,7 +24,8 @@ VertexOut VS(VertexIn vin)
 	vout.PosH = mul(float4(vin.PosL, 1.0f), gWorldViewProj);
 
 	// Just pass vertex color into the pixel shader.
-	vout.Color = vin.Color;
+	vout.Color = vin.Color * ((sin(gTime) + 1.0f) / 2.0f);
+	// vout.Color = vin.Color;
 
 	return vout;
 }
@@ -31,4 +33,5 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
 	return pin.Color;
+	// return pin.Color * ((sin(gTime) + 1.0f) / 2.0f);
 }

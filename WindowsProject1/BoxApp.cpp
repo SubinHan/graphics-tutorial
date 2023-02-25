@@ -64,6 +64,7 @@ void BoxApp::Update(const GameTimer& gt)
 
 	ObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
+	objConstants.gTime = gt.TotalTime();
 	objectConstantBuffer->CopyData(0, objConstants);
 }
 
