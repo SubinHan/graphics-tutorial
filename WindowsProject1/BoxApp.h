@@ -8,7 +8,7 @@
 struct Vertex
 {
 	DirectX::XMFLOAT3 Pos;
-	DirectX::XMFLOAT4 Color;
+	DirectX::PackedVector::XMCOLOR Color;
 };
 
 struct ObjectConstants
