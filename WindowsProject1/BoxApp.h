@@ -14,6 +14,8 @@ struct Vertex
 struct ObjectConstants
 {
 	DirectX::XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4 PulseColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	float Time;
 };
 
 class BoxApp : public MainWindow
