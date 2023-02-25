@@ -29,6 +29,8 @@ public:
 private:
 	virtual void OnResize() override;
 	virtual void Update(const GameTimer& gt) override;
+	void DrawBox();
+	void DrawPyramid();
 	virtual void Draw(const GameTimer& gt) override;
 
 	void BuildDescriptorHeaps();

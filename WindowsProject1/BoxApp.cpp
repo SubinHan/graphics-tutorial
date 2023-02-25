@@ -67,7 +67,7 @@ void BoxApp::Update(const GameTimer& gt)
 	objectConstantBuffer->CopyData(0, objConstants);
 }
 
-void BoxApp::Draw(const GameTimer& gt)
+void BoxApp::DrawBox()
 {
 	auto commandList = device->GetCommandList();
 	auto commandListAlloc = device->GetCommandListAllocator();
@@ -91,17 +91,18 @@ void BoxApp::Draw(const GameTimer& gt)
 
 
 	commandList->ClearRenderTargetView(currentBackBufferView,
-		Colors::LightSteelBlue, 0, nullptr);
+	                                   Colors::LightSteelBlue, 0, nullptr);
 	commandList->ClearDepthStencilView(depthStencilView,
-		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
-		1.0f, 0, 0, nullptr);
+	                                   D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
+	                                   1.0f, 0, 0, nullptr);
 
 	commandList->OMSetRenderTargets(1, &currentBackBufferView,
-		true, &depthStencilView);
+	                                true, &depthStencilView);
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { cbvHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-	
+
+
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 
 	auto vertexBuffers = boxGeometry->VertexBufferView();
@@ -115,8 +116,59 @@ void BoxApp::Draw(const GameTimer& gt)
 		0, cbvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	commandList->DrawIndexedInstanced(
-		boxGeometry->DrawArgs["box"].IndexCount,
+		36,
 		1, 0, 0, 0);
+
+	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
+		currentBackBuffer,
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		D3D12_RESOURCE_STATE_PRESENT
+	);
+
+	commandList->ResourceBarrier(1, &barrierDraw);
+
+	ThrowIfFailed(commandList->Close());
+
+	ID3D12CommandList* cmdsLists[] = { commandList.Get() };
+	device->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+	device->FlushCommandQueue();
+}
+
+void BoxApp::DrawPyramid()
+{
+	auto commandList = device->GetCommandList();
+	auto commandListAlloc = device->GetCommandListAllocator();
+	auto currentBackBuffer = device->CurrentBackBuffer();
+	auto currentBackBufferView = device->CurrentBackBufferView();
+	auto depthStencilView = device->DepthStencilView();
+
+	ThrowIfFailed(commandListAlloc->Reset());
+
+	ThrowIfFailed(commandList->Reset(commandListAlloc.Get(), pso.Get()));
+	
+	commandList->OMSetRenderTargets(1, &currentBackBufferView,
+		true, &depthStencilView);
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { cbvHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+
+	commandList->SetGraphicsRootSignature(rootSignature.Get());
+
+	auto vertexBuffers = boxGeometry->VertexBufferView();
+	auto indexBuffer = boxGeometry->IndexBufferView();
+
+	commandList->IASetVertexBuffers(0, 1, &vertexBuffers);
+	commandList->IASetIndexBuffer(&indexBuffer);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	commandList->SetGraphicsRootDescriptorTable(
+		0, cbvHeap->GetGPUDescriptorHandleForHeapStart());
+
+	commandList->DrawIndexedInstanced(
+		18,
+		1, 36, 0, 0);
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -134,6 +186,16 @@ void BoxApp::Draw(const GameTimer& gt)
 	device->SwapBuffers();
 
 	device->FlushCommandQueue();
+}
+
+void BoxApp::Draw(const GameTimer& gt)
+{
+	radius += 2.0f;
+	Update(gt);
+	DrawBox();
+	radius -= 2.0f;
+	Update(gt);
+	DrawPyramid();
 }
 
 void BoxApp::BuildDescriptorHeaps()
@@ -227,7 +289,7 @@ void BoxApp::BuildShadersAndInputLayout()
 
 void BoxApp::BuildBoxGeometry()
 {
-	std::array<Vertex, 8> vertices =
+	std::array<Vertex, 9> boxVertices =
 	{
 		Vertex({XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White)}),
 		Vertex({XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black)}),
@@ -236,10 +298,11 @@ void BoxApp::BuildBoxGeometry()
 		Vertex({XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue)}),
 		Vertex({XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow)}),
 		Vertex({XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan)}),
-		Vertex({XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta)})
+		Vertex({XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta)}),
+		Vertex({XMFLOAT3(.0f, +1.0f, 0.0f), XMFLOAT4(Colors::Red)})
 	};
 
-	std::array<std::uint16_t, 36> indices =
+	std::array<std::uint16_t, 54> boxIndices =
 	{
 		0, 1, 2,
 		0, 2, 3,
@@ -257,44 +320,52 @@ void BoxApp::BuildBoxGeometry()
 		1, 6, 2,
 
 		4, 0, 3,
-		4, 3, 7
+		4, 3, 7,
+
+		7, 4, 0,
+		3, 7, 0,
+
+		0, 4, 8,
+		4, 7, 8,
+		7, 3, 8,
+		3, 0, 8
 	};
 
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+	const UINT vbBoxByteSize = (UINT)boxVertices.size() * sizeof(Vertex);
+	const UINT ibBoxByteSize = (UINT)boxIndices.size() * sizeof(std::uint16_t);
 
 	boxGeometry = std::make_unique<MeshGeometry>();
 	boxGeometry->Name = "boxGeo";
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &boxGeometry->VertexBufferCPU));
-	CopyMemory(boxGeometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbBoxByteSize, &boxGeometry->VertexBufferCPU));
+	CopyMemory(boxGeometry->VertexBufferCPU->GetBufferPointer(), boxVertices.data(), vbBoxByteSize);
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &boxGeometry->IndexBufferCPU));
-	CopyMemory(boxGeometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbBoxByteSize, &boxGeometry->IndexBufferCPU));
+	CopyMemory(boxGeometry->IndexBufferCPU->GetBufferPointer(), boxIndices.data(), ibBoxByteSize);
 
 	boxGeometry->VertexBufferGPU = DxUtil::CreateDefaultBuffer(
 		device->GetD3DDevice().Get(),
 		device->GetCommandList().Get(),
-		vertices.data(),
-		vbByteSize,
+		boxVertices.data(),
+		vbBoxByteSize,
 		boxGeometry->VertexBufferUploader
 	);
 
 	boxGeometry->IndexBufferGPU = DxUtil::CreateDefaultBuffer(
 		device->GetD3DDevice().Get(),
 		device->GetCommandList().Get(),
-		indices.data(),
-		ibByteSize,
+		boxIndices.data(),
+		ibBoxByteSize,
 		boxGeometry->IndexBufferUploader
 	);
 
 	boxGeometry->VertexByteStride = sizeof(Vertex);
-	boxGeometry->VertexBufferByteSize = vbByteSize;
+	boxGeometry->VertexBufferByteSize = vbBoxByteSize;
 	boxGeometry->IndexFormat = DXGI_FORMAT_R16_UINT;
-	boxGeometry->IndexBufferByteSize = ibByteSize;
+	boxGeometry->IndexBufferByteSize = ibBoxByteSize;
 
 	SubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
+	submesh.IndexCount = (UINT)boxIndices.size();
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
