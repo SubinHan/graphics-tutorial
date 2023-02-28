@@ -1,5 +1,5 @@
 #pragma once
-#include "MainWindow.h"
+#include "Common/MainWindow.h"
 
 class InitApp : public MainWindow
 {

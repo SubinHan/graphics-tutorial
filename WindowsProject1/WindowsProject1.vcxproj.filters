@@ -27,25 +27,25 @@
     <ClInclude Include="WindowsProject1.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="BaseWindow.h">
+    <ClInclude Include="Common\BaseWindow.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="MainWindow.h">
+    <ClInclude Include="Common\MainWindow.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="AbstractMessageHandler.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DxgiLogger.h">
+    <ClInclude Include="Common\DxgiLogger.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DxDebug.h">
+    <ClInclude Include="Common\DxDebug.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DxDevice.h">
+    <ClInclude Include="Common\DxDevice.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="GameTimer.h">
+    <ClInclude Include="Common\GameTimer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="BoxApp.h">
@@ -54,13 +54,13 @@
     <ClInclude Include="InitApp.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="MathHelper.h">
+    <ClInclude Include="Common\MathHelper.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DxUtil.h">
+    <ClInclude Include="Common\DxUtil.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="UploadBuffer.h">
+    <ClInclude Include="Common\UploadBuffer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -68,31 +68,31 @@
     <ClCompile Include="WindowsProject1.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="MainWindow.cpp">
+    <ClCompile Include="Common\MainWindow.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="DXGILogger.cpp">
+    <ClCompile Include="Common\DXGILogger.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="DxException.cpp">
+    <ClCompile Include="Common\DxException.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="DxDevice.cpp">
+    <ClCompile Include="Common\DxDevice.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="GameTimer.cpp">
+    <ClCompile Include="Common\GameTimer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="InitApp.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="MathHelper.cpp">
+    <ClCompile Include="Common\MathHelper.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="BoxApp.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="DxUtil.cpp">
+    <ClCompile Include="Common\DxUtil.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

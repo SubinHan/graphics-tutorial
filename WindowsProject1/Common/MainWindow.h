@@ -10,7 +10,6 @@
 
 #include <memory>
 #include "BaseWindow.h"
-#include "AbstractMessageHandler.h"
 #include "DXGILogger.h"
 #include "DxDebug.h"
 #include "DxDevice.h"
@@ -23,8 +22,7 @@ class MainWindow : public BaseWindow<MainWindow>
 	bool isMaximized = false;
 	bool isResizing = false;
 	bool isFullscreenActivated = false;
-
-	AbstractMessageHandler* pMessageHandler;
+	
 	ID2D1Factory* pFactory;
 
 	GameTimer timer;

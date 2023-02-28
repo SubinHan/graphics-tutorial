@@ -14,7 +14,6 @@ template <class T> void SafeRelease(T** ppT)
 }
 
 MainWindow::MainWindow(HINSTANCE hInstance) : BaseWindow(hInstance),
-    pMessageHandler(nullptr),
     pFactory(nullptr),
     device(nullptr)
 {

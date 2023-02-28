@@ -4,7 +4,7 @@
 
 #include <windows.h>
 #include "BoxApp.h"
-#include "DxDebug.h"
+#include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {

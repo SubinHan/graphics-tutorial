@@ -144,33 +144,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BaseWindow.h" />
+    <ClInclude Include="Common\BaseWindow.h" />
     <ClInclude Include="BoxApp.h" />
-    <ClInclude Include="DxUtil.h" />
-    <ClInclude Include="DxDebug.h" />
-    <ClInclude Include="DxDevice.h" />
-    <ClInclude Include="DxgiLogger.h" />
+    <ClInclude Include="Common\DxUtil.h" />
+    <ClInclude Include="Common\DxDebug.h" />
+    <ClInclude Include="Common\DxDevice.h" />
+    <ClInclude Include="Common\DxgiLogger.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="GameTimer.h" />
+    <ClInclude Include="Common\GameTimer.h" />
     <ClInclude Include="InitApp.h" />
-    <ClInclude Include="MainWindow.h" />
+    <ClInclude Include="Common\MainWindow.h" />
     <ClInclude Include="AbstractMessageHandler.h" />
-    <ClInclude Include="MathHelper.h" />
+    <ClInclude Include="Common\MathHelper.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="UploadBuffer.h" />
+    <ClInclude Include="Common\UploadBuffer.h" />
     <ClInclude Include="WindowsProject1.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoxApp.cpp" />
-    <ClCompile Include="DxUtil.cpp" />
-    <ClCompile Include="DxDevice.cpp" />
-    <ClCompile Include="DxException.cpp" />
-    <ClCompile Include="DXGILogger.cpp" />
-    <ClCompile Include="GameTimer.cpp" />
+    <ClCompile Include="Common\DxUtil.cpp" />
+    <ClCompile Include="Common\DxDevice.cpp" />
+    <ClCompile Include="Common\DxException.cpp" />
+    <ClCompile Include="Common\DXGILogger.cpp" />
+    <ClCompile Include="Common\GameTimer.cpp" />
     <ClCompile Include="InitApp.cpp" />
-    <ClCompile Include="MainWindow.cpp" />
-    <ClCompile Include="MathHelper.cpp" />
+    <ClCompile Include="Common\MainWindow.cpp" />
+    <ClCompile Include="Common\MathHelper.cpp" />
     <ClCompile Include="WindowsProject1.cpp" />
   </ItemGroup>
   <ItemGroup>

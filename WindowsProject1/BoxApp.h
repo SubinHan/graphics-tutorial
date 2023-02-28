@@ -1,9 +1,9 @@
 #pragma once
 
-#include "MainWindow.h"
-#include "MathHelper.h"
-#include "DxUtil.h"
-#include "UploadBuffer.h"
+#include "Common/MainWindow.h"
+#include "Common/MathHelper.h"
+#include "Common/DxUtil.h"
+#include "Common/UploadBuffer.h"
 
 struct Vertex
 {
