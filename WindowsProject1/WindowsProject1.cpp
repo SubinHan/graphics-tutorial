@@ -4,16 +4,16 @@
 
 #include <windows.h>
 // #include "05/InitApp.h"
- #include "06/BoxApp.h"
-//#include "07/ShapeApp.h"
+ //#include "06/BoxApp.h"
+#include "07/ShapeApp.h"
 #include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
     try {
         //InitApp win(hInstance);
-        BoxApp win(hInstance);
-        //ShapeApp win(hInstance);
+        //BoxApp win(hInstance);
+        ShapeApp win(hInstance);
 
         if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
         {
