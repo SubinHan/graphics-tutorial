@@ -33,9 +33,6 @@
     <ClInclude Include="Common\MainWindow.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="AbstractMessageHandler.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="Common\DxgiLogger.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -48,10 +45,10 @@
     <ClInclude Include="Common\GameTimer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="BoxApp.h">
+    <ClInclude Include="06\BoxApp.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="InitApp.h">
+    <ClInclude Include="05\InitApp.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Common\MathHelper.h">
@@ -83,13 +80,13 @@
     <ClCompile Include="Common\GameTimer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="InitApp.cpp">
+    <ClCompile Include="05\InitApp.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Common\MathHelper.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="BoxApp.cpp">
+    <ClCompile Include="06\BoxApp.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Common\DxUtil.cpp">
@@ -110,9 +107,9 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\VertexShader.hlsl">
+    <FxCompile Include="06\Shaders\VertexShader.hlsl">
       <Filter>소스 파일</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\color.hlsl" />
+    <FxCompile Include="06\Shaders\color.hlsl" />
   </ItemGroup>
 </Project>
