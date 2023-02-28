@@ -49,14 +49,14 @@ public:
 	virtual void Update(const GameTimer& gt) = 0;
 	virtual void Draw(const GameTimer& gt) = 0;
 
-	virtual void LeftDown(int x, int y, short keyState) {};
-	virtual void LeftUp(int x, int y, short keyState) {};
-	virtual void MiddleDown(int x, int y, short keyState) {};
-	virtual void MiddleUp(int x, int y, short keyState) {};
-	virtual void RightDown(int x, int y, short keyState) {};
-	virtual void RightUp(int x, int y, short keyState) {};
-	virtual void XDown(int x, int y, short keyState) {};
-	virtual void XUp(int x, int y, short keyState) {};
+	virtual void MouseLeftDown(int x, int y, short keyState) {};
+	virtual void MouseLeftUp(int x, int y, short keyState) {};
+	virtual void MouseMiddleDown(int x, int y, short keyState) {};
+	virtual void MouseMiddleUp(int x, int y, short keyState) {};
+	virtual void MouseRightDown(int x, int y, short keyState) {};
+	virtual void MouseRightUp(int x, int y, short keyState) {};
+	virtual void MouseXDown(int x, int y, short keyState) {};
+	virtual void MouseXUp(int x, int y, short keyState) {};
 	virtual void MouseWheel(short delta, short keyState) {}
 	virtual void MouseHover(int x, int y) {}
 	virtual void MouseLeave() {}

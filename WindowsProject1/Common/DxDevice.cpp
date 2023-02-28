@@ -70,7 +70,7 @@ void DxDevice::ResetCommandList()
     commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
     ThrowIfFailed(swapChain->Present(0, 0));
-    currentBackBuffer = (currentBackBuffer + 1) % swapChainBufferCount;
+    currentBackBuffer = (currentBackBuffer + 1) % SWAP_CHAIN_BUFFER_COUNT;
 
     FlushCommandQueue();
 
@@ -114,7 +114,7 @@ void DxDevice::FlushCommandQueue()
 
 void DxDevice::ResetAllSwapChainBuffers()
 {
-    for (int i = 0; i < swapChainBufferCount; i++)
+    for (int i = 0; i < SWAP_CHAIN_BUFFER_COUNT; i++)
     {
         swapChainBuffer[i].Reset();
     }
@@ -128,7 +128,7 @@ void DxDevice::ResetDepthStencilBuffer()
 void DxDevice::ResizeBuffers()
 {
     ThrowIfFailed(swapChain->ResizeBuffers(
-        swapChainBufferCount,
+        SWAP_CHAIN_BUFFER_COUNT,
         clientWidth,
         clientHeight,
         backBufferFormat,
@@ -138,7 +138,7 @@ void DxDevice::ResizeBuffers()
     currentBackBuffer = 0;
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
-    for (UINT i = 0; i < swapChainBufferCount; i++)
+    for (UINT i = 0; i < SWAP_CHAIN_BUFFER_COUNT; i++)
     {
         ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&swapChainBuffer[i])));
         pD3dDevice->CreateRenderTargetView(swapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
@@ -166,6 +166,11 @@ ComPtr<ID3D12GraphicsCommandList>& DxDevice::GetCommandList()
     return commandList;
 }
 
+ComPtr<IDXGISwapChain>& DxDevice::GetSwapChain()
+{
+    return swapChain;
+}
+
 void DxDevice::RSSetViewports(UINT numViewports)
 {
     commandList->RSSetViewports(numViewports, &screenViewport);
@@ -179,7 +184,7 @@ void DxDevice::RSSetScissorRects(UINT numRects)
 void DxDevice::SwapBuffers()
 {
     ThrowIfFailed(swapChain->Present(0, 0));
-    currentBackBuffer = (currentBackBuffer + 1) % swapChainBufferCount;
+    currentBackBuffer = (currentBackBuffer + 1) % SWAP_CHAIN_BUFFER_COUNT;
 }
 
 DXGI_FORMAT DxDevice::GetBackBufferFormat()
@@ -224,7 +229,37 @@ void DxDevice::SetClientHeight(UINT height)
 
 UINT DxDevice::GetSwapChainBufferCount()
 {
-    return swapChainBufferCount;
+    return SWAP_CHAIN_BUFFER_COUNT;
+}
+
+ComPtr<ID3D12Fence> DxDevice::GetFence()
+{
+    return fence;
+}
+
+D3D12_VIEWPORT& DxDevice::GetScreenViewport()
+{
+    return screenViewport;
+}
+
+tagRECT& DxDevice::GetScissorRect()
+{
+    return scissorRect;
+}
+
+UINT DxDevice::GetCbvSrvUavDescriptorSize()
+{
+    return cbvDescriptorSize;
+}
+
+UINT DxDevice::GetCurrentFence()
+{
+    return currentFence;
+}
+
+UINT DxDevice::IncreaseFence()
+{
+    return ++currentFence;
 }
 
 
@@ -299,7 +334,7 @@ void DxDevice::CreateSwapChain()
     sd.SampleDesc.Count = msaaState ? 4 : 1;
     sd.SampleDesc.Quality = msaaState ? (msaaQuality - 1) : 0;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.BufferCount = swapChainBufferCount;
+    sd.BufferCount = SWAP_CHAIN_BUFFER_COUNT;
     sd.OutputWindow = mainWindow;
     sd.Windowed = true;
     sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -311,7 +346,7 @@ void DxDevice::CreateSwapChain()
 void DxDevice::CreateRtvAndDsvDescriptorHeaps()
 {
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-    rtvHeapDesc.NumDescriptors = swapChainBufferCount;
+    rtvHeapDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     rtvHeapDesc.NodeMask = 0;
@@ -328,7 +363,7 @@ void DxDevice::CreateRtvAndDsvDescriptorHeaps()
 void DxDevice::CreateRenderTargetView()
 {
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
-    for (UINT i = 0; i < swapChainBufferCount; i++)
+    for (UINT i = 0; i < SWAP_CHAIN_BUFFER_COUNT; i++)
     {
         ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&swapChainBuffer[i])));
         pD3dDevice->CreateRenderTargetView(swapChainBuffer[i].Get(), nullptr, rtvHeapHandle);

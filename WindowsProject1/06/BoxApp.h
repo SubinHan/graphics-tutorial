@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Common/MainWindow.h"
 #include "../Common/MathHelper.h"
+#include "../Common/MainWindow.h"
 #include "../Common/DxUtil.h"
 #include "../Common/UploadBuffer.h"
 
@@ -39,8 +39,8 @@ private:
 	void BuildPSO();
 
 public:
-	void LeftDown(int x, int y, short keyState) override;
-	void LeftUp(int x, int y, short keyState) override;
+	void MouseLeftDown(int x, int y, short keyState) override;
+	void MouseLeftUp(int x, int y, short keyState) override;
 	void MouseMove(int x, int y, short keyState) override;
 
 private:

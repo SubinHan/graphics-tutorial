@@ -13,41 +13,6 @@ using Microsoft::WRL::ComPtr;
 
 class DxDevice
 {
-	static const UINT swapChainBufferCount = 2;
-
-	ComPtr<IDXGIFactory> pDxgiFactory;
-	ComPtr<ID3D12Device> pD3dDevice;
-	ComPtr<ID3D12Fence> fence;
-
-	UINT rtvDescriptorSize;
-	UINT dsvDescriptorSize;
-	UINT cbvDescriptorSize;
-
-	ComPtr<ID3D12CommandQueue> commandQueue;
-	ComPtr<ID3D12CommandAllocator> commandListAllocator;
-	ComPtr<ID3D12GraphicsCommandList> commandList;
-	ComPtr<IDXGISwapChain> swapChain;
-	ComPtr<ID3D12DescriptorHeap> rtvHeap;
-	ComPtr<ID3D12DescriptorHeap> dsvHeap;
-	ComPtr<ID3D12Resource> swapChainBuffer[swapChainBufferCount];
-	ComPtr<ID3D12Resource> depthStencilBuffer;
-
-	UINT msaaQuality;
-	bool msaaState;
-	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-	HWND mainWindow;
-	UINT clientWidth;
-	UINT clientHeight;
-	UINT clientRefreshRate;
-
-	UINT currentBackBuffer = 0;
-	UINT currentFence = 0;
-
-	D3D12_VIEWPORT screenViewport;
-	tagRECT scissorRect;
-
 public:
 	DxDevice(HWND mainWindow);
 
@@ -68,6 +33,7 @@ public:
 	ComPtr<ID3D12CommandQueue>& GetCommandQueue();
 	ComPtr<ID3D12CommandAllocator>& GetCommandListAllocator();
 	ComPtr<ID3D12GraphicsCommandList>& GetCommandList();
+	ComPtr<IDXGISwapChain>& GetSwapChain();
 	void RSSetViewports(UINT numViewports);
 	void RSSetScissorRects(UINT numRects);
 	void SwapBuffers();
@@ -83,6 +49,17 @@ public:
 	void SetClientHeight(UINT height);
 	UINT GetSwapChainBufferCount();
 
+	ComPtr<ID3D12Fence> GetFence();
+	D3D12_VIEWPORT& GetScreenViewport();
+	tagRECT& GetScissorRect();
+	UINT GetCbvSrvUavDescriptorSize();
+
+	UINT GetCurrentFence();
+	UINT IncreaseFence();
+
+public:
+	static constexpr UINT SWAP_CHAIN_BUFFER_COUNT = 2;
+
 private:
 	void Init();
 	void CreateDevice();
@@ -92,4 +69,38 @@ private:
 	void CreateSwapChain();
 	void CreateRtvAndDsvDescriptorHeaps();
 	void CreateRenderTargetView();
+
+private:
+	ComPtr<IDXGIFactory> pDxgiFactory;
+	ComPtr<ID3D12Device> pD3dDevice;
+	ComPtr<ID3D12Fence> fence;
+
+	UINT rtvDescriptorSize = 0;
+	UINT dsvDescriptorSize = 0;
+	UINT cbvDescriptorSize = 0;
+
+	ComPtr<ID3D12CommandQueue> commandQueue;
+	ComPtr<ID3D12CommandAllocator> commandListAllocator;
+	ComPtr<ID3D12GraphicsCommandList> commandList;
+	ComPtr<IDXGISwapChain> swapChain;
+	ComPtr<ID3D12DescriptorHeap> rtvHeap;
+	ComPtr<ID3D12DescriptorHeap> dsvHeap;
+	ComPtr<ID3D12Resource> swapChainBuffer[SWAP_CHAIN_BUFFER_COUNT];
+	ComPtr<ID3D12Resource> depthStencilBuffer;
+
+	UINT msaaQuality;
+	bool msaaState;
+	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+	HWND mainWindow;
+	UINT clientWidth;
+	UINT clientHeight;
+	UINT clientRefreshRate;
+
+	UINT currentBackBuffer = 0;
+	UINT currentFence = 0;
+
+	D3D12_VIEWPORT screenViewport;
+	tagRECT scissorRect;
 };

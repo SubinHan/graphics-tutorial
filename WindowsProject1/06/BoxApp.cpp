@@ -88,7 +88,7 @@ void BoxApp::Draw(const GameTimer& gt)
 		D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	commandList->ResourceBarrier(1, &barrierReset);
-
+	
 
 	commandList->ClearRenderTargetView(currentBackBufferView,
 		Colors::LightSteelBlue, 0, nullptr);
@@ -331,7 +331,7 @@ void BoxApp::BuildPSO()
 	ThrowIfFailed(device->GetD3DDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso)));
 }
 
-void BoxApp::LeftDown(int x, int y, short keyState)
+void BoxApp::MouseLeftDown(int x, int y, short keyState)
 {
 	lastMousePos.x = x;
 	lastMousePos.y = y;
@@ -339,7 +339,7 @@ void BoxApp::LeftDown(int x, int y, short keyState)
 	SetCapture(m_hwnd);
 }
 
-void BoxApp::LeftUp(int x, int y, short keyState)
+void BoxApp::MouseLeftUp(int x, int y, short keyState)
 {
 	ReleaseCapture();
 }

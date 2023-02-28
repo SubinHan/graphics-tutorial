@@ -144,12 +144,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="07\ShapeApp.h" />
     <ClInclude Include="Common\BaseWindow.h" />
     <ClInclude Include="06\BoxApp.h" />
     <ClInclude Include="Common\DxUtil.h" />
     <ClInclude Include="Common\DxDebug.h" />
     <ClInclude Include="Common\DxDevice.h" />
     <ClInclude Include="Common\DxgiLogger.h" />
+    <ClInclude Include="Common\FrameResource.h" />
+    <ClInclude Include="Common\GeometryGenerator.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Common\GameTimer.h" />
     <ClInclude Include="05\InitApp.h" />
@@ -162,12 +165,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="06\BoxApp.cpp" />
+    <ClCompile Include="07\ShapeApp.cpp" />
     <ClCompile Include="Common\DxUtil.cpp" />
     <ClCompile Include="Common\DxDevice.cpp" />
     <ClCompile Include="Common\DxException.cpp" />
     <ClCompile Include="Common\DXGILogger.cpp" />
+    <ClCompile Include="Common\FrameResource.cpp" />
     <ClCompile Include="Common\GameTimer.cpp" />
     <ClCompile Include="05\InitApp.cpp" />
+    <ClCompile Include="Common\GeometryGenerator.cpp" />
     <ClCompile Include="Common\MainWindow.cpp" />
     <ClCompile Include="Common\MathHelper.cpp" />
     <ClCompile Include="WindowsProject1.cpp" />
@@ -192,6 +198,12 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="07\Shaders\color.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="07\Shaders\VertexShader.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
   </ItemGroup>
