@@ -25,9 +25,8 @@ class MainWindow : public BaseWindow<MainWindow>
 	
 	ID2D1Factory* pFactory;
 
-	GameTimer timer;
-
 protected:
+	GameTimer timer;
 	DxDevice* device;
 
 public:

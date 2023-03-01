@@ -66,7 +66,16 @@
     <ClInclude Include="07\ShapeApp.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Common\FrameResource.h">
+    <ClInclude Include="07\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="07LandAndWaves\LandAndWavesApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="07LandAndWaves\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="07LandAndWaves\Waves.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -107,7 +116,16 @@
     <ClCompile Include="Common\GeometryGenerator.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Common\FrameResource.cpp">
+    <ClCompile Include="07\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="07LandAndWaves\LandAndWavesApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="07LandAndWaves\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="07LandAndWaves\Waves.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

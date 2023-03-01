@@ -4,6 +4,7 @@
 #include "../Common/MathHelper.h"
 #include "../Common/DxUtil.h"
 #include "FrameResource.h"
+#include "Waves.h"
 
 extern const int gNumFrameResources;
 
@@ -36,41 +37,49 @@ struct RenderItem
 	int BaseVertexLocation = 0;
 };
 
-class ShapeApp : public MainWindow
+class LandAndWavesApp : public MainWindow
 {
 public:
-	ShapeApp(HINSTANCE hInstance);
-	ShapeApp(const ShapeApp& rhs) = delete;
-	ShapeApp& operator=(const ShapeApp& rhs) = delete;
-	~ShapeApp();
+	LandAndWavesApp(HINSTANCE hInstance);
+	LandAndWavesApp(const LandAndWavesApp& rhs) = delete;
+	LandAndWavesApp& operator=(const LandAndWavesApp& rhs) = delete;
+	~LandAndWavesApp();
 
 	bool Initialize() override;
+
+public:
+	static constexpr float SAND_HEIGHT = -10.0f;
+	static constexpr float LAND_LOW_HEIGHT = 5.0f;
+	static constexpr float LAND_MIDDLE_HEIGHT = 12.0f;
+	static constexpr float LAND_HIGH_HEIGHT = 20.0f;
+
+protected:
+	void OnMouseLeftDown(int x, int y, short keyState) override;
+	void OnMouseLeftUp(int x, int y, short keyState) override;
+	void OnMouseMove(int x, int y, short keyState) override;
+	void OnKeyDown(WPARAM windowVirtualKeyCode) override;
 
 private:
 	void OnResize() override;
 	void Update(const GameTimer& gt) override;
 	void Draw(const GameTimer& gt) override;
-	
+
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
+	void UpdateWaves(const GameTimer& gt);
 
 	void BuildDescriptorHeaps();
 	void BuildConstantBufferViews();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
-	void BuildShapeGeometry();
+	float GetHillsHeight(float x, float z) const;
+	void BuildLandGeometry();
+	void BuildWavesGeometry();
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildRenderItems();
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
-
-
-public:
-	void OnMouseLeftDown(int x, int y, short keyState) override;
-	void OnMouseLeftUp(int x, int y, short keyState) override;
-	void OnMouseMove(int x, int y, short keyState) override;
-	void OnKeyDown(WPARAM windowVirtualKeyCode) override;
 
 private:
 
@@ -87,7 +96,10 @@ private:
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> shaders;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStateObjects;
 
+
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
+
+	RenderItem* wavesRitem = nullptr;
 
 	// List of all the render items.
 	std::vector<std::unique_ptr<RenderItem>> allRitems;
@@ -98,6 +110,8 @@ private:
 	PassConstants mainPassCB;
 
 	UINT passCbvOffset = 0;
+
+	std::unique_ptr<Waves> waves;
 
 	bool isWireframe = false;
 
