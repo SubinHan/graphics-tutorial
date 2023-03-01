@@ -195,7 +195,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseLeftDown(xPos, yPos, keyState);
+        OnMouseLeftDown(xPos, yPos, keyState);
         break;
     }
     case WM_LBUTTONUP:
@@ -203,7 +203,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseLeftUp(xPos, yPos, keyState);
+        OnMouseLeftUp(xPos, yPos, keyState);
         break;
     }
     case WM_MBUTTONDOWN:
@@ -211,7 +211,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseMiddleDown(xPos, yPos, keyState);
+        OnMouseMiddleDown(xPos, yPos, keyState);
         break;
     }
     case WM_MBUTTONUP:
@@ -219,7 +219,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseMiddleUp(xPos, yPos, keyState);
+        OnMouseMiddleUp(xPos, yPos, keyState);
         break;
     }
     case WM_RBUTTONDOWN:
@@ -227,7 +227,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseRightDown(xPos, yPos, keyState);
+        OnMouseRightDown(xPos, yPos, keyState);
         break;
     }
     case WM_RBUTTONUP:
@@ -235,7 +235,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseRightUp(xPos, yPos, keyState);
+        OnMouseRightUp(xPos, yPos, keyState);
         break;
     }
     case WM_XBUTTONDOWN:
@@ -243,7 +243,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseXDown(xPos, yPos, keyState);
+        OnMouseXDown(xPos, yPos, keyState);
         break;
     }
     case WM_XBUTTONUP:
@@ -251,7 +251,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseXUp(xPos, yPos, keyState);
+        OnMouseXUp(xPos, yPos, keyState);
         break;
     }
     case WM_MOUSEWHEEL:
@@ -259,7 +259,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseWheel(GET_WHEEL_DELTA_WPARAM(wParam), keyState);
+        OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam), keyState);
         break;
 }
     case WM_MOUSEHOVER:
@@ -267,7 +267,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseHover(xPos, yPos);
+        OnMouseHover(xPos, yPos);
         break;
     }
     case WM_MOUSELEAVE:
@@ -275,7 +275,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseLeave();
+        OnMouseLeave();
         break;
     }
     case WM_MOUSEMOVE:
@@ -283,8 +283,17 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
         int keyState = GET_KEYSTATE_WPARAM(wParam);
-        MouseMove(xPos, yPos, keyState);
+        OnMouseMove(xPos, yPos, keyState);
         break;
+    }
+    case WM_KEYDOWN:
+    {
+        OnKeyDown(wParam);
+        break;
+    }
+    case WM_KEYUP:
+    {
+        OnKeyUp(wParam);
     }
 
     default:

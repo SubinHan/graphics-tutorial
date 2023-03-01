@@ -166,7 +166,7 @@ void ShapeApp::Draw(const GameTimer& gt)
     commandQueue->Signal(device->GetFence().Get(), device->GetCurrentFence());
 }
 
-void ShapeApp::MouseLeftDown(int x, int y, short keyState)
+void ShapeApp::OnMouseLeftDown(int x, int y, short keyState)
 {
     mLastMousePos.x = x;
     mLastMousePos.y = y;
@@ -174,12 +174,12 @@ void ShapeApp::MouseLeftDown(int x, int y, short keyState)
     SetCapture(m_hwnd);
 }
 
-void ShapeApp::MouseLeftUp(int x, int y, short keyState)
+void ShapeApp::OnMouseLeftUp(int x, int y, short keyState)
 {
     ReleaseCapture();
 }
 
-void ShapeApp::MouseMove(int x, int y, short keyState)
+void ShapeApp::OnMouseMove(int x, int y, short keyState)
 {
     if ((keyState & MK_LBUTTON) != 0)
     {
@@ -209,6 +209,14 @@ void ShapeApp::MouseMove(int x, int y, short keyState)
 
     mLastMousePos.x = x;
     mLastMousePos.y = y;
+}
+
+void ShapeApp::OnKeyDown(WPARAM windowVirtualKeyCode)
+{
+    if (windowVirtualKeyCode != 'I')
+        return;
+
+    isWireframe = !isWireframe;
 }
 
 void ShapeApp::UpdateCamera(const GameTimer& gt)

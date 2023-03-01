@@ -331,7 +331,7 @@ void BoxApp::BuildPSO()
 	ThrowIfFailed(device->GetD3DDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso)));
 }
 
-void BoxApp::MouseLeftDown(int x, int y, short keyState)
+void BoxApp::OnMouseLeftDown(int x, int y, short keyState)
 {
 	lastMousePos.x = x;
 	lastMousePos.y = y;
@@ -339,12 +339,12 @@ void BoxApp::MouseLeftDown(int x, int y, short keyState)
 	SetCapture(m_hwnd);
 }
 
-void BoxApp::MouseLeftUp(int x, int y, short keyState)
+void BoxApp::OnMouseLeftUp(int x, int y, short keyState)
 {
 	ReleaseCapture();
 }
 
-void BoxApp::MouseMove(int x, int y, short keyState)
+void BoxApp::OnMouseMove(int x, int y, short keyState)
 {
 	if ((keyState & MK_LBUTTON) != 0)
 	{

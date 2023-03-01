@@ -67,9 +67,10 @@ private:
 
 
 public:
-	void MouseLeftDown(int x, int y, short keyState) override;
-	void MouseLeftUp(int x, int y, short keyState) override;
-	void MouseMove(int x, int y, short keyState) override;
+	void OnMouseLeftDown(int x, int y, short keyState) override;
+	void OnMouseLeftUp(int x, int y, short keyState) override;
+	void OnMouseMove(int x, int y, short keyState) override;
+	void OnKeyDown(WPARAM windowVirtualKeyCode) override;
 
 private:
 
