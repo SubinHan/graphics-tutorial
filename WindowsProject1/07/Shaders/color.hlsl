@@ -20,7 +20,7 @@ cbuffer cbPass : register(b1)
 
 cbuffer cbPerObject : register(b0)
 {
-	float4x4 gWorld;
+	float4x4 gWorld[16];
 }
 
 struct VertexIn

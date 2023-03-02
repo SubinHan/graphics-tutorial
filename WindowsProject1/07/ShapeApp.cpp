@@ -238,6 +238,9 @@ void ShapeApp::UpdateCamera(const GameTimer& gt)
 void ShapeApp::UpdateObjectCBs(const GameTimer& gt)
 {
     auto currObjectCB = currFrameResource->ObjectCB.get();
+
+    int index = 0;
+
     for (auto& e : allRitems)
     {
         // Only update the cbuffer data if the constants have changed.  
@@ -247,7 +250,7 @@ void ShapeApp::UpdateObjectCBs(const GameTimer& gt)
             XMMATRIX world = XMLoadFloat4x4(&e->World);
 
             ObjectConstants objConstants;
-            XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
+            XMStoreFloat4x4(&objConstants.World[index++], XMMatrixTranspose(world));
 
             currObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
@@ -376,7 +379,7 @@ void ShapeApp::BuildRootSignature()
 
     // Create root CBVs.
     slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0);
-    slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
+    slotRootParameter[1].InitAsConstantBufferView(1);
 
     // A root signature is an array of root parameters.
     CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr,
