@@ -101,13 +101,13 @@ private:
 
 	bool isWireframe = false;
 
-	DirectX::XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
-	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+	DirectX::XMFLOAT3 eyePos = { 0.0f, 0.0f, 0.0f };
+	DirectX::XMFLOAT4X4 view = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 proj = MathHelper::Identity4x4();
 
-	float mTheta = 1.5f * DirectX::XM_PI;
-	float mPhi = 0.2f * DirectX::XM_PI;
-	float mRadius = 15.0f;
+	float theta = 1.5f * DirectX::XM_PI;
+	float phi = 0.2f * DirectX::XM_PI;
+	float radius = 15.0f;
 
-	POINT mLastMousePos;
+	POINT lastMousePos;
 };

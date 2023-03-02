@@ -3,7 +3,7 @@
 
 using namespace DirectX;
 
-//const int gNumFrameResources = 3;
+const int gNumFrameResources = 3;
 
 ShapeApp::ShapeApp(HINSTANCE hInstance)
     : MainWindow(hInstance)
@@ -54,12 +54,11 @@ void ShapeApp::OnResize()
 
     // The window resized, so update the aspect ratio and recompute the projection matrix.
     XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
-    XMStoreFloat4x4(&mProj, P);
+    XMStoreFloat4x4(&proj, P);
 }
 
 void ShapeApp::Update(const GameTimer& gt)
 {
-    //OnKeyboardInput(gt);
     UpdateCamera(gt);
 
     // Cycle through the circular frame resource array.
@@ -168,8 +167,8 @@ void ShapeApp::Draw(const GameTimer& gt)
 
 void ShapeApp::OnMouseLeftDown(int x, int y, short keyState)
 {
-    mLastMousePos.x = x;
-    mLastMousePos.y = y;
+    lastMousePos.x = x;
+    lastMousePos.y = y;
 
     SetCapture(m_hwnd);
 }
@@ -184,31 +183,31 @@ void ShapeApp::OnMouseMove(int x, int y, short keyState)
     if ((keyState & MK_LBUTTON) != 0)
     {
         // Make each pixel correspond to a quarter of a degree.
-        float dx = DirectX::XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
-        float dy = DirectX::XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
+        float dx = DirectX::XMConvertToRadians(0.25f * static_cast<float>(x - lastMousePos.x));
+        float dy = DirectX::XMConvertToRadians(0.25f * static_cast<float>(y - lastMousePos.y));
 
         // Update angles based on input to orbit camera around box.
-        mTheta += dx;
-        mPhi += dy;
+        theta += dx;
+        phi += dy;
 
-        // Restrict the angle mPhi.
-        mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
+        // Restrict the angle phi.
+        phi = MathHelper::Clamp(phi, 0.1f, MathHelper::Pi - 0.1f);
     }
     else if ((keyState & MK_RBUTTON) != 0)
     {
         // Make each pixel correspond to 0.2 unit in the scene.
-        float dx = 0.05f * static_cast<float>(x - mLastMousePos.x);
-        float dy = 0.05f * static_cast<float>(y - mLastMousePos.y);
+        float dx = 0.05f * static_cast<float>(x - lastMousePos.x);
+        float dy = 0.05f * static_cast<float>(y - lastMousePos.y);
 
         // Update the camera radius based on input.
-        mRadius += dx - dy;
+        radius += dx - dy;
 
         // Restrict the radius.
-        mRadius = MathHelper::Clamp(mRadius, 5.0f, 150.0f);
+        radius = MathHelper::Clamp(radius, 5.0f, 150.0f);
     }
 
-    mLastMousePos.x = x;
-    mLastMousePos.y = y;
+    lastMousePos.x = x;
+    lastMousePos.y = y;
 }
 
 void ShapeApp::OnKeyDown(WPARAM windowVirtualKeyCode)
@@ -222,17 +221,17 @@ void ShapeApp::OnKeyDown(WPARAM windowVirtualKeyCode)
 void ShapeApp::UpdateCamera(const GameTimer& gt)
 {
     // Convert Spherical to Cartesian coordinates.
-    mEyePos.x = mRadius * sinf(mPhi) * cosf(mTheta);
-    mEyePos.z = mRadius * sinf(mPhi) * sinf(mTheta);
-    mEyePos.y = mRadius * cosf(mPhi);
+    eyePos.x = radius * sinf(phi) * cosf(theta);
+    eyePos.z = radius * sinf(phi) * sinf(theta);
+    eyePos.y = radius * cosf(phi);
 
     // Build the view matrix.
-    XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
+    XMVECTOR pos = XMVectorSet(eyePos.x, eyePos.y, eyePos.z, 1.0f);
     XMVECTOR target = XMVectorZero();
     XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
     XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-    XMStoreFloat4x4(&mView, view);
+    XMStoreFloat4x4(&this->view, view);
 }
 
 void ShapeApp::UpdateObjectCBs(const GameTimer& gt)
@@ -259,8 +258,8 @@ void ShapeApp::UpdateObjectCBs(const GameTimer& gt)
 
 void ShapeApp::UpdateMainPassCB(const GameTimer& gt)
 {
-    XMMATRIX view = XMLoadFloat4x4(&mView);
-    XMMATRIX proj = XMLoadFloat4x4(&mProj);
+    XMMATRIX view = XMLoadFloat4x4(&this->view);
+    XMMATRIX proj = XMLoadFloat4x4(&this->proj);
 
     XMMATRIX viewProj = XMMatrixMultiply(view, proj);
     auto viewDeterminant = XMMatrixDeterminant(view);
@@ -276,7 +275,7 @@ void ShapeApp::UpdateMainPassCB(const GameTimer& gt)
     XMStoreFloat4x4(&mainPassCB.InvProj, XMMatrixTranspose(invProj));
     XMStoreFloat4x4(&mainPassCB.ViewProj, XMMatrixTranspose(viewProj));
     XMStoreFloat4x4(&mainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-    mainPassCB.EyePosW = mEyePos;
+    mainPassCB.EyePosW = eyePos;
 
     auto clientWidth = device->GetClientWidth();
     auto clientHeight = device->GetClientHeight();
