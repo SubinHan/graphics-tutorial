@@ -4,6 +4,7 @@
 
 #include "GeometryGenerator.h"
 #include <algorithm>
+#include <fstream>
 
 using namespace DirectX;
 
@@ -654,4 +655,103 @@ GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float x, float y, floa
 	meshData.Indices32[5] = 3;
 
 	return meshData;
+}
+
+std::string ltrim(const std::string& s)
+{
+	static const std::string WHITESPACE = " \n\r\t\f\v";
+
+	size_t start = s.find_first_not_of(WHITESPACE);
+	return (start == std::string::npos) ? "" : s.substr(start);
+}
+
+GeometryGenerator::MeshData GeometryGenerator::CreateMeshWithFile(std::string filePath)
+{
+	MeshData meshData;
+
+	std::ifstream inputStream(filePath, std::ifstream::in);
+	std::string word;
+	inputStream >> word;
+	inputStream >> word;
+
+	int vertexCount = std::stoi(word);
+
+	meshData.Vertices.resize(vertexCount);
+
+	inputStream >> word;
+	inputStream >> word;
+
+	int triangleCount = std::stoi(word);
+
+	meshData.Indices32.resize(triangleCount * 3);
+
+	while (std::getline(inputStream, word), word != "{")
+		;
+
+	int index = 0;
+	while (std::getline(inputStream, word), word != "}")
+	{
+		word = ltrim(word);
+		auto values = split(word, ' ');
+
+		float posX = std::stof(values[0]);
+		float posY = std::stof(values[1]);
+		float posZ = std::stof(values[2]);
+
+		float normalX = std::stof(values[3]);
+		float normalY = std::stof(values[4]);
+		float normalZ = std::stof(values[5]);
+
+		meshData.Vertices[index].Position.x = posX;
+		meshData.Vertices[index].Position.y = posY;
+		meshData.Vertices[index].Position.z = posZ;
+		meshData.Vertices[index].Normal.x = normalX;
+		meshData.Vertices[index].Normal.y = normalY;
+		meshData.Vertices[index].Normal.z = normalZ;
+
+		index++;
+	}
+
+	while (std::getline(inputStream, word), word != "{")
+		;
+
+	index = 0;
+	while (std::getline(inputStream, word), word != "}")
+	{
+		ltrim(word);
+		auto values = split(word, ' ');
+
+		int index1 = std::stoi(values[0]);
+		int index2 = std::stoi(values[1]);
+		int index3 = std::stoi(values[2]);
+
+		meshData.Indices32[index++] = index1;
+		meshData.Indices32[index++] = index2;
+		meshData.Indices32[index++] = index3;
+	}
+
+	return meshData;
+}
+
+std::vector<std::string> GeometryGenerator::split(std::string str, char delimeter)
+{
+	std::vector<std::string> result;
+
+	int current = 0;
+	int previous = 0;
+	std::string value;
+
+	current = str.find(' ');
+	while (current != std::string::npos)
+	{
+		value = str.substr(previous, current - previous);
+		previous = current + 1;
+		current = str.find(delimeter, previous);
+
+		result.push_back(value);
+	}
+
+	result.push_back(str.substr(previous, str.size()));
+
+	return result;
 }
