@@ -317,12 +317,12 @@ void LitWavesApp::UpdateMainPassCB(const GameTimer& gt)
 	mainPassCB.FarZ = 1000.0f;
 	mainPassCB.TotalTime = gt.TotalTime();
 	mainPassCB.DeltaTime = gt.DeltaTime();
-	mainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
+	mainPassCB.AmbientLight = { 0.25f, 0.1f, 0.1f, 1.0f };
 
 	XMVECTOR lightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta, sunPhi);
 
 	XMStoreFloat3(&mainPassCB.Lights[0].Direction, lightDir);
-	mainPassCB.Lights[0].Strength = { 1.0f, 1.0f, 0.9f };
+	mainPassCB.Lights[0].Strength = { (sinf(gt.TotalTime()) + 1.0f) * 0.5f, 0.0f, 0.0f };
 
 	auto currPassCB = currFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mainPassCB);
