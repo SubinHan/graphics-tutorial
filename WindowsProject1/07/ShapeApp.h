@@ -115,7 +115,7 @@ private:
 	float radius = 15.0f;
 
 	float sunTheta = 1.25f * DirectX::XM_PI;
-	float sunPhi = DirectX::XM_PIDIV4;
+	float sunPhi = 1.5 * DirectX::XM_PIDIV4;
 
 	POINT lastMousePos;
 };

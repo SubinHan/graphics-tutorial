@@ -316,6 +316,15 @@ void ShapeApp::UpdateMainPassCB(const GameTimer& gt)
     XMStoreFloat3(&mainPassCB.Lights[0].Direction, lightDir);
     mainPassCB.Lights[0].Strength = { 1.0f, 1.0f, 0.9f };
 
+    // Three-point lighting
+    XMVECTOR backLightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta + XM_PIDIV2, sunPhi);
+    XMVECTOR fillLightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta - XM_PIDIV2, sunPhi);
+
+    XMStoreFloat3(&mainPassCB.Lights[1].Direction, backLightDir);
+    XMStoreFloat3(&mainPassCB.Lights[2].Direction, fillLightDir);
+    mainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
+    mainPassCB.Lights[2].Strength = { 0.5f, 0.5f, 0.5f };
+
     auto currPassCB = currFrameResource->PassCB.get();
     currPassCB->CopyData(0, mainPassCB);
 }
@@ -604,14 +613,14 @@ void ShapeApp::BuildMaterials()
     auto box = std::make_unique<Material>();
     box->Name = "box";
     box->MatCBIndex = 0;
-    box->DiffuseAlbedo = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+    box->DiffuseAlbedo = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
     box->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
     box->Roughness = 0.0f;
 
     auto grid = std::make_unique<Material>();
     grid->Name = "grid";
     grid->MatCBIndex = 1;
-    grid->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    grid->DiffuseAlbedo = XMFLOAT4(0.5f, 0.5f, 0.1f, 1.0f);
     grid->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
     grid->Roughness = 0.3f;
 
