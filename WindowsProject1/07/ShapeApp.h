@@ -3,7 +3,7 @@
 #include "../Common/MainWindow.h"
 #include "../Common/MathHelper.h"
 #include "../Common/DxUtil.h"
-#include "FrameResource.h"
+#include "../08LitWaves/FrameResource.h"
 
 extern const int gNumFrameResources;
 
@@ -24,6 +24,7 @@ struct RenderItem
 
 	// Index into GPU constant buffer corresponding to the ObjectCB for this render item.
 	UINT ObjCBIndex = -1;
+	UINT MatCBIndex = -1;
 
 	MeshGeometry* Geo = nullptr;
 
@@ -53,6 +54,7 @@ private:
 	
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
+	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
 	void BuildDescriptorHeaps();
@@ -60,6 +62,7 @@ private:
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
 	void BuildShapeGeometry();
+	void BuildMaterials();
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildRenderItems();
@@ -84,6 +87,8 @@ private:
 	ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> geometries;
+	std::unordered_map<std::string, std::unique_ptr<Material>> materials;
+	std::unordered_map<std::string, std::unique_ptr<Texture>> textures;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> shaders;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStateObjects;
 
@@ -108,6 +113,9 @@ private:
 	float theta = 1.5f * DirectX::XM_PI;
 	float phi = 0.2f * DirectX::XM_PI;
 	float radius = 15.0f;
+
+	float sunTheta = 1.25f * DirectX::XM_PI;
+	float sunPhi = DirectX::XM_PIDIV4;
 
 	POINT lastMousePos;
 };
