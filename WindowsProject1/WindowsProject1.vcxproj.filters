@@ -78,6 +78,15 @@
     <ClInclude Include="07LandAndWaves\Waves.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="08LitWaves\LitWavesApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="08LitWaves\Waves.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="08LitWaves\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -128,6 +137,15 @@
     <ClCompile Include="07LandAndWaves\Waves.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="08LitWaves\LitWavesApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="08LitWaves\Waves.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="08LitWaves\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -149,5 +167,7 @@
     <FxCompile Include="06\Shaders\color.hlsl" />
     <FxCompile Include="07\Shaders\color.hlsl" />
     <FxCompile Include="07\Shaders\VertexShader.hlsl" />
+    <FxCompile Include="08LitWaves\Shaders\Default.hlsl" />
+    <FxCompile Include="08LitWaves\Shaders\LightingUtil.hlsl" />
   </ItemGroup>
 </Project>
