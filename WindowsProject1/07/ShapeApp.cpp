@@ -279,6 +279,23 @@ void ShapeApp::UpdateMaterialCBs(const GameTimer& gt)
     }
 }
 
+void ShapeApp::UpdateLightsInPassCB()
+{
+	XMVECTOR lightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta, sunPhi);
+
+	XMStoreFloat3(&mainPassCB.Lights[0].Direction, lightDir);
+	mainPassCB.Lights[0].Strength = { 1.0f, 1.0f, 0.9f };
+
+	// Three-point lighting
+	XMVECTOR backLightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta + XM_PIDIV2, sunPhi);
+	XMVECTOR fillLightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta - XM_PIDIV2, sunPhi);
+
+	XMStoreFloat3(&mainPassCB.Lights[1].Direction, backLightDir);
+	XMStoreFloat3(&mainPassCB.Lights[2].Direction, fillLightDir);
+	mainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
+	mainPassCB.Lights[2].Strength = { 0.5f, 0.5f, 0.5f };
+}
+
 void ShapeApp::UpdateMainPassCB(const GameTimer& gt)
 {
     XMMATRIX view = XMLoadFloat4x4(&this->view);
@@ -311,19 +328,7 @@ void ShapeApp::UpdateMainPassCB(const GameTimer& gt)
     mainPassCB.DeltaTime = gt.DeltaTime();
     mainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
 
-    XMVECTOR lightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta, sunPhi);
-
-    XMStoreFloat3(&mainPassCB.Lights[0].Direction, lightDir);
-    mainPassCB.Lights[0].Strength = { 1.0f, 1.0f, 0.9f };
-
-    // Three-point lighting
-    XMVECTOR backLightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta + XM_PIDIV2, sunPhi);
-    XMVECTOR fillLightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta - XM_PIDIV2, sunPhi);
-
-    XMStoreFloat3(&mainPassCB.Lights[1].Direction, backLightDir);
-    XMStoreFloat3(&mainPassCB.Lights[2].Direction, fillLightDir);
-    mainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
-    mainPassCB.Lights[2].Strength = { 0.5f, 0.5f, 0.5f };
+    UpdateLightsInPassCB();
 
     auto currPassCB = currFrameResource->PassCB.get();
     currPassCB->CopyData(0, mainPassCB);
