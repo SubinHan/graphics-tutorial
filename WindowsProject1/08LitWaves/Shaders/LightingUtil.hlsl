@@ -167,4 +167,56 @@ float4 ComputeLighting(Light gLights[MaxLights], Material mat,
     return float4(result, 0.0f);
 }
 
+float4 ApplyStepFunction(float4 light, int numSteps)
+{
+    int i = 0;
 
+    float lo = 0.0f;
+    const float delta = 1.0f / numSteps;
+
+	for(lo = 0.0f, i = 0; i < numSteps; i++)
+	{
+        float hi = lo + delta;
+        if(lo <= light.x && light.x < hi)
+        {
+            light.x = hi;
+            break;
+        }
+        lo += delta;
+	}
+
+    for (lo = 0.0f, i = 0; i < numSteps; i++)
+    {
+        float hi = lo + delta;
+        if (lo <= light.y && light.y < hi)
+        {
+            light.y = hi;
+            break;
+        }
+        lo += delta;
+    }
+
+    for (lo = 0.0f, i = 0; i < numSteps; i++)
+    {
+        float hi = lo + delta;
+        if (lo <= light.z && light.z < hi)
+        {
+            light.z = hi;
+            break;
+        }
+        lo += delta;
+    }
+
+    for (lo = 0.0f, i = 0; i < numSteps; i++)
+    {
+        float hi = lo + delta;
+        if (lo <= light.w && light.w < hi)
+        {
+            light.w = hi;
+            break;
+        }
+        lo += delta;
+    }
+
+    return light;
+}
