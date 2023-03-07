@@ -55,6 +55,7 @@ private:
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialCBs(const GameTimer& gt);
+	void UpdateLightsInPassCB();
 	void UpdateMainPassCB(const GameTimer& gt);
 
 	void BuildDescriptorHeaps();

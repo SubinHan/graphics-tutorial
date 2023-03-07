@@ -281,19 +281,26 @@ void ShapeApp::UpdateMaterialCBs(const GameTimer& gt)
 
 void ShapeApp::UpdateLightsInPassCB()
 {
-	XMVECTOR lightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta, sunPhi);
+    for (int i = 0; i < 5; i++)
+    {
+        XMMATRIX leftCylWorld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
+        XMMATRIX rightCylWorld = XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i * 5.0f);
 
-	XMStoreFloat3(&mainPassCB.Lights[0].Direction, lightDir);
-	mainPassCB.Lights[0].Strength = { 1.0f, 1.0f, 0.9f };
+        mainPassCB.Lights[2 * i].Strength = { 1.0f, 1.0f, 0.9f };
+        mainPassCB.Lights[2 * i].FalloffStart = 0.01f;
+        mainPassCB.Lights[2 * i].FalloffEnd = 10.0f;
+        mainPassCB.Lights[2 * i].Position = { -5.0f, 1.5f, -10.f + i * 5.0f };
+        mainPassCB.Lights[2 * i].Direction = { 0.0f, -1.0f, 0.0f };
+        mainPassCB.Lights[2 * i].SpotPower = 0.9f;
 
-	// Three-point lighting
-	XMVECTOR backLightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta + XM_PIDIV2, sunPhi);
-	XMVECTOR fillLightDir = -MathHelper::SphericalToCartesian(1.0f, sunTheta - XM_PIDIV2, sunPhi);
 
-	XMStoreFloat3(&mainPassCB.Lights[1].Direction, backLightDir);
-	XMStoreFloat3(&mainPassCB.Lights[2].Direction, fillLightDir);
-	mainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
-	mainPassCB.Lights[2].Strength = { 0.5f, 0.5f, 0.5f };
+        mainPassCB.Lights[2 * i + 1].Strength = { 1.0f, 1.0f, 0.9f };
+        mainPassCB.Lights[2 * i + 1].FalloffStart = 0.01f;
+        mainPassCB.Lights[2 * i + 1].FalloffEnd = 10.0f;
+        mainPassCB.Lights[2 * i + 1].Position = { +5.0f, 1.5f, -10.f + i * 5.0f };
+        mainPassCB.Lights[2 * i + 1].Direction = { 0.0f, -1.0f, 0.0f };
+        mainPassCB.Lights[2 * i + 1].SpotPower = 0.9f;
+    }
 }
 
 void ShapeApp::UpdateMainPassCB(const GameTimer& gt)
