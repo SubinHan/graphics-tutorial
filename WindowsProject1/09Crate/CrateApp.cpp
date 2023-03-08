@@ -59,22 +59,8 @@ void CrateApp::OnResize()
 	XMStoreFloat4x4(&proj, P);
 }
 
-void CrateApp::AnimateMaterials(const GameTimer& gt)
-{
-	auto boxMat = materials["woodCrate"].get();
-
-	auto translation = XMMatrixTranslation(-0.5f, -0.5f, 0);
-	auto andRotation = translation * XMMatrixRotationZ(0.2f * gt.TotalTime());
-	auto andTranslation = andRotation * XMMatrixTranslation(0.5f, 0.5f, 0);
-
-	XMStoreFloat4x4(&boxMat->MatTransform, andTranslation);
-
-	boxMat->NumFramesDirty = gNumFrameResources;
-}
-
 void CrateApp::Update(const GameTimer& gt)
 {
-	AnimateMaterials(gt);
 	OnKeyboardInput(gt);
 	UpdateCamera(gt);
 
