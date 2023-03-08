@@ -198,7 +198,7 @@ void CrateApp::OnMouseMove(int x, int y, short keyState)
 		radius += dx - dy;
 
 		// Restrict the radius.
-		radius = MathHelper::Clamp(radius, 5.0f, 150.0f);
+		radius = MathHelper::Clamp(radius, 1.0f, 150.0f);
 	}
 
 	lastMousePos.x = x;
