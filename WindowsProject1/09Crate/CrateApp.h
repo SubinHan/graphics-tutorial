@@ -72,6 +72,7 @@ public:
 
 private:
 	virtual void OnResize()override;
+	void AnimateMaterials(const GameTimer& gt);
 	virtual void Update(const GameTimer& gt)override;
 	virtual void Draw(const GameTimer& gt)override;
 
