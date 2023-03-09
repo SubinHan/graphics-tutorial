@@ -87,6 +87,21 @@
     <ClInclude Include="08LitWaves\FrameResource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="09Crate\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="09Crate\CrateApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\DDSTextureLoader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="09TexShape\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="09TexShape\TexShapeApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -146,6 +161,21 @@
     <ClCompile Include="08LitWaves\FrameResource.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="09Crate\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="09Crate\CrateApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\DDSTextureLoader.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="09TexShape\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="09TexShape\TexShapeApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -169,5 +199,9 @@
     <FxCompile Include="07\Shaders\VertexShader.hlsl" />
     <FxCompile Include="08LitWaves\Shaders\Default.hlsl" />
     <FxCompile Include="08LitWaves\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="09Crate\Shaders\Default.hlsl" />
+    <FxCompile Include="09Crate\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="09TexShape\Shaders\Default.hlsl" />
+    <FxCompile Include="09TexShape\Shaders\LightingUtil.hlsl" />
   </ItemGroup>
 </Project>

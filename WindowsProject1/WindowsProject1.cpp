@@ -8,7 +8,8 @@
 //#include "07/ShapeApp.h"
 //#include "07LandAndWaves//LandAndWavesApp.h"
 //#include "08LitWaves/LitWavesApp.h"
-#include "09Crate/CrateApp.h"
+//#include "09Crate/CrateApp.h"
+#include "09TexShape/TexShapeApp.h"
 #include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -19,7 +20,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
         //ShapeApp win(hInstance);
         //LandAndWavesApp win(hInstance);
         //LitWavesApp win(hInstance);
-        CrateApp win(hInstance);
+        //CrateApp win(hInstance);
+        TexShapeApp win(hInstance);
 
         if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
         {

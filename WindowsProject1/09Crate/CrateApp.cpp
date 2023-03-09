@@ -338,6 +338,9 @@ void CrateApp::LoadTextures()
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(device->GetD3DDevice().Get(),
 		device->GetCommandList().Get(), woodCrateTex->Filename.c_str(),
 		woodCrateTex->Resource, woodCrateTex->UploadHeap));
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(device->GetD3DDevice().Get(),
+		device->GetCommandList().Get(), woodCrateTex->Filename.c_str(),
+		woodCrateTex->Resource, woodCrateTex->UploadHeap));
 
 	textures[woodCrateTex->Name] = std::move(woodCrateTex);
 }
