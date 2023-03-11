@@ -27,6 +27,16 @@ void TexShapeApp::LoadTextures()
         stoneTex->Resource, stoneTex->UploadHeap));
 
     textures[stoneTex->Name] = std::move(stoneTex);
+
+    auto tileTex = std::make_unique<Texture>();
+    tileTex->Name = "tileTex";
+    tileTex->Filename = L"Textures/tile.dds";
+
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(device->GetD3DDevice().Get(),
+        device->GetCommandList().Get(), tileTex->Filename.c_str(),
+        tileTex->Resource, tileTex->UploadHeap));
+
+    textures[tileTex->Name] = std::move(tileTex);
 }
 
 void TexShapeApp::BuildMaterials()
@@ -41,6 +51,17 @@ void TexShapeApp::BuildMaterials()
     stoneMat->Roughness = 0.01f;
 
     materials[stoneMat->Name] = std::move(stoneMat);
+
+    auto tileMat = std::make_unique<Material>();
+
+    tileMat->Name = "tile";
+    tileMat->MatCBIndex = 0;
+    tileMat->DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+    tileMat->FresnelR0 = { 0.3f, 0.3f, 0.3f };
+    tileMat->DiffuseSrvHeapIndex = 1;
+    tileMat->Roughness = 0.01f;
+
+    materials[tileMat->Name] = std::move(tileMat);
 }
 
 void TexShapeApp::BuildShaderResourceViews()
@@ -804,12 +825,13 @@ void TexShapeApp::BuildRenderItems()
     gridRitem->World = MathHelper::Identity4x4();
     gridRitem->ObjCBIndex = 1;
     gridRitem->Geo = geometries["shapeGeo"].get();
-    gridRitem->Mat = materials["stone"].get();
+    gridRitem->Mat = materials["tile"].get();
     gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
     gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
     gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
     gridRitem->MatCBIndex = 0;
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixIdentity() * 5.0f);
     allRitems.push_back(std::move(gridRitem));
 
     UINT objCBIndex = 2;
