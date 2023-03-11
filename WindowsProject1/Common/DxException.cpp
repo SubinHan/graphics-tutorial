@@ -20,5 +20,5 @@ std::wstring DxException::ToString() const
 	_com_error err(errorCode);
 	text += err.ErrorMessage();
 
-	return std::wstring();
+	return text;
 }

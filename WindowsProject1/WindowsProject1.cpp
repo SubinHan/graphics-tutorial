@@ -34,7 +34,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
     {
         OutputDebugString(L"Exception:");
         OutputDebugString(e.ToString().c_str());
-        MessageBox(nullptr, e.ToString().c_str(), L"HR Failed", MB_OK);
+    	MessageBox(nullptr, e.ToString().c_str(), L"HR Failed", MB_OK);
     }
 
     return 0;

@@ -50,6 +50,7 @@ public:
 
 	void LoadTextures();
 	void BuildMaterials();
+	void BuildShaderResourceViews();
 	bool Initialize() override;
 
 private:
@@ -87,9 +88,8 @@ private:
 	int currFrameResourceIndex = 0;
 
 	ComPtr<ID3D12RootSignature> rootSignature = nullptr;
-	ComPtr<ID3D12DescriptorHeap> cbvHeap = nullptr;
 
-	ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> srvCbvDescriptorHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> geometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> materials;
@@ -108,6 +108,7 @@ private:
 	PassConstants mainPassCB;
 
 	UINT passCbvOffset = 0;
+	UINT textureSrvOffset = 0;
 
 	bool isWireframe = false;
 

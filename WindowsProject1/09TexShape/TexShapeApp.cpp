@@ -43,6 +43,30 @@ void TexShapeApp::BuildMaterials()
     materials[stoneMat->Name] = std::move(stoneMat);
 }
 
+void TexShapeApp::BuildShaderResourceViews()
+{
+    int textureIndex = 0;
+    for (auto& each : textures)
+    {
+        CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(srvCbvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+        hDescriptor.Offset(textureSrvOffset + textureIndex++, device->GetCbvSrvUavDescriptorSize());
+
+        auto texture = each.second.get();
+        auto textureResource = texture->Resource;
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.Format = textureResource->GetDesc().Format;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MostDetailedMip = 0;
+        srvDesc.Texture2D.MipLevels = textureResource->GetDesc().MipLevels;
+        srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+        device->GetD3DDevice()->CreateShaderResourceView(
+            textureResource.Get(), &srvDesc, hDescriptor);
+    }
+}
+
 bool TexShapeApp::Initialize()
 {
     if (!MainWindow::Initialize())
@@ -61,9 +85,10 @@ bool TexShapeApp::Initialize()
     BuildMaterials();
     BuildShapeGeometry();
     BuildRenderItems();
-    BuildFrameResources();
     BuildDescriptorHeaps();
+    BuildFrameResources();
     BuildConstantBufferViews();
+    BuildShaderResourceViews();
     BuildPSOs();
 
     // Execute the initialization commands.
@@ -178,16 +203,13 @@ void TexShapeApp::Draw(const GameTimer& gt)
     // Specify the buffers we are going to render to.
     commandList->OMSetRenderTargets(1, &currentBackBufferView, true, &depthStencilView);
 
-    ID3D12DescriptorHeap* srvDescriptorHeaps[] = { srvDescriptorHeap.Get()};
-    commandList->SetDescriptorHeaps(_countof(srvDescriptorHeaps), srvDescriptorHeaps);
-
-    ID3D12DescriptorHeap* cbvDescriptorHeaps[] = { cbvHeap.Get() };
-    commandList->SetDescriptorHeaps(_countof(cbvDescriptorHeaps), cbvDescriptorHeaps);
+    ID3D12DescriptorHeap* descriptorHeaps[] = { srvCbvDescriptorHeap.Get()};
+    commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
     commandList->SetGraphicsRootSignature(rootSignature.Get());
 
     int passCbvIndex = passCbvOffset + currFrameResourceIndex;
-    auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
+    auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(srvCbvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
     passCbvHandle.Offset(passCbvIndex, device->GetCbvSrvUavDescriptorSize());
     commandList->SetGraphicsRootDescriptorTable(2, passCbvHandle);
 
@@ -358,48 +380,27 @@ void TexShapeApp::UpdateMainPassCB(const GameTimer& gt)
 
 void TexShapeApp::BuildDescriptorHeaps()
 {
-    //
-    // Create the SRV heap.
-    //
-    D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-    srvHeapDesc.NumDescriptors = 1;
-    srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srvDescriptorHeap)));
+    UINT texCount = static_cast<UINT>(textures.size());
+    UINT objCount = static_cast<UINT>(opaqueRitems.size());
+    UINT matCount = static_cast<UINT>(materials.size());
 
-    // Fill out the heap with actual descriptors.
-    //
-    CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-    auto stoneTex = textures["stoneTex"]->Resource;
-
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.Format = stoneTex->GetDesc().Format;
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MostDetailedMip = 0;
-    srvDesc.Texture2D.MipLevels = stoneTex->GetDesc().MipLevels;
-    srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-
-    device->GetD3DDevice()->CreateShaderResourceView(stoneTex.Get(), &srvDesc, hDescriptor);
-
-    UINT objCount = (UINT)opaqueRitems.size();
-    UINT matCount = (UINT)materials.size();
+    //--objs--mats--...--objs--mats--mainpass--...--mainpass--textures//
 
     // Need a CBV descriptor for each object for each frame resource,
     // +1 for the perPass CBV for each frame resource.
-    UINT numDescriptors = (objCount + matCount + 1) * gNumFrameResources;
+    UINT numDescriptors =
+        (objCount + matCount + 1) * gNumFrameResources + texCount;
 
     // Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
     passCbvOffset = (objCount + matCount) * gNumFrameResources;
+    textureSrvOffset = passCbvOffset + gNumFrameResources;
 
-    D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-    cbvHeapDesc.NumDescriptors = numDescriptors;
-    cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    cbvHeapDesc.NodeMask = 0;
-    ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(&cbvHeapDesc,
-        IID_PPV_ARGS(&cbvHeap)));
+    D3D12_DESCRIPTOR_HEAP_DESC cbvSrvHeapDesc = {};
+    cbvSrvHeapDesc.NumDescriptors = numDescriptors;
+    cbvSrvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    cbvSrvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    cbvSrvHeapDesc.NodeMask = 0;
+    ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(&cbvSrvHeapDesc, IID_PPV_ARGS(&srvCbvDescriptorHeap)));
 }
 
 void TexShapeApp::BuildConstantBufferViews()
@@ -407,10 +408,10 @@ void TexShapeApp::BuildConstantBufferViews()
     UINT objCBByteSize = DxUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
     UINT matCBByteSize = DxUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
 
-    UINT objCount = (UINT)opaqueRitems.size();
+    UINT objCount = static_cast<UINT>(opaqueRitems.size());
     UINT matCount = static_cast<UINT>(materials.size());
 
-    const int frameIndexSize = static_cast<int>(objCount + matCount);
+    const int frameIndexSize = static_cast<const int>(objCount + matCount);
 
     // Need a CBV descriptor for each object for each frame resource.
     for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
@@ -426,7 +427,7 @@ void TexShapeApp::BuildConstantBufferViews()
 
             // Offset to the object cbv in the descriptor heap.
             int heapIndex = frameIndex * frameIndexSize + i;
-            auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
+            auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCbvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
             handle.Offset(heapIndex, device->GetCbvSrvUavDescriptorSize());
 
             D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
@@ -441,11 +442,11 @@ void TexShapeApp::BuildConstantBufferViews()
             D3D12_GPU_VIRTUAL_ADDRESS cbAddress = matCB->GetGPUVirtualAddress();
 
             // Offset to the ith object constant buffer in the buffer.
-            cbAddress += objCount * objCBByteSize + i * matCBByteSize;
+            cbAddress += i * matCBByteSize;
 
             // Offset to the object cbv in the descriptor heap.
             int heapIndex = frameIndex * frameIndexSize + objCount + i;
-            auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
+            auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCbvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
             handle.Offset(heapIndex, device->GetCbvSrvUavDescriptorSize());
 
             D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
@@ -466,7 +467,7 @@ void TexShapeApp::BuildConstantBufferViews()
 
         // Offset to the pass cbv in the descriptor heap.
         int heapIndex = passCbvOffset + frameIndex;
-        auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
+        auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCbvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
         handle.Offset(heapIndex, device->GetCbvSrvUavDescriptorSize());
 
         D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
@@ -542,11 +543,11 @@ void TexShapeApp::BuildRootSignature()
     CD3DX12_DESCRIPTOR_RANGE cbvPerObject;
     cbvPerObject.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 
-    CD3DX12_DESCRIPTOR_RANGE cbvMat;
-    cbvMat.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 01);
-
     CD3DX12_DESCRIPTOR_RANGE cbvPass;
-    cbvPass.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+    cbvPass.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+
+    CD3DX12_DESCRIPTOR_RANGE cbvMat;
+    cbvMat.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 
     // Root parameter can be a table, root descriptor or root constants.
     CD3DX12_ROOT_PARAMETER slotRootParameter[4];
@@ -554,8 +555,8 @@ void TexShapeApp::BuildRootSignature()
     // Create root CBVs.
     slotRootParameter[0].InitAsDescriptorTable(1, &srvTex, D3D12_SHADER_VISIBILITY_PIXEL);
     slotRootParameter[1].InitAsDescriptorTable(1, &cbvPerObject);
-    slotRootParameter[2].InitAsDescriptorTable(1, &cbvMat);
-    slotRootParameter[3].InitAsDescriptorTable(1, &cbvPass);
+    slotRootParameter[2].InitAsDescriptorTable(1, &cbvPass);
+    slotRootParameter[3].InitAsDescriptorTable(1, &cbvMat);
 
     auto staticSamplers = GetStaticSamplers();
 
@@ -890,26 +891,28 @@ void TexShapeApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
         cmdList->IASetIndexBuffer(&indexBufferView);
         cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
 
-        CD3DX12_GPU_DESCRIPTOR_HANDLE tex(srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-        tex.Offset(ri->Mat->DiffuseSrvHeapIndex, device->GetCbvSrvUavDescriptorSize());
+        CD3DX12_GPU_DESCRIPTOR_HANDLE tex(srvCbvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+        tex.Offset(textureSrvOffset + ri->Mat->DiffuseSrvHeapIndex, device->GetCbvSrvUavDescriptorSize());
 
-        const UINT frameSize = opaqueRitems.size() + materials.size();
+        cmdList->SetGraphicsRootDescriptorTable(0, tex);
+
+        const UINT frameSize = ritems.size() + materials.size();
 
         // Offset to the CBV in the descriptor heap for this object and for this frame resource.
         UINT objIndex = currFrameResourceIndex * static_cast<UINT>(frameSize)
     		+ ri->ObjCBIndex;
-        auto objHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
+        auto objHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(srvCbvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
         objHandle.Offset(objIndex, device->GetCbvSrvUavDescriptorSize());
 
-        cmdList->SetGraphicsRootDescriptorTable(0, objHandle);
+        cmdList->SetGraphicsRootDescriptorTable(1, objHandle);
 
         UINT matIndex = currFrameResourceIndex * static_cast<UINT>(frameSize)
-            + opaqueRitems.size()
+            + ritems.size()
     		+ ri->MatCBIndex;
-        auto matHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(cbvHeap->GetGPUDescriptorHandleForHeapStart());
+        auto matHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(srvCbvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
         matHandle.Offset(matIndex, device->GetCbvSrvUavDescriptorSize());
 
-        cmdList->SetGraphicsRootDescriptorTable(1, matHandle);
+        cmdList->SetGraphicsRootDescriptorTable(3, matHandle);
 
         cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
     }

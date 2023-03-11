@@ -36,16 +36,8 @@ cbuffer cbPerObject : register(b0)
     float4x4 gTexTransform;
 };
 
-cbuffer cbMaterial : register(b1)
-{
-    float4 gDiffuseAlbedo;
-    float3 gFresnelR0;
-    float  gRoughness;
-    float4x4 gMatTransform;
-};
-
 // Constant data that varies per material.
-cbuffer cbPass : register(b2)
+cbuffer cbPass : register(b1)
 {
     float4x4 gView;
     float4x4 gInvView;
@@ -68,6 +60,14 @@ cbuffer cbPass : register(b2)
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
+};
+
+cbuffer cbMaterial : register(b2)
+{
+    float4 gDiffuseAlbedo;
+    float3 gFresnelR0;
+    float  gRoughness;
+    float4x4 gMatTransform;
 };
 
 struct VertexIn
