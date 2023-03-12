@@ -421,7 +421,7 @@ void TexShapeApp::BuildDescriptorHeaps()
     cbvSrvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     cbvSrvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     cbvSrvHeapDesc.NodeMask = 0;
-    ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(&cbvSrvHeapDesc, IID_PPV_ARGS(&srvCbvDescriptorHeap)));
+    ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(&cvSrvHeapDesc, IID_PPV_ARGS(&srvCbvDescriptorHeap)));
 }
 
 void TexShapeApp::BuildConstantBufferViews()
