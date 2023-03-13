@@ -163,11 +163,11 @@ void BlendApp::Draw(const GameTimer& gt)
 
 	auto passCB = currFrameResource->PassCB->Resource();
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-
+	
 	commandList->SetPipelineState(PSOs["opaque"].Get());
 	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
 
-	commandList->SetPipelineState(PSOs["transparent"].Get());
+	commandList->SetPipelineState(PSOs["blue"].Get());
 	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Transparent)]);
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -814,6 +814,16 @@ void BlendApp::BuildPSOs()
 		)
 	);
 
+	auto bluePsoDesc = transparentPsoDesc;
+	auto blueBlendDesc = transparencyBlendDesc;
+	blueBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_BLUE;
+	bluePsoDesc.BlendState.RenderTarget[0] = blueBlendDesc;
+
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateGraphicsPipelineState(
+			&bluePsoDesc, IID_PPV_ARGS(&PSOs["blue"])
+		)
+	);
 }
 
 void BlendApp::BuildFrameResources()
