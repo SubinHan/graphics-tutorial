@@ -164,11 +164,14 @@ void BlendApp::Draw(const GameTimer& gt)
 	auto passCB = currFrameResource->PassCB->Resource();
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-	commandList->SetPipelineState(PSOs["opaque"].Get());
-	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
-
+	// If the transparencies are rendered before opaques,
+	// then it doesn't blended because the depth buffer already filled
+	// with transparencies' depth.
 	commandList->SetPipelineState(PSOs["transparent"].Get());
 	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Transparent)]);
+
+	commandList->SetPipelineState(PSOs["opaque"].Get());
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
