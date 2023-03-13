@@ -164,7 +164,11 @@ void BlendApp::Draw(const GameTimer& gt)
 	auto passCB = currFrameResource->PassCB->Resource();
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
+	commandList->SetPipelineState(PSOs["opaque"].Get());
 	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
+
+	commandList->SetPipelineState(PSOs["transparent"].Get());
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Transparent)]);
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -361,7 +365,7 @@ void BlendApp::UpdateMainPassCB(const GameTimer& gt)
 
 	mainPassCB.FogColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	mainPassCB.FogStart = { 5.0f };
-	mainPassCB.FogRange = { 200.0f };
+	mainPassCB.FogRange = { 400.0f };
 
 	auto currPassCB = currFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mainPassCB);
@@ -809,6 +813,7 @@ void BlendApp::BuildPSOs()
 			&transparentPsoDesc, IID_PPV_ARGS(&PSOs["transparent"])
 		)
 	);
+
 }
 
 void BlendApp::BuildFrameResources()
@@ -842,7 +847,7 @@ void BlendApp::BuildMaterials()
 	water->Name = "water";
 	water->MatCBIndex = 2;
 	water->DiffuseSrvHeapIndex = textures["waterTex"]->SrvIndex;
-	water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+	water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.5f, 0.8f);
 	water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	water->Roughness = 0.0f;
 
@@ -862,20 +867,6 @@ void BlendApp::BuildMaterials()
 
 void BlendApp::BuildRenderItems()
 {
-	auto wavesRitem = std::make_unique<RenderItem>();
-	wavesRitem->World = MathHelper::Identity4x4();
-	wavesRitem->ObjCBIndex = 0;
-	wavesRitem->Mat = materials["water"].get();
-	wavesRitem->Geo = geometries["waterGeo"].get();
-	wavesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs["grid"].IndexCount;
-	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs["grid"].StartIndexLocation;
-	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
-
-	this->wavesRitem = wavesRitem.get();
-
-	RitemLayer[(int)RenderLayer::Opaque].push_back(wavesRitem.get());
-
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
 	gridRitem->ObjCBIndex = 1;
@@ -905,9 +896,23 @@ void BlendApp::BuildRenderItems()
 
 	RitemLayer[(int)RenderLayer::Opaque].push_back(crateRitem.get());
 
-	allRitems.push_back(std::move(wavesRitem));
+	auto wavesRitem = std::make_unique<RenderItem>();
+	wavesRitem->World = MathHelper::Identity4x4();
+	wavesRitem->ObjCBIndex = 0;
+	wavesRitem->Mat = materials["water"].get();
+	wavesRitem->Geo = geometries["waterGeo"].get();
+	wavesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs["grid"].IndexCount;
+	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
+
+	this->wavesRitem = wavesRitem.get();
+
+	RitemLayer[(int)RenderLayer::Transparent].push_back(wavesRitem.get());
+
 	allRitems.push_back(std::move(gridRitem));
 	allRitems.push_back(std::move(crateRitem));
+	allRitems.push_back(std::move(wavesRitem));
 }
 
 void BlendApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
