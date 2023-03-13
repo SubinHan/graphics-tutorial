@@ -249,6 +249,8 @@ struct Texture
 
 	std::wstring Filename;
 
+	UINT SrvIndex;
+
 	Microsoft::WRL::ComPtr<ID3D12Resource> Resource = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> UploadHeap = nullptr;
 };

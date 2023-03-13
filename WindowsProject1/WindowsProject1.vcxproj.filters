@@ -111,6 +111,15 @@
     <ClInclude Include="09TexWaves\Waves.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="10Blend\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="10Blend\BlendApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="10Blend\Waves.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -194,6 +203,15 @@
     <ClCompile Include="09TexWaves\Waves.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="10Blend\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="10Blend\BlendApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="10Blend\Waves.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -223,5 +241,7 @@
     <FxCompile Include="09TexShape\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="09TexWaves\Shaders\Default.hlsl" />
     <FxCompile Include="09TexWaves\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="10Blend\Shaders\Default.hlsl" />
+    <FxCompile Include="10Blend\Shaders\LightingUtil.hlsl" />
   </ItemGroup>
 </Project>

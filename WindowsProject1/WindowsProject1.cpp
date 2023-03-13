@@ -10,7 +10,8 @@
 //#include "08LitWaves/LitWavesApp.h"
 //#include "09Crate/CrateApp.h"
 //#include "09TexShape/TexShapeApp.h"
-#include "09TexWaves/TexWavesApp.h"
+//#include "09TexWaves/TexWavesApp.h"
+#include "10Blend/BlendApp.h"
 #include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -23,7 +24,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
         //LitWavesApp win(hInstance);
         //CrateApp win(hInstance);
         //TexShapeApp win(hInstance);
-        TexWavesApp win(hInstance);
+        //TexWavesApp win(hInstance);
+        BlendApp win(hInstance);
 
         if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
         {
