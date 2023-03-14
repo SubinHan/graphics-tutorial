@@ -120,6 +120,15 @@
     <ClInclude Include="10Blend\Waves.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="11Stencil\StencilApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="11Stencil\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="11Stencil\Waves.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -212,6 +221,15 @@
     <ClCompile Include="10Blend\Waves.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="11Stencil\StencilApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="11Stencil\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="11Stencil\Waves.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -243,5 +261,9 @@
     <FxCompile Include="09TexWaves\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="10Blend\Shaders\Default.hlsl" />
     <FxCompile Include="10Blend\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="11Stencil\Shaders\Default.hlsl" />
+    <FxCompile Include="11Stencil\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="11Stencil\Default.hlsl" />
+    <FxCompile Include="11Stencil\LightingUtil.hlsl" />
   </ItemGroup>
 </Project>

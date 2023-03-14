@@ -201,6 +201,9 @@
     <ClInclude Include="10Blend\FrameResource.h" />
     <ClInclude Include="10Blend\BlendApp.h" />
     <ClInclude Include="10Blend\Waves.h" />
+    <ClInclude Include="11Stencil\StencilApp.h" />
+    <ClInclude Include="11Stencil\FrameResource.h" />
+    <ClInclude Include="11Stencil\Waves.h" />
     <ClInclude Include="Common\BaseWindow.h" />
     <ClInclude Include="06\BoxApp.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -285,6 +288,9 @@
     <ClCompile Include="10Blend\FrameResource.cpp" />
     <ClCompile Include="10Blend\BlendApp.cpp" />
     <ClCompile Include="10Blend\Waves.cpp" />
+    <ClCompile Include="11Stencil\StencilApp.cpp" />
+    <ClCompile Include="11Stencil\FrameResource.cpp" />
+    <ClCompile Include="11Stencil\Waves.cpp" />
     <ClCompile Include="Common\DDSTextureLoader.cpp" />
     <ClCompile Include="Common\DxUtil.cpp" />
     <ClCompile Include="Common\DxDevice.cpp" />
@@ -363,6 +369,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="10Blend\Shaders\LightingUtil.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="11Stencil\Default.hlsl" />
+    <FxCompile Include="11Stencil\LightingUtil.hlsl" />
+    <FxCompile Include="11Stencil\Shaders\Default.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="11Stencil\Shaders\LightingUtil.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
