@@ -49,10 +49,21 @@ struct RenderItem
 	int BaseVertexLocation = 0;
 };
 
+struct ReflectedRenderItem : RenderItem
+{
+	ReflectedRenderItem() = default;
+
+	RenderItem* OriginalRenderItem = nullptr;
+};
+
 enum class RenderLayer : int
 {
 	Opaque = 0,
 	Transparent = Opaque + 1,
+	Mirrors = Transparent + 1,
+	Reflected = Mirrors + 1,
+	Shadow = Reflected + 1,
+	Clear = Shadow + 1,
 	Count
 };
 
@@ -74,6 +85,7 @@ private:
 	void OnMouseLeftDown(int x, int y, short keyState)override;
 	void OnMouseLeftUp(int x, int y, short keyState)override;
 	void OnMouseMove(int x, int y, short keyState)override;
+	void UpdateReflectedItem(const GameTimer& gt);
 
 	void OnKeyboardInput(const GameTimer& gt);
 	void AnimateMaterials(const GameTimer& gt);
@@ -92,8 +104,11 @@ private:
 	void BuildShaderResourceViews();
 	void BuildShadersAndInputLayout();
 	void BuildLandGeometry();
-	void BuildCrate();
+	void BuildCrateGeometry();
 	void BuildWavesGeometryBuffers();
+	void BuildMirrorGeometry();
+	void BuildEndOfWorldGeometry();
+	void BuildReflectedItems();
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildMaterials();

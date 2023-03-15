@@ -263,7 +263,6 @@
     <FxCompile Include="10Blend\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="11Stencil\Shaders\Default.hlsl" />
     <FxCompile Include="11Stencil\Shaders\LightingUtil.hlsl" />
-    <FxCompile Include="11Stencil\Default.hlsl" />
-    <FxCompile Include="11Stencil\LightingUtil.hlsl" />
+    <FxCompile Include="11Stencil\Shaders\Clear.hlsl" />
   </ItemGroup>
 </Project>

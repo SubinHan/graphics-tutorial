@@ -6,7 +6,7 @@
 
 // Defaults for number of lights.
 #ifndef NUM_DIR_LIGHTS
-#define NUM_DIR_LIGHTS 1
+#define NUM_DIR_LIGHTS 3
 #endif
 
 #ifndef NUM_POINT_LIGHTS
@@ -145,8 +145,5 @@ float4 PS(VertexOut pin) : SV_Target
     // Common convention to take alpha from diffuse material.
     litColor.a = diffuseAlbedo.a;
 
-
     return litColor;
 }
-
-
