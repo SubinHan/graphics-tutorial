@@ -55,6 +55,7 @@ enum class RenderLayer : int
 	Opaque = 0,
 	Transparent = Opaque + 1,
 	Tree = Transparent + 1,
+	Circle = Tree + 1,
 	Count
 };
 
@@ -97,6 +98,7 @@ private:
 	void BuildCrate();
 	void BuildTree();
 	void BuildWavesGeometryBuffers();
+	void BuildCircle();
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildMaterials();
@@ -126,6 +128,7 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> defaultInputLayout;
 	std::vector<D3D12_INPUT_ELEMENT_DESC> treeInputLayout;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> circleInputLayout;
 
 	RenderItem* wavesRitem = nullptr;
 

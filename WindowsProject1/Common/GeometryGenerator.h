@@ -113,6 +113,7 @@ public:
 	MeshData CreatePoint(float x, float y, float z);
 
 	MeshData CreateUniformRandomPoints(float xLo, float xHi, float yLo, float yHi, float zLo, float zHi, int numPoints);
+	MeshData CreateCircleLineStripXZ(float radius, uint32 numLines);
 
 private:
 	void Subdivide(MeshData& meshData);

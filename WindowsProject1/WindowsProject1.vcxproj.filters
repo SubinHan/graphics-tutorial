@@ -285,5 +285,6 @@
     <FxCompile Include="12TreeBillboards\Shaders\Default.hlsl" />
     <FxCompile Include="12TreeBillboards\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="12TreeBillboards\Shaders\TreeSprite.hlsl" />
+    <FxCompile Include="12TreeBillboards\Shaders\Circle.hlsl" />
   </ItemGroup>
 </Project>

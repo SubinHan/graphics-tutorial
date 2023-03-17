@@ -43,6 +43,7 @@ bool TreeApp::Initialize()
 	BuildWavesGeometryBuffers();
 	BuildCrate();
 	BuildTree();
+	BuildCircle();
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -175,6 +176,8 @@ void TreeApp::Draw(const GameTimer& gt)
 	commandList->SetPipelineState(PSOs["tree"].Get());
 	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Tree)]);
 
+	commandList->SetPipelineState(PSOs["circle"].Get());
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Circle)]);
 
 	commandList->SetPipelineState(PSOs["transparent"].Get());
 	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Transparent)]);
@@ -450,6 +453,7 @@ void TreeApp::LoadTextures()
 	LoadTexture(L"Textures/water1.dds", "waterTex");
 	LoadTexture(L"Textures/grass.dds", "grassTex");
 	LoadTexture(L"Textures/WireFence.dds", "wireFenceTex");
+	LoadTexture(L"Textures/white1x1.dds", "whiteTex");
 	LoadTextureArray(L"Textures/treearray.dds", "treeTex");
 }
 
@@ -630,7 +634,10 @@ void TreeApp::BuildShadersAndInputLayout()
 	shaders["treeVS"] = DxUtil::CompileShader(L"12TreeBillboards\\Shaders\\TreeSprite.hlsl", defines, "VS", "vs_5_0");
 	shaders["treeGS"] = DxUtil::CompileShader(L"12TreeBillboards\\Shaders\\TreeSprite.hlsl", defines, "GS", "gs_5_0");
 	shaders["treePS"] = DxUtil::CompileShader(L"12TreeBillboards\\Shaders\\TreeSprite.hlsl", defines, "PS", "ps_5_0");
-	
+
+	shaders["circleVS"] = DxUtil::CompileShader(L"12TreeBillboards\\Shaders\\Circle.hlsl", defines, "VS", "vs_5_0");
+	shaders["circleGS"] = DxUtil::CompileShader(L"12TreeBillboards\\Shaders\\Circle.hlsl", defines, "GS", "gs_5_0");
+	shaders["circlePS"] = DxUtil::CompileShader(L"12TreeBillboards\\Shaders\\Circle.hlsl", defines, "PS", "ps_5_0");
 
 	defaultInputLayout =
 	{
@@ -643,6 +650,12 @@ void TreeApp::BuildShadersAndInputLayout()
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{"SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	};
+
+	circleInputLayout =
+	{
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{"HEIGHT", 0, DXGI_FORMAT_R32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 }
 
@@ -867,6 +880,53 @@ void TreeApp::BuildWavesGeometryBuffers()
 	geometries["waterGeo"] = std::move(geo);
 }
 
+void TreeApp::BuildCircle()
+{
+	GeometryGenerator geoGen;
+	auto circle = geoGen.CreateCircleLineStripXZ(10.0f, 15);
+
+	std::vector<CircleVertex> vertices(circle.Vertices.size());
+	auto indices = circle.GetIndices16();
+
+	for (int i = 0; i < vertices.size(); ++i)
+	{
+		vertices[i].Pos = circle.Vertices[i].Position;
+		vertices[i].Height = 15.0f;
+	}
+
+	auto circleGeometry = std::make_unique<MeshGeometry>();
+	auto vbByteSize = sizeof(CircleVertex) * vertices.size();
+	auto ibByteSize = sizeof(std::uint16_t) * indices.size();
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &circleGeometry->VertexBufferCPU));
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &circleGeometry->IndexBufferCPU));
+
+	CopyMemory(circleGeometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+	CopyMemory(circleGeometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	auto commandList = device->GetCommandList();
+
+	circleGeometry->VertexBufferGPU = DxUtil::CreateDefaultBuffer(device->GetD3DDevice().Get(),
+		commandList.Get(), vertices.data(), vbByteSize, circleGeometry->VertexBufferUploader);
+
+	circleGeometry->IndexBufferGPU = DxUtil::CreateDefaultBuffer(device->GetD3DDevice().Get(),
+		commandList.Get(), indices.data(), ibByteSize, circleGeometry->IndexBufferUploader);
+
+	circleGeometry->VertexByteStride = sizeof(CircleVertex);
+	circleGeometry->VertexBufferByteSize = vbByteSize;
+	circleGeometry->IndexFormat = DXGI_FORMAT_R16_UINT;
+	circleGeometry->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	circleGeometry->DrawArgs["circle"] = submesh;
+
+	geometries["circleGeo"] = std::move(circleGeometry);
+}
+
 void TreeApp::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
@@ -953,6 +1013,36 @@ void TreeApp::BuildPSOs()
 			&treePsoDesc, IID_PPV_ARGS(&PSOs["tree"])
 		)
 	);
+
+	auto circlePsoDesc = opaquePsoDesc;
+
+	circlePsoDesc.InputLayout =
+	{
+		circleInputLayout.data(),
+		static_cast<UINT>(circleInputLayout.size())
+	};
+	circlePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(shaders["circleVS"]->GetBufferPointer()),
+		shaders["circleVS"]->GetBufferSize()
+	};
+	circlePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(shaders["circlePS"]->GetBufferPointer()),
+		shaders["circlePS"]->GetBufferSize()
+	};
+	circlePsoDesc.GS =
+	{
+		reinterpret_cast<BYTE*>(shaders["circleGS"]->GetBufferPointer()),
+		shaders["circleGS"]->GetBufferSize()
+	};
+	circlePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateGraphicsPipelineState(
+			&circlePsoDesc, IID_PPV_ARGS(&PSOs["circle"])
+		)
+	);
 }
 
 void TreeApp::BuildFrameResources()
@@ -966,9 +1056,11 @@ void TreeApp::BuildFrameResources()
 
 void TreeApp::BuildMaterials()
 {
+	int matCBIndex = 0;
+
 	auto crate = std::make_unique<Material>();
 	crate->Name = "crate";
-	crate->MatCBIndex = 0;
+	crate->MatCBIndex = matCBIndex++;
 	crate->DiffuseSrvHeapIndex = textures["crateTex"]->SrvIndex;
 	crate->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	crate->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
@@ -976,7 +1068,7 @@ void TreeApp::BuildMaterials()
 
 	auto grass = std::make_unique<Material>();
 	grass->Name = "grass";
-	grass->MatCBIndex = 1;
+	grass->MatCBIndex = matCBIndex++;
 	grass->DiffuseSrvHeapIndex = textures["grassTex"]->SrvIndex;
 	grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
 	grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
@@ -984,7 +1076,7 @@ void TreeApp::BuildMaterials()
 	
 	auto water = std::make_unique<Material>();
 	water->Name = "water";
-	water->MatCBIndex = 2;
+	water->MatCBIndex = matCBIndex++;
 	water->DiffuseSrvHeapIndex = textures["waterTex"]->SrvIndex;
 	water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.5f, 0.8f);
 	water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
@@ -992,7 +1084,7 @@ void TreeApp::BuildMaterials()
 
 	auto wireFenceBox = std::make_unique<Material>();
 	wireFenceBox->Name = "wireFence";
-	wireFenceBox->MatCBIndex = 3;
+	wireFenceBox->MatCBIndex = matCBIndex++;
 	wireFenceBox->DiffuseSrvHeapIndex = textures["wireFenceTex"]->SrvIndex;
 	wireFenceBox->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	wireFenceBox->FresnelR0 = XMFLOAT3(0.2f, 0.2f, 0.12);
@@ -1000,17 +1092,26 @@ void TreeApp::BuildMaterials()
 
 	auto treeSprite = std::make_unique<Material>();
 	treeSprite->Name = "tree";
-	treeSprite->MatCBIndex = 3;
+	treeSprite->MatCBIndex = matCBIndex++;
 	treeSprite->DiffuseSrvHeapIndex = textureArrays["treeTex"]->SrvIndex;
 	treeSprite->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	treeSprite->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1);
 	treeSprite->Roughness = 0.1f;
+
+	auto white = std::make_unique<Material>();
+	white->Name = "white";
+	white->MatCBIndex = matCBIndex++;
+	white->DiffuseSrvHeapIndex = textures["whiteTex"]->SrvIndex;
+	white->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	white->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1);
+	white->Roughness = 0.0f;
 
 	materials["crate"] = std::move(crate);
 	materials["grass"] = std::move(grass);
 	materials["water"] = std::move(water);
 	materials["wireFence"] = std::move(wireFenceBox);
 	materials["tree"] = std::move(treeSprite);
+	materials["white"] = std::move(white);
 }
 
 void TreeApp::BuildRenderItems()
@@ -1060,6 +1161,20 @@ void TreeApp::BuildRenderItems()
 
 	RitemLayer[static_cast<int>(RenderLayer::Tree)].push_back(treeRitem.get());
 	allRitems.push_back(std::move(treeRitem));
+
+	auto circleRitem = std::make_unique<RenderItem>();
+	circleRitem->World = MathHelper::Identity4x4();
+	circleRitem->ObjCBIndex = 4;
+	circleRitem->Mat = materials["white"].get();
+	circleRitem->Geo = geometries["circleGeo"].get();
+	circleRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
+	circleRitem->IndexCount = circleRitem->Geo->DrawArgs["circle"].IndexCount;
+	circleRitem->StartIndexLocation = circleRitem->Geo->DrawArgs["circle"].StartIndexLocation;
+	circleRitem->BaseVertexLocation = circleRitem->Geo->DrawArgs["circle"].BaseVertexLocation;
+	XMStoreFloat4x4(&circleRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+
+	RitemLayer[static_cast<int>(RenderLayer::Circle)].push_back(circleRitem.get());
+	allRitems.push_back(std::move(circleRitem));
 
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();

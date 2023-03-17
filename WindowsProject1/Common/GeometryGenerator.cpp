@@ -701,3 +701,28 @@ GeometryGenerator::MeshData GeometryGenerator::CreateUniformRandomPoints(
 
 	return meshData;
 }
+
+GeometryGenerator::MeshData GeometryGenerator::CreateCircleLineStripXZ(float radius, uint32 numLines)
+{
+	MeshData meshData;
+
+	meshData.Vertices.resize(numLines + 1);
+	meshData.Indices32.resize(numLines + 1);
+
+	float theta = 2 * MathHelper::Pi / numLines;
+
+	for(int i = 0; i <= numLines; ++i)
+	{
+		const float angle = theta * i;
+		meshData.Vertices[i] = Vertex
+		{
+			radius * cosf(angle), 0.0f, radius * sinf(angle),
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f
+		};
+		meshData.Indices32[i] = i;
+	}
+
+	return meshData;
+}

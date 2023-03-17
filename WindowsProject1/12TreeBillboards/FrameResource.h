@@ -54,6 +54,12 @@ struct TreeVertex
     DirectX::XMFLOAT2 Size;
 };
 
+struct CircleVertex
+{
+    DirectX::XMFLOAT3 Pos;
+    float Height;
+};
+
 // Stores the resources needed for the CPU to build the command lists
 // for a frame.  
 struct FrameResource
