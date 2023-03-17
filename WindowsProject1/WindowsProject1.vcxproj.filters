@@ -129,6 +129,15 @@
     <ClInclude Include="11Stencil\Waves.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="12TreeBillboards\TreeApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="12TreeBillboards\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="12TreeBillboards\Waves.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -230,6 +239,15 @@
     <ClCompile Include="11Stencil\Waves.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="12TreeBillboards\TreeApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="12TreeBillboards\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="12TreeBillboards\Waves.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -264,5 +282,8 @@
     <FxCompile Include="11Stencil\Shaders\Default.hlsl" />
     <FxCompile Include="11Stencil\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="11Stencil\Shaders\Clear.hlsl" />
+    <FxCompile Include="12TreeBillboards\Shaders\Default.hlsl" />
+    <FxCompile Include="12TreeBillboards\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="12TreeBillboards\Shaders\TreeSprite.hlsl" />
   </ItemGroup>
 </Project>

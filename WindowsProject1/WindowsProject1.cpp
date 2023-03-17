@@ -12,7 +12,8 @@
 //#include "09TexShape/TexShapeApp.h"
 //#include "09TexWaves/TexWavesApp.h"
 //#include "10Blend/BlendApp.h"
-#include "11Stencil/StencilApp.h"
+//#include "11Stencil/StencilApp.h"
+#include "12TreeBillboards/TreeApp.h"
 #include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -27,7 +28,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
         //TexShapeApp win(hInstance);
         //TexWavesApp win(hInstance);
         //BlendApp win(hInstance);
-        StencilApp win(hInstance);
+        //StencilApp win(hInstance);
+        TreeApp win(hInstance);
 
         if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
         {

@@ -42,6 +42,7 @@ public:
 	DXGI_FORMAT GetDepthStencilFormat();
 	bool GetMsaaState();
 	UINT GetMsaaQuality();
+	void Enable4xMsaa();
 
 	UINT GetClientWidth();
 	UINT GetClientHeight();

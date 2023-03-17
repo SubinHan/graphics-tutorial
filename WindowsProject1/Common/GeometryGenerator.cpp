@@ -5,6 +5,8 @@
 #include "GeometryGenerator.h"
 #include <algorithm>
 
+#include "MathHelper.h"
+
 using namespace DirectX;
 
 GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float height, float depth, uint32 numSubdivisions)
@@ -652,6 +654,50 @@ GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float x, float y, floa
 	meshData.Indices32[3] = 0;
 	meshData.Indices32[4] = 2;
 	meshData.Indices32[5] = 3;
+
+	return meshData;
+}
+
+GeometryGenerator::MeshData GeometryGenerator::CreatePoint(float x, float y, float z)
+{
+	MeshData meshData;
+
+	meshData.Vertices.resize(1);
+	meshData.Indices32.resize(1);
+
+	// Position coordinates specified in NDC space.
+	meshData.Vertices[0] = Vertex(
+		x, y, z,
+		0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f);
+
+	meshData.Indices32[0] = 0;
+
+	return meshData;
+}
+
+GeometryGenerator::MeshData GeometryGenerator::CreateUniformRandomPoints(
+	float xLo, float xHi, float yLo, float yHi,
+	float zLo, float zHi, int numPoints)
+{
+	MeshData meshData;
+
+	meshData.Vertices.resize(numPoints);
+	meshData.Indices32.resize(numPoints);
+	for(int i = 0; i < numPoints; ++i)
+	{
+		meshData.Vertices[i] = Vertex
+		{
+			MathHelper::RandF(xLo, xHi),
+			MathHelper::RandF(yLo, yHi),
+			MathHelper::RandF(zLo, zHi),
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f
+		};
+		meshData.Indices32[i] = i;
+	}
 
 	return meshData;
 }

@@ -110,6 +110,10 @@ public:
 	///</summary>
 	MeshData CreateQuad(float x, float y, float w, float h, float depth);
 
+	MeshData CreatePoint(float x, float y, float z);
+
+	MeshData CreateUniformRandomPoints(float xLo, float xHi, float yLo, float yHi, float zLo, float zHi, int numPoints);
+
 private:
 	void Subdivide(MeshData& meshData);
 	Vertex MidPoint(const Vertex& v0, const Vertex& v1);

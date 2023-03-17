@@ -207,6 +207,11 @@ UINT DxDevice::GetMsaaQuality()
     return msaaQuality;
 }
 
+void DxDevice::Enable4xMsaa()
+{
+    msaaState = true;
+}
+
 UINT DxDevice::GetClientWidth()
 {
     return clientWidth;
