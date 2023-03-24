@@ -138,6 +138,18 @@
     <ClInclude Include="12TreeBillboards\Waves.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="13Blur\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="13Blur\BlurApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="13Blur\Waves.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="13Blur\BlurFilter.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -248,6 +260,18 @@
     <ClCompile Include="12TreeBillboards\Waves.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="13Blur\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="13Blur\BlurApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="13Blur\Waves.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="13Blur\BlurFilter.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -285,5 +309,9 @@
     <FxCompile Include="12TreeBillboards\Shaders\Default.hlsl" />
     <FxCompile Include="12TreeBillboards\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="12TreeBillboards\Shaders\TreeSprite.hlsl" />
+    <FxCompile Include="13Blur\Shaders\Default.hlsl" />
+    <FxCompile Include="13Blur\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="13Blur\Shaders\TreeSprite.hlsl" />
+    <FxCompile Include="13Blur\Shaders\Blur.hlsl" />
   </ItemGroup>
 </Project>
