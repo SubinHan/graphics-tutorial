@@ -24,6 +24,8 @@ RWTexture2D<float4> gOutput : register(u0);
 #define CacheSize (N + 2 * gMaxBlurRadius)
 groupshared float4 gCache[CacheSize];
 
+float4 Gaussian(float4 x);
+
 [numthreads(N, 1, 1)]
 void HorzBlurCS( 
 	int3 groupThreadID : SV_GroupThreadID,
@@ -49,14 +51,23 @@ void HorzBlurCS(
 	GroupMemoryBarrierWithGroupSync();
 
 	float4 blurColor = float4(0, 0, 0, 0);
+	float4 normalizeFactor = float4(0, 0, 0, 0);
 
 	for(int i = -gBlurRadius; i <= gBlurRadius; ++i)
 	{
 		int k = groupThreadID.x + gBlurRadius + i;
 
-		blurColor += weights[i + gBlurRadius] * gCache[k];
+		const float4 center = gCache[groupThreadID.x + gBlurRadius];
+		const float4 weight = Gaussian(abs(gCache[k] - center))
+			* Gaussian(abs(i));
+
+		normalizeFactor += weight;
+
+		blurColor += gCache[k] * weight;
 	}
 
+	blurColor /= normalizeFactor;
+	
 	gOutput[dispatchThreadID.xy] = blurColor;
 }
 
@@ -85,13 +96,27 @@ void VertBlurCS(
 	GroupMemoryBarrierWithGroupSync();
 
 	float4 blurColor = float4(0, 0, 0, 0);
+	float4 normalizeFactor = float4(0, 0, 0, 0);
 
 	for (int i = -gBlurRadius; i <= gBlurRadius; ++i)
 	{
 		int k = groupThreadID.y + gBlurRadius + i;
 
-		blurColor += weights[i + gBlurRadius] * gCache[k];
+		const float4 center = gCache[groupThreadID.y + gBlurRadius];
+		const float4 weight = Gaussian(abs(gCache[k] - center))
+			* Gaussian(abs(i));
+
+		normalizeFactor += weight;
+
+		blurColor += gCache[k] * weight;
 	}
 
+	blurColor /= normalizeFactor;
+
 	gOutput[dispatchThreadID.xy] = blurColor;
+}
+
+float4 Gaussian(float4 x)
+{
+	return exp(-pow(x, 2));
 }
