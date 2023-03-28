@@ -33,7 +33,7 @@ bool BlurApp::Initialize()
 	// to query this information.
 	cbvSrvUavDescriptorSize = device->GetD3DDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	waves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
+	waves = std::make_unique<Waves>(device->GetD3DDevice().Get(), 256, 256, 1.0f, 0.03f, 4.0f, 0.2f);
 
 	blurFilter = std::make_unique<BlurFilter>(
 		device->GetD3DDevice().Get(),
@@ -53,10 +53,11 @@ bool BlurApp::Initialize()
 	BuildTree();
 	BuildMaterials();
 
-
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSOs();
+	
+	//waves->InitWaves(commandList.Get());
 
 	// Execute the initialization commands.
 	ThrowIfFailed(commandList->Close());
@@ -135,7 +136,6 @@ void BlurApp::Update(const GameTimer& gt)
 	UpdateMaterialCBs(gt);
 	UpdateMainPassCB(gt);
 	AnimateMaterials(gt);
-	UpdateWaves(gt);
 }
 
 void BlurApp::Draw(const GameTimer& gt)
@@ -182,7 +182,7 @@ void BlurApp::Draw(const GameTimer& gt)
 	commandList->SetGraphicsRootSignature(rootSignature.Get());;
 
 	auto passCB = currFrameResource->PassCB->Resource();
-	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress());
 
 	commandList->SetPipelineState(PSOs["opaque"].Get());
 	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
@@ -190,16 +190,27 @@ void BlurApp::Draw(const GameTimer& gt)
 	commandList->SetPipelineState(PSOs["tree"].Get());
 	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Tree)]);
 
-	commandList->SetPipelineState(PSOs["transparent"].Get());
-	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Transparent)]);
+	UpdateWaves(gt);
 
+	float texelSize{ 1.0f / waves->ColumnCount() };
+	float gridSpatialStep{ waves->GetSpatialStep() };
+	commandList->SetGraphicsRoot32BitConstant(5, *(reinterpret_cast<UINT*>(&texelSize)), 0);
+	commandList->SetGraphicsRoot32BitConstant(5, *(reinterpret_cast<UINT*>(&texelSize)), 1);
+	commandList->SetGraphicsRoot32BitConstant(5, *(reinterpret_cast<UINT*>(&gridSpatialStep)), 2);
+	//commandList->SetGraphicsRoot32BitConstants(5, 1, &texelSize, 0);
+	//commandList->SetGraphicsRoot32BitConstants(5, 1, &texelSize, 1);
+	//commandList->SetGraphicsRoot32BitConstants(5, 1, &gridSpatialStep, 3);
+
+	commandList->SetPipelineState(PSOs["waves"].Get());
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Transparent)]);
+	
 	blurFilter->Execute(
 		commandList.Get(),
 		postProcessRootSignature.Get(),
 		PSOs["horzBlur"].Get(),
 		PSOs["vertBlur"].Get(),
 		device->CurrentBackBuffer(),
-		4);
+		0);
 
 	const auto barrierCopyToRenderTarget = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -414,23 +425,10 @@ void BlurApp::UpdateMainPassCB(const GameTimer& gt)
 
 void BlurApp::UpdateWaves(const GameTimer& gt)
 {
-	// Every quarter second, generate a random wave.
-	static float t_base = 0.0f;
-	if ((timer.TotalTime() - t_base) >= 0.25f)
-	{
-		t_base += 0.25f;
-
-		int i = MathHelper::Rand(4, waves->RowCount() - 5);
-		int j = MathHelper::Rand(4, waves->ColumnCount() - 5);
-
-		float r = MathHelper::RandF(0.2f, 0.5f);
-
-		waves->Disturb(i, j, r);
-	}
-
 	// Update the wave simulation.
-	waves->Update(gt.DeltaTime());
-
+	//waves->Update(gt.DeltaTime());
+	waves->Execute(device->GetCommandList().Get(), gt);
+	
 	// Update the wave vertex buffer with the new solution.
 	auto currWavesVB = currFrameResource->WavesVB.get();
 	for (int i = 0; i < waves->VertexCount(); ++i)
@@ -482,6 +480,32 @@ void BlurApp::LoadTextures()
 	LoadTexture(L"Textures/water1.dds", "waterTex");
 	LoadTexture(L"Textures/grass.dds", "grassTex");
 	LoadTexture(L"Textures/WireFence.dds", "wireFenceTex");
+
+	LoadTexture(L"Textures/default_nmap.dds", "defaultNormal");
+	//D3D12_RESOURCE_DESC textureDesc = {};
+	//textureDesc.MipLevels = 1;
+	//textureDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	//textureDesc.Width = waves->ColumnCount();
+	//textureDesc.Height = waves->RowCount();
+	//textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	//textureDesc.DepthOrArraySize = 1;
+	//textureDesc.SampleDesc.Count = 1;
+	//textureDesc.SampleDesc.Quality = 0;
+	//textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+	//auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+
+	//ThrowIfFailed(
+	//	device->GetD3DDevice()->CreateCommittedResource(
+	//		&heapProperties,
+	//		D3D12_HEAP_FLAG_NONE,
+	//		&textureDesc,
+	//		D3D12_RESOURCE_STATE_COPY_DEST,
+	//		nullptr,
+	//		IID_PPV_ARGS
+	//	)
+	//)
+
 	LoadTextureArray(L"Textures/treearray.dds", "treeTex");
 }
 
@@ -546,16 +570,21 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> BlurApp::GetStaticSamplers()
 void BlurApp::BuildRootSignature()
 {
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[6];
 
-	CD3DX12_DESCRIPTOR_RANGE srv;
-	srv.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-	slotRootParameter[0].InitAsDescriptorTable(1, &srv);
+	CD3DX12_DESCRIPTOR_RANGE srvTex;
+	srvTex.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	slotRootParameter[0].InitAsDescriptorTable(1, &srvTex);
+	
+	CD3DX12_DESCRIPTOR_RANGE srvNormal;
+	srvNormal.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+	slotRootParameter[1].InitAsDescriptorTable(1, &srvNormal);
 
 	// Create root CBV.
-	slotRootParameter[1].InitAsConstantBufferView(0);
-	slotRootParameter[2].InitAsConstantBufferView(1);
-	slotRootParameter[3].InitAsConstantBufferView(2);
+	slotRootParameter[2].InitAsConstantBufferView(0);
+	slotRootParameter[3].InitAsConstantBufferView(1);
+	slotRootParameter[4].InitAsConstantBufferView(2);
+	slotRootParameter[5].InitAsConstants(3, 3);
 
 	auto staticSamplers = GetStaticSamplers();
 
@@ -596,7 +625,8 @@ void BlurApp::BuildDescriptorHeaps()
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-	ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&cbvSrvUavDescriptorHeap)));}
+	ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&cbvSrvUavDescriptorHeap)));
+}
 
 void BlurApp::BuildShaderResourceViews()
 {
@@ -649,6 +679,20 @@ void BlurApp::BuildShaderResourceViews()
 		descriptorIndex++;
 	}
 
+	waves->BuildDescriptors(
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+			descriptorIndex,
+			cbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(
+			cbvSrvUavDescriptorHeap->GetGPUDescriptorHandleForHeapStart(),
+			descriptorIndex,
+			cbvSrvUavDescriptorSize),
+		cbvSrvUavDescriptorSize
+	);
+
+	descriptorIndex += 4;
+
 	blurFilter->BuildDescriptors(
 		CD3DX12_CPU_DESCRIPTOR_HANDLE(
 			cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -668,10 +712,12 @@ void BlurApp::BuildShadersAndInputLayout()
 	{
 		"FOG", "1",
 		"ALPHA_TEST", "1",
+		"DISPLACEMENT_MAP", "1",
 		NULL, NULL
 	};
 
 	shaders["standardVS"] = DxUtil::CompileShader(L"13Blur\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
+	shaders["normalMapVS"] = DxUtil::CompileShader(L"13Blur\\Shaders\\Default.hlsl", defines, "VS", "vs_5_0");
 	shaders["opaquePS"] = DxUtil::CompileShader(L"13Blur\\Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
 	shaders["treeVS"] = DxUtil::CompileShader(L"13Blur\\Shaders\\TreeSprite.hlsl", defines, "VS", "vs_5_0");
 	shaders["treeGS"] = DxUtil::CompileShader(L"13Blur\\Shaders\\TreeSprite.hlsl", defines, "GS", "gs_5_0");
@@ -859,7 +905,7 @@ void BlurApp::BuildTree()
 void BlurApp::BuildWavesGeometryBuffers()
 {
 	std::vector<std::uint16_t> indices(3 * waves->TriangleCount()); // 3 indices per face
-	assert(waves->VertexCount() < 0x0000ffff);
+	//assert(waves->VertexCount() < 0x0000ffff);
 
 	// Iterate over each quad.
 	int m = waves->RowCount();
@@ -969,6 +1015,20 @@ void BlurApp::BuildPSOs()
 		)
 	);
 
+	auto wavesPsoDesc = transparentPsoDesc;
+
+	wavesPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(shaders["normalMapVS"]->GetBufferPointer()),
+		shaders["normalMapVS"]->GetBufferSize()
+	};
+
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateGraphicsPipelineState(
+			&wavesPsoDesc, IID_PPV_ARGS(&PSOs["waves"])
+		)
+	);
+
 	auto treePsoDesc = opaquePsoDesc;
 
 	treePsoDesc.InputLayout = 
@@ -1045,6 +1105,7 @@ void BlurApp::BuildMaterials()
 	crate->Name = "crate";
 	crate->MatCBIndex = 0;
 	crate->DiffuseSrvHeapIndex = textures["crateTex"]->SrvIndex;
+	crate->NormalSrvHeapIndex = textures["defaultNormal"]->SrvIndex;
 	crate->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	crate->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	crate->Roughness = 0.0f;
@@ -1053,6 +1114,7 @@ void BlurApp::BuildMaterials()
 	grass->Name = "grass";
 	grass->MatCBIndex = 1;
 	grass->DiffuseSrvHeapIndex = textures["grassTex"]->SrvIndex;
+	grass->NormalSrvHeapIndex = textures["defaultNormal"]->SrvIndex;
 	grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
 	grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	grass->Roughness = 0.125f;
@@ -1061,6 +1123,11 @@ void BlurApp::BuildMaterials()
 	water->Name = "water";
 	water->MatCBIndex = 2;
 	water->DiffuseSrvHeapIndex = textures["waterTex"]->SrvIndex;
+	const UINT waterNormalSrvHeapIndex = 
+		(waves->GetSolutionSrvHandleCpu().ptr 
+		- cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr)
+		/ cbvSrvUavDescriptorSize;
+	water->NormalSrvHeapIndex = waterNormalSrvHeapIndex;
 	water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.5f, 0.8f);
 	water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	water->Roughness = 0.0f;
@@ -1069,6 +1136,7 @@ void BlurApp::BuildMaterials()
 	wireFenceBox->Name = "wireFence";
 	wireFenceBox->MatCBIndex = 3;
 	wireFenceBox->DiffuseSrvHeapIndex = textures["wireFenceTex"]->SrvIndex;
+	wireFenceBox->NormalSrvHeapIndex = textures["defaultNormal"]->SrvIndex;
 	wireFenceBox->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	wireFenceBox->FresnelR0 = XMFLOAT3(0.2f, 0.2f, 0.12);
 	wireFenceBox->Roughness = 0.0f;
@@ -1077,6 +1145,7 @@ void BlurApp::BuildMaterials()
 	treeSprite->Name = "tree";
 	treeSprite->MatCBIndex = 3;
 	treeSprite->DiffuseSrvHeapIndex = textureArrays["treeTex"]->SrvIndex;
+	treeSprite->NormalSrvHeapIndex = textures["defaultNormal"]->SrvIndex;
 	treeSprite->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	treeSprite->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1);
 	treeSprite->Roughness = 0.1f;
@@ -1217,12 +1286,16 @@ void BlurApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vec
 		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(cbvSrvUavDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 		tex.Offset(ri->Mat->DiffuseSrvHeapIndex, device->GetCbvSrvUavDescriptorSize());
 
+		CD3DX12_GPU_DESCRIPTOR_HANDLE normal(cbvSrvUavDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		normal.Offset(ri->Mat->NormalSrvHeapIndex, device->GetCbvSrvUavDescriptorSize());
+
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
 		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + ri->Mat->MatCBIndex * matCBByteSize;
 
 		cmdList->SetGraphicsRootDescriptorTable(0, tex);
-		cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
-		cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+		cmdList->SetGraphicsRootDescriptorTable(1, normal);
+		cmdList->SetGraphicsRootConstantBufferView(2, objCBAddress);
+		cmdList->SetGraphicsRootConstantBufferView(4, matCBAddress);
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}

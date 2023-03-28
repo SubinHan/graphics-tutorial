@@ -169,4 +169,3 @@ void Waves::Disturb(int i, int j, float magnitude)
 	mCurrSolution[(i + 1) * mNumCols + j].y += halfMag;
 	mCurrSolution[(i - 1) * mNumCols + j].y += halfMag;
 }
-

@@ -313,5 +313,6 @@
     <FxCompile Include="13Blur\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="13Blur\Shaders\TreeSprite.hlsl" />
     <FxCompile Include="13Blur\Shaders\Blur.hlsl" />
+    <FxCompile Include="13Blur\Shaders\Waves.hlsl" />
   </ItemGroup>
 </Project>

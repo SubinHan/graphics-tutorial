@@ -202,6 +202,7 @@ void BlurFilter::BuildDescriptors()
 	uavDesc.Format = format;
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
+	
 
 	d3dDevice->CreateShaderResourceView(blurMap0.Get(), &srvDesc, blur0CpuSrv);
 	d3dDevice->CreateUnorderedAccessView(blurMap0.Get(), nullptr, &uavDesc, blur0CpuUav);

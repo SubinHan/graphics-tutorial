@@ -21,6 +21,7 @@
 #include "LightingUtil.hlsl"
 
 Texture2D    gDiffuseMap : register(t0);
+Texture2D    gDisplacementMap : register(t1);
 
 SamplerState gsamPointWrap  : register(s0);
 SamplerState gsamPointClamp  : register(s1);
@@ -74,6 +75,12 @@ cbuffer cbMaterial : register(b2)
     float4x4 gMatTransform;
 };
 
+cbuffer cbDisplacement : register(b3)
+{
+    float2 gDisplacementMapTexelSize;
+    float gGridSpatialStep;
+}
+
 struct VertexIn
 {
     float3 PosL    : POSITION;
@@ -92,6 +99,27 @@ struct VertexOut
 VertexOut VS(VertexIn vin)
 {
     VertexOut vout = (VertexOut)0.0f;
+
+#ifdef DISPLACEMENT_MAP
+    vin.PosL.y += gDisplacementMap.SampleLevel(
+        gsamLinearWrap, vin.TexC, 1.0f).r;
+    float du = gDisplacementMapTexelSize.x;
+    float dv = gDisplacementMapTexelSize.y;
+    float l = gDisplacementMap.SampleLevel(
+        gsamPointClamp,
+        vin.TexC - float2(du, 0.0f), 0.0f).r;
+    float r = gDisplacementMap.SampleLevel(
+        gsamPointClamp,
+        vin.TexC + float2(du, 0.0f), 0.0f).r;
+    float t = gDisplacementMap.SampleLevel(
+        gsamPointClamp,
+        vin.TexC - float2(0.0f, dv), 0.0f).r;
+    float b = gDisplacementMap.SampleLevel(
+        gsamPointClamp,
+        vin.TexC + float2(0.0f, dv), 0.0f).r;
+
+    vin.NormalL = normalize(float3(-r + l, 2.0f * gGridSpatialStep, b - t));
+#endif // DISPLACEMENT_MAP
 
     // Transform to world space.
     float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
