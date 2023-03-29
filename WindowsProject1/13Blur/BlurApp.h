@@ -9,6 +9,7 @@
 #include "../Common/DDSTextureLoader.h"
 
 #include "FrameResource.h"
+#include "SobelFilter.h"
 #include "Waves.h"
 
 using Microsoft::WRL::ComPtr;
@@ -93,7 +94,6 @@ private:
 	void BuildRootSignature();
 	void BuildPostProcessRootSignature();
 	void BuildDescriptorHeaps();
-	void BuildShaderResourceViews();
 	void BuildShadersAndInputLayout();
 	void BuildLandGeometry();
 	void BuildCrate();
@@ -120,6 +120,7 @@ private:
 
 	ComPtr<ID3D12RootSignature> rootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> postProcessRootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> compositeRootSignature = nullptr;
 
 	ComPtr<ID3D12DescriptorHeap> cbvSrvUavDescriptorHeap = nullptr;
 
@@ -144,6 +145,7 @@ private:
 	std::unique_ptr<Waves> waves;
 
 	std::unique_ptr<BlurFilter> blurFilter;
+	std::unique_ptr<SobelFilter> sobelFilter;
 
 	PassConstants mainPassCB;
 

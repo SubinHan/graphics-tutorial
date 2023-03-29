@@ -32,6 +32,8 @@ public:
 		ID3D12Resource* input,
 		int blurCount);
 
+	const int DescriptorCount();
+
 private:
 	std::vector<float> CalcGaussWeights(float sigma);
 

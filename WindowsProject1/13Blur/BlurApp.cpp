@@ -41,11 +41,16 @@ bool BlurApp::Initialize()
 		device->GetClientHeight(),
 		DXGI_FORMAT_R8G8B8A8_UNORM);
 
+	sobelFilter = std::make_unique<SobelFilter>(
+		device->GetD3DDevice().Get(),
+		device->GetClientWidth(),
+		device->GetClientHeight(),
+		DXGI_FORMAT_R8G8B8A8_UNORM);
+
 	LoadTextures();
 	BuildRootSignature();
 	BuildPostProcessRootSignature();
 	BuildDescriptorHeaps();
-	BuildShaderResourceViews();
 	BuildShadersAndInputLayout();
 	BuildLandGeometry();
 	BuildWavesGeometryBuffers();
@@ -80,6 +85,11 @@ void BlurApp::OnResize()
 	if(blurFilter)
 	{
 		blurFilter->OnResize(device->GetClientWidth(), device->GetClientHeight());
+	}
+
+	if (blurFilter)
+	{
+		sobelFilter->OnResize(device->GetClientWidth(), device->GetClientHeight());
 	}
 }
 
@@ -193,32 +203,18 @@ void BlurApp::Draw(const GameTimer& gt)
 	commandList->SetPipelineState(PSOs["transparent"].Get());
 	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Transparent)]);
 
-	blurFilter->Execute(
+	sobelFilter->Execute(
 		commandList.Get(),
-		postProcessRootSignature.Get(),
-		PSOs["horzBlur"].Get(),
-		PSOs["vertBlur"].Get(),
-		device->CurrentBackBuffer(),
-		4);
-
-	const auto barrierCopyToRenderTarget = CD3DX12_RESOURCE_BARRIER::Transition(
+		device->CurrentBackBuffer());
+	
+	auto barrierPresent = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
-		D3D12_RESOURCE_STATE_COPY_SOURCE,
-		D3D12_RESOURCE_STATE_COPY_DEST
-	);
-
-	commandList->ResourceBarrier(1, &barrierCopyToRenderTarget);
-
-	commandList->CopyResource(currentBackBuffer, blurFilter->Output());
-
-	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
-		currentBackBuffer,
-		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
 		D3D12_RESOURCE_STATE_PRESENT
 	);
 
 	// Indicate a state transition on the resource usage.
-	commandList->ResourceBarrier(1, &barrierDraw);
+	commandList->ResourceBarrier(1, &barrierPresent);
 
 	// Done recording commands.
 	ThrowIfFailed(commandList->Close());
@@ -588,18 +584,17 @@ void BlurApp::BuildRootSignature()
 
 void BlurApp::BuildDescriptorHeaps()
 {
-	const int blurDescriptorCount = 4;
+	const int blurDescriptorCount = blurFilter->DescriptorCount();
+	const int sobelDescriptorCount = sobelFilter->DescriptorCount();
 
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 
-		textures.size() + textureArrays.size() + blurDescriptorCount;
+	srvHeapDesc.NumDescriptors =
+		textures.size() + textureArrays.size() + blurDescriptorCount + sobelDescriptorCount;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-	ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&cbvSrvUavDescriptorHeap)));}
+	ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&cbvSrvUavDescriptorHeap)));
 
-void BlurApp::BuildShaderResourceViews()
-{
 	int descriptorIndex = 0;
 	for (auto& each : textures)
 	{
@@ -660,6 +655,21 @@ void BlurApp::BuildShaderResourceViews()
 			cbvSrvUavDescriptorSize),
 		cbvSrvUavDescriptorSize
 	);
+
+	descriptorIndex += 4;
+
+	sobelFilter->BuildDescriptors(
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+			descriptorIndex,
+			cbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(
+			cbvSrvUavDescriptorHeap->GetGPUDescriptorHandleForHeapStart(),
+			descriptorIndex,
+			cbvSrvUavDescriptorSize),
+		cbvSrvUavDescriptorSize
+	);
+
 }
 
 void BlurApp::BuildShadersAndInputLayout()

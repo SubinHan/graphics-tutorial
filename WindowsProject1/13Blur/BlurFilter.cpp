@@ -250,3 +250,8 @@ void BlurFilter::BuildResources()
 		nullptr,
 		IID_PPV_ARGS(&blurMap1)));
 }
+
+const int BlurFilter::DescriptorCount()
+{
+	return 4;
+}
