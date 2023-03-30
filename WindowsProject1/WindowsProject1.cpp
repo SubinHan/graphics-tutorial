@@ -14,7 +14,8 @@
 //#include "10Blend/BlendApp.h"
 //#include "11Stencil/StencilApp.h"
 //#include "12TreeBillboards/TreeApp.h"
-#include "13Blur/BlurApp.h"
+//#include "13Blur/BlurApp.h"
+#include "14BasicTessellation/BasicTessellationApp.h"
 #include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -31,7 +32,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
         //BlendApp win(hInstance);
         //StencilApp win(hInstance);
         //TreeApp win(hInstance);
-        BlurApp win(hInstance);
+        //BlurApp win(hInstance);
+        BasicTessellationApp win(hInstance);
 
         if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
         {

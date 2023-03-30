@@ -150,6 +150,12 @@
     <ClInclude Include="13Blur\BlurFilter.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="14BasicTessellation\BasicTessellationApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="14BasicTessellation\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -272,6 +278,12 @@
     <ClCompile Include="13Blur\BlurFilter.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="14BasicTessellation\BasicTessellationApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="14BasicTessellation\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -313,5 +325,10 @@
     <FxCompile Include="13Blur\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="13Blur\Shaders\TreeSprite.hlsl" />
     <FxCompile Include="13Blur\Shaders\Blur.hlsl" />
+    <FxCompile Include="14BasicTessellation\Shaders\Blur.hlsl" />
+    <FxCompile Include="14BasicTessellation\Shaders\Default.hlsl" />
+    <FxCompile Include="14BasicTessellation\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="14BasicTessellation\Shaders\TreeSprite.hlsl" />
+    <FxCompile Include="14BasicTessellation\Shaders\Tessellation.hlsl" />
   </ItemGroup>
 </Project>

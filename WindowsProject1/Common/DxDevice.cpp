@@ -282,6 +282,15 @@ void DxDevice::Init()
 
 void DxDevice::CreateDevice()
 {
+#if defined(DEBUG) || defined(_DEBUG) 
+    // Enable the D3D12 debug layer.
+    {
+        ComPtr<ID3D12Debug> debugController;
+        ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+        debugController->EnableDebugLayer();
+    }
+#endif
+
     ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
 
     HRESULT hardwareResult = D3D12CreateDevice(
