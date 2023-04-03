@@ -92,7 +92,7 @@ private:
 	void BuildFrameResources();
 	void BuildMaterials();
 
-	void BuildQuadPatchGeometry();
+	void BuildTriPatchGeometry();
 
 	void BuildRenderItems();
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
