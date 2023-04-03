@@ -84,6 +84,16 @@ struct PatchTess
 	float InsideTess[2] : SV_InsideTessFactor;
 };
 
+float3 QuadraticBernsteinBasis(float t)
+{
+	float invT = 1.0f - t;
+
+	return float3(
+		invT * invT,
+		2 * invT * t,
+		t * t);
+}
+
 float4 BernsteinBasis(float t)
 {
 	float invT = 1.0f - t;
@@ -115,6 +125,23 @@ VertexOut VS(VertexIn vin)
 	return vout;
 }
 
+float3 QuadraticBezierSum(const OutputPatch<HullOut, 9> bezPatch,
+	float3 basisU, float3 basisV)
+{
+	float3 sum = float3(0.0f, 0.0f, 0.0f);
+	sum += basisV.x * (basisU.x * bezPatch[0].PosL +
+		basisU.y * bezPatch[1].PosL +
+		basisU.z * bezPatch[2].PosL);
+	sum += basisV.y * (basisU.x * bezPatch[3].PosL +
+		basisU.y * bezPatch[4].PosL +
+		basisU.z * bezPatch[5].PosL);
+	sum += basisV.z * (basisU.x * bezPatch[6].PosL +
+		basisU.y * bezPatch[7].PosL +
+		basisU.z * bezPatch[8].PosL);
+
+	return sum;
+}
+
 float3 CubicBezierSum(const OutputPatch<HullOut, 16> bezPatch,
 	float4 basisU, float4 basisV)
 {
@@ -140,15 +167,14 @@ float3 CubicBezierSum(const OutputPatch<HullOut, 16> bezPatch,
 }
 
 
-PatchTess ConstantHS(InputPatch<VertexOut, 16> patch, uint patchID : SV_PrimitiveID)
+PatchTess ConstantHS(InputPatch<VertexOut, 9> patch, uint patchID : SV_PrimitiveID)
 {
 	PatchTess pt;
 
-	float3 centerL = 0.0625f *
+	float3 centerL = 0.1111f *
 		patch[0].PosL + patch[1].PosL + patch[2].PosL + patch[3].PosL +
 		patch[4].PosL + patch[5].PosL + patch[6].PosL + patch[7].PosL +
-		patch[8].PosL + patch[9].PosL + patch[10].PosL + patch[11].PosL +
-		patch[12].PosL + patch[13].PosL + patch[14].PosL + patch[15].PosL;
+		patch[8].PosL;
 		
 	float3 centerW = mul(float4(centerL, 1.0f), gWorld).xyz;
 
@@ -178,10 +204,10 @@ PatchTess ConstantHS(InputPatch<VertexOut, 16> patch, uint patchID : SV_Primitiv
 [domain("quad")]
 [partitioning("integer")]
 [outputtopology("triangle_cw")]
-[outputcontrolpoints(16)]
+[outputcontrolpoints(9)]
 [patchconstantfunc("ConstantHS")]
 [maxtessfactor(64.0f)]
-HullOut HS(InputPatch<VertexOut, 16> p,
+HullOut HS(InputPatch<VertexOut, 9> p,
 	uint i : SV_OutputControlPointID,
 	uint patchId : SV_PrimitiveID)
 {
@@ -202,20 +228,14 @@ struct DomainOut
 [domain("quad")]
 DomainOut DS(PatchTess patchTess,
 	float2 uv : SV_DomainLocation,
-	const OutputPatch<HullOut, 16> bezPatch)
+	const OutputPatch<HullOut, 9> bezPatch)
 {
 	DomainOut dout;
 
-	float4 basisU = BernsteinBasis(uv.x);
-	float4 basisV = BernsteinBasis(uv.y);
+	float3 basisU = QuadraticBernsteinBasis(uv.x);
+	float3 basisV = QuadraticBernsteinBasis(uv.y);
 
-	float3 p = CubicBezierSum(bezPatch, basisU, basisV);
-
-	float4 dBasisU = dBernsteinBasis(uv.x);
-	float4 dBasisV = dBernsteinBasis(uv.y);
-
-	float3 dpdu = CubicBezierSum(bezPatch, dBasisU, basisV);
-	float3 dpdv = CubicBezierSum(bezPatch, basisU, dBasisV);
+	float3 p = QuadraticBezierSum(bezPatch, basisU, basisV);
 
 	float4 posW = mul(float4(p, 1.0f), gWorld);
 	dout.PosH = mul(posW, gViewProj);
