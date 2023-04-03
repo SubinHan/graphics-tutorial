@@ -2,6 +2,17 @@
 // Tessellation.hlsl by Frank Luna (C) 2015 All Rights Reserved.
 //***************************************************************************************
 
+#ifndef NUM_DIR_LIGHTS
+	#define NUM_DIR_LIGHTS 1
+#endif
+
+#ifndef NUM_POINT_LIGHTS
+#define NUM_POINT_LIGHTS 0
+#endif
+
+#ifndef NUM_SPOT_LIGHTS
+#define NUM_SPOT_LIGHTS 0
+#endif
 
 // Include structures and functions for lighting.
 #include "LightingUtil.hlsl"
@@ -71,12 +82,10 @@ struct VertexOut
 	float3 PosL    : POSITION;
 };
 
-
 struct HullOut
 {
 	float3 PosL : POSITION;
 };
-
 
 struct PatchTess
 {
@@ -195,6 +204,9 @@ HullOut HS(InputPatch<VertexOut, 16> p,
 struct DomainOut
 {
 	float4 PosH : SV_POSITION;
+	float4 PosW : POSITION;
+	float3 NormalW : NORMAL;
+	float2 TexC    : TEXCOORD;
 };
 
 // The domain shader is called for every vertex created by the tessellator.  
@@ -217,13 +229,49 @@ DomainOut DS(PatchTess patchTess,
 	float3 dpdu = CubicBezierSum(bezPatch, dBasisU, basisV);
 	float3 dpdv = CubicBezierSum(bezPatch, basisU, dBasisV);
 
-	float4 posW = mul(float4(p, 1.0f), gWorld);
-	dout.PosH = mul(posW, gViewProj);
+	dout.PosW = mul(float4(p, 1.0f), gWorld);
+	dout.PosH = mul(dout.PosW, gViewProj);
+	dout.NormalW = cross(dpdu, dpdv);
+	dout.TexC = uv;
 
 	return dout;
 }
 
 float4 PS(DomainOut pin) : SV_Target
 {
-	return float4(1.0f, 1.0f, 1.0f, 1.0f);
+	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
+
+#ifdef ALPHA_TEST
+	clip(diffuseAlbedo.a - 0.1f);
+#endif
+
+	// Interpolating normal can unnormalize it, so renormalize it.
+	pin.NormalW = normalize(pin.NormalW);
+
+	// Vector from point being lit to eye. 
+	float3 toEyeW = gEyePosW - pin.PosW;
+	float distToEye = length(toEyeW);
+	toEyeW /= distToEye;
+
+	// Light terms.
+	float4 ambient = gAmbientLight * diffuseAlbedo;
+
+	const float shininess = 1.0f - gRoughness;
+	Material mat = { diffuseAlbedo, gFresnelR0, shininess };
+	float3 shadowFactor = 1.0f;
+	float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
+		pin.NormalW, toEyeW, shadowFactor);
+
+
+	float4 litColor = ambient + directLight;
+
+#ifdef FOG
+	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
+	litColor = lerp(litColor, gFogColor, fogAmount);
+#endif
+
+	// Common convention to take alpha from diffuse material.
+	litColor.a = diffuseAlbedo.a;
+
+	return litColor;
 }

@@ -354,6 +354,7 @@ void BezierApp::LoadTexture(std::wstring filePath, std::string textureName)
 void BezierApp::LoadTextures()
 {
 	LoadTexture(L"Textures/white1x1.dds", "whiteTex");
+	LoadTexture(L"Textures/tile.dds", "tileTex");
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> BezierApp::GetStaticSamplers()
@@ -541,7 +542,7 @@ void BezierApp::BuildPSOs()
 		shaders["tessPS"]->GetBufferSize()
 	};
 	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
 	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	opaquePsoDesc.SampleMask = UINT_MAX;
@@ -569,7 +570,7 @@ void BezierApp::BuildMaterials()
 	auto white = std::make_unique<Material>();
 	white->Name = "whiteMat";
 	white->MatCBIndex = 0;
-	white->DiffuseSrvHeapIndex = textures["whiteTex"]->SrvIndex;
+	white->DiffuseSrvHeapIndex = textures["tileTex"]->SrvIndex;
 	white->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	white->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	white->Roughness = 0.0f;
