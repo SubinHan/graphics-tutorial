@@ -27,12 +27,12 @@ struct PassConstants
     float FarZ = 0.0f;
     float TotalTime = 0.0f;
     float DeltaTime = 0.0f;
-
     DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
 
     DirectX::XMFLOAT4 FogColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     float FogStart = 0.0f;
     float FogRange = 0.0f;
+    DirectX::XMFLOAT2 cbPerObjectPad2;
 
     // Indices [0, NUM_DIR_LIGHTS) are directional lights;
     // indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
