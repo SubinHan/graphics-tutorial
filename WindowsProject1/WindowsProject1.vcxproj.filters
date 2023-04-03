@@ -156,6 +156,12 @@
     <ClInclude Include="14BasicTessellation\FrameResource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="14Bezier\BezierApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="14Bezier\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -284,6 +290,12 @@
     <ClCompile Include="14BasicTessellation\FrameResource.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="14Bezier\BezierApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="14Bezier\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -330,5 +342,10 @@
     <FxCompile Include="14BasicTessellation\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="14BasicTessellation\Shaders\TreeSprite.hlsl" />
     <FxCompile Include="14BasicTessellation\Shaders\Tessellation.hlsl" />
+    <FxCompile Include="14Bezier\Shaders\Blur.hlsl" />
+    <FxCompile Include="14Bezier\Shaders\Default.hlsl" />
+    <FxCompile Include="14Bezier\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="14Bezier\Shaders\Tessellation.hlsl" />
+    <FxCompile Include="14Bezier\Shaders\TreeSprite.hlsl" />
   </ItemGroup>
 </Project>

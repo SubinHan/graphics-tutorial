@@ -71,6 +71,41 @@ struct VertexOut
 	float3 PosL    : POSITION;
 };
 
+
+struct HullOut
+{
+	float3 PosL : POSITION;
+};
+
+
+struct PatchTess
+{
+	float EdgeTess[4]   : SV_TessFactor;
+	float InsideTess[2] : SV_InsideTessFactor;
+};
+
+float4 BernsteinBasis(float t)
+{
+	float invT = 1.0f - t;
+
+	return float4(
+		invT * invT * invT,
+		3.0f * t * invT * invT,
+		3.0f * t * t * invT,
+		t * t * t);
+}
+
+float4 dBernsteinBasis(float t)
+{
+	float invT = 1.0f - t;
+
+	return float4(
+		-3 * invT * invT,
+		3 * invT * invT - 6 * t * invT,
+		6 * t * invT - 3 * t * t,
+		3 * t * t);
+}
+
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout;
@@ -80,17 +115,41 @@ VertexOut VS(VertexIn vin)
 	return vout;
 }
 
-struct PatchTess
+float3 CubicBezierSum(const OutputPatch<HullOut, 16> bezPatch,
+	float4 basisU, float4 basisV)
 {
-	float EdgeTess[4]   : SV_TessFactor;
-	float InsideTess[2] : SV_InsideTessFactor;
-};
+	float3 sum = float3(0.0f, 0.0f, 0.0f);
+	sum += basisV.x * (basisU.x * bezPatch[0].PosL +
+		basisU.y * bezPatch[1].PosL +
+		basisU.z * bezPatch[2].PosL +
+		basisU.w * bezPatch[3].PosL);
+	sum += basisV.y * (basisU.x * bezPatch[4].PosL +
+		basisU.y * bezPatch[5].PosL +
+		basisU.z * bezPatch[6].PosL +
+		basisU.w * bezPatch[7].PosL);
+	sum += basisV.z * (basisU.x * bezPatch[8].PosL +
+		basisU.y * bezPatch[9].PosL +
+		basisU.z * bezPatch[10].PosL +
+		basisU.w * bezPatch[11].PosL);
+	sum += basisV.w * (basisU.x * bezPatch[12].PosL +
+		basisU.y * bezPatch[13].PosL +
+		basisU.z * bezPatch[14].PosL +
+		basisU.w * bezPatch[15].PosL);
 
-PatchTess ConstantHS(InputPatch<VertexOut, 4> patch, uint patchID : SV_PrimitiveID)
+	return sum;
+}
+
+
+PatchTess ConstantHS(InputPatch<VertexOut, 16> patch, uint patchID : SV_PrimitiveID)
 {
 	PatchTess pt;
 
-	float3 centerL = 0.25f * (patch[0].PosL + patch[1].PosL + patch[2].PosL + patch[3].PosL);
+	float3 centerL = 0.0625f *
+		patch[0].PosL + patch[1].PosL + patch[2].PosL + patch[3].PosL +
+		patch[4].PosL + patch[5].PosL + patch[6].PosL + patch[7].PosL +
+		patch[8].PosL + patch[9].PosL + patch[10].PosL + patch[11].PosL +
+		patch[12].PosL + patch[13].PosL + patch[14].PosL + patch[15].PosL;
+		
 	float3 centerW = mul(float4(centerL, 1.0f), gWorld).xyz;
 
 	float d = distance(centerW, gEyePosW);
@@ -116,18 +175,13 @@ PatchTess ConstantHS(InputPatch<VertexOut, 4> patch, uint patchID : SV_Primitive
 	return pt;
 }
 
-struct HullOut
-{
-	float3 PosL : POSITION;
-};
-
 [domain("quad")]
-[partitioning("fractional_odd")]
+[partitioning("integer")]
 [outputtopology("triangle_cw")]
-[outputcontrolpoints(4)]
+[outputcontrolpoints(16)]
 [patchconstantfunc("ConstantHS")]
 [maxtessfactor(64.0f)]
-HullOut HS(InputPatch<VertexOut, 4> p,
+HullOut HS(InputPatch<VertexOut, 16> p,
 	uint i : SV_OutputControlPointID,
 	uint patchId : SV_PrimitiveID)
 {
@@ -148,17 +202,20 @@ struct DomainOut
 [domain("quad")]
 DomainOut DS(PatchTess patchTess,
 	float2 uv : SV_DomainLocation,
-	const OutputPatch<HullOut, 4> quad)
+	const OutputPatch<HullOut, 16> bezPatch)
 {
 	DomainOut dout;
 
-	// Bilinear interpolation.
-	float3 v1 = lerp(quad[0].PosL, quad[1].PosL, uv.x);
-	float3 v2 = lerp(quad[2].PosL, quad[3].PosL, uv.x);
-	float3 p = lerp(v1, v2, uv.y);
+	float4 basisU = BernsteinBasis(uv.x);
+	float4 basisV = BernsteinBasis(uv.y);
 
-	// Displacement mapping
-	p.y = 0.3f * (p.z * sin(p.x) + p.x * cos(p.z));
+	float3 p = CubicBezierSum(bezPatch, basisU, basisV);
+
+	float4 dBasisU = dBernsteinBasis(uv.x);
+	float4 dBasisV = dBernsteinBasis(uv.y);
+
+	float3 dpdu = CubicBezierSum(bezPatch, dBasisU, basisV);
+	float3 dpdv = CubicBezierSum(bezPatch, basisU, dBasisV);
 
 	float4 posW = mul(float4(p, 1.0f), gWorld);
 	dout.PosH = mul(posW, gViewProj);
