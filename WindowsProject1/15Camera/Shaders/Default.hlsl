@@ -47,10 +47,6 @@ cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
     float4x4 gTexTransform;
-    uint gMaterialIndex;
-    uint gObjPad0;
-    uint gObjPad1;
-    uint gObjPad2;
 };
 
 // Constant data that varies per material.
@@ -88,6 +84,7 @@ struct VertexIn
     float3 PosL    : POSITION;
     float3 NormalL : NORMAL;
     float2 TexC    : TEXCOORD;
+    uint MatIndex  : MATINDEX;
 };
 
 struct VertexOut
@@ -96,13 +93,14 @@ struct VertexOut
     float3 PosW    : POSITION;
     float3 NormalW : NORMAL;
     float2 TexC    : TEXCOORD;
+    uint MatIndex  : MATINDEX;
 };
 
 VertexOut VS(VertexIn vin)
 {
     VertexOut vout = (VertexOut)0.0f;
 
-    MaterialData matData = gMaterialData[gMaterialIndex];
+    MaterialData matData = gMaterialData[vin.MatIndex];
 
     // Transform to world space.
     float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
@@ -118,12 +116,14 @@ VertexOut VS(VertexIn vin)
     float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
     vout.TexC = mul(texC, matData.MatTransform).xy;
 
+    vout.MatIndex = vin.MatIndex;
+
     return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-    MaterialData matData = gMaterialData[gMaterialIndex];
+    MaterialData matData = gMaterialData[pin.MatIndex];
 	float4 diffuseAlbedo = matData.DiffuseAlbedo;
     float3 fresnelR0 = matData.FresnelR0;
     float roughness = matData.Roughness;
