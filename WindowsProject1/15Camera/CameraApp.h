@@ -67,7 +67,7 @@ private:
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
-	void UpdateMaterialCBs(const GameTimer& gt);
+	void UpdateMaterialBuffer(const GameTimer& gt);
 
 	void LoadTexture(std::wstring filePath, std::string textureName);
 

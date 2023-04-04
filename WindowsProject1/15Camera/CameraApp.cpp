@@ -85,7 +85,7 @@ void CameraApp::Update(const GameTimer& gt)
     }
 
     UpdateObjectCBs(gt);
-    UpdateMaterialCBs(gt);
+    UpdateMaterialBuffer(gt);
     UpdateMainPassCB(gt);
 }
 
@@ -139,10 +139,20 @@ void CameraApp::Draw(const GameTimer& gt)
     commandList->SetGraphicsRootSignature(rootSignature.Get());
 
     auto passCB = currFrameResource->PassCB->Resource();
-    commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+    commandList->SetGraphicsRootConstantBufferView(
+        1, passCB->GetGPUVirtualAddress());
+
+    auto matBuffer = currFrameResource->MaterialBuffer->Resource();
+    commandList->SetGraphicsRootShaderResourceView(
+        2, matBuffer->GetGPUVirtualAddress());
+
+    commandList->SetGraphicsRootDescriptorTable(
+        3, srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
 
     commandList->SetPipelineState(pipelineStateObjects["opaque"].Get());
-    DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
+    DrawRenderItems(
+        commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
 
     auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
         currentBackBuffer,
@@ -240,6 +250,8 @@ void CameraApp::UpdateObjectCBs(const GameTimer& gt)
 
             ObjectConstants objConstants;
             XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
+            objConstants.Textransform = e->TexTransform;
+            objConstants.MaterialIndex = e->Mat->MatCBIndex;
 
             currObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
@@ -293,9 +305,9 @@ void CameraApp::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mainPassCB);
 }
 
-void CameraApp::UpdateMaterialCBs(const GameTimer& gt)
+void CameraApp::UpdateMaterialBuffer(const GameTimer& gt)
 {
-    auto currMaterialBuffer = currFrameResource->MaterialCB.get();
+    auto currMaterialBuffer = currFrameResource->MaterialBuffer.get();
     for (auto& e : materials)
     {
         // Only update the cbuffer data if the constants have changed.  If the cbuffer
@@ -305,11 +317,12 @@ void CameraApp::UpdateMaterialCBs(const GameTimer& gt)
         {
             XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
 
-            MaterialConstants matData;
+            MaterialData matData;
             matData.DiffuseAlbedo = mat->DiffuseAlbedo;
             matData.FresnelR0 = mat->FresnelR0;
             matData.Roughness = mat->Roughness;
             XMStoreFloat4x4(&matData.MatTransform, XMMatrixTranspose(matTransform));
+            matData.DiffuseMapIndex = mat->DiffuseSrvHeapIndex;
 
             currMaterialBuffer->CopyData(mat->MatCBIndex, matData);
 
@@ -335,6 +348,9 @@ void CameraApp::LoadTexture(std::wstring filePath, std::string textureName)
 void CameraApp::LoadTextures()
 {
     LoadTexture(L"Textures/white1x1.dds", "whiteTex");
+    LoadTexture(L"Textures/tile.dds", "tileTex");
+    LoadTexture(L"Textures/stone.dds", "stoneTex");
+    LoadTexture(L"Textures/bricks.dds", "bricksTex");
 }
 
 void CameraApp::BuildDescriptorHeaps()
@@ -379,17 +395,17 @@ void CameraApp::BuildDescriptorHeaps()
 
 void CameraApp::BuildRootSignature()
 {
+    CD3DX12_DESCRIPTOR_RANGE texTable;
+    texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0, 0);
+
     // Root parameter can be a table, root descriptor or root constants.
     CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
-    CD3DX12_DESCRIPTOR_RANGE srv;
-    srv.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-    slotRootParameter[0].InitAsDescriptorTable(1, &srv);
-    // Create root CBV.
-    slotRootParameter[1].InitAsConstantBufferView(0);
-    slotRootParameter[2].InitAsConstantBufferView(1);
-    slotRootParameter[3].InitAsConstantBufferView(2);
+    slotRootParameter[0].InitAsConstantBufferView(0);
+    slotRootParameter[1].InitAsConstantBufferView(1);
+    slotRootParameter[2].InitAsShaderResourceView(0, 1);
+    slotRootParameter[3].InitAsDescriptorTable(1, &texTable,
+        D3D12_SHADER_VISIBILITY_PIXEL);
 
     auto staticSamplers = DxUtil::GetStaticSamplers();
 
@@ -445,6 +461,36 @@ void CameraApp::BuildMaterials()
     white->Roughness = 0.0f;
 
     materials["whiteMat"] = std::move(white);
+
+    auto stone = std::make_unique<Material>();
+    stone->Name = "stoneMat";
+    stone->MatCBIndex = 1;
+    stone->DiffuseSrvHeapIndex = textures["stoneTex"]->SrvIndex;
+    stone->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    stone->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+    stone->Roughness = 0.0f;
+
+    materials["stoneMat"] = std::move(stone);
+
+    auto tile = std::make_unique<Material>();
+    tile->Name = "tileMat";
+    tile->MatCBIndex = 2;
+    tile->DiffuseSrvHeapIndex = textures["tileTex"]->SrvIndex;
+    tile->DiffuseAlbedo = XMFLOAT4(0.6f, 0.6f, 0.6f, 1.0f);
+    tile->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+    tile->Roughness = 0.0f;
+
+    materials["tileMat"] = std::move(tile);
+
+    auto bricks = std::make_unique<Material>();
+    bricks->Name = "bricksMat";
+    bricks->MatCBIndex = 3;
+    bricks->DiffuseSrvHeapIndex = textures["bricksTex"]->SrvIndex;
+    bricks->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    bricks->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+    bricks->Roughness = 0.0f;
+
+    materials["bricksMat"] = std::move(bricks);
 }
 
 void CameraApp::BuildShapeGeometry()
@@ -658,7 +704,7 @@ void CameraApp::BuildRenderItems()
     auto boxRitem = std::make_unique<RenderItem>();
     XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
     boxRitem->ObjCBIndex = 0;
-    boxRitem->Mat = materials["whiteMat"].get();
+    boxRitem->Mat = materials["bricksMat"].get();
     boxRitem->Geo = geometries["shapeGeo"].get();
     boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
@@ -670,7 +716,10 @@ void CameraApp::BuildRenderItems()
     auto gridRitem = std::make_unique<RenderItem>();
     gridRitem->World = MathHelper::Identity4x4();
     gridRitem->ObjCBIndex = 1;
-    gridRitem->Mat = materials["whiteMat"].get();
+    XMStoreFloat4x4(
+        &gridRitem->TexTransform,
+        XMMatrixScaling(4.0f, 4.0f, 4.0f));
+    gridRitem->Mat = materials["tileMat"].get();
     gridRitem->Geo = geometries["shapeGeo"].get();
     gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
@@ -695,7 +744,7 @@ void CameraApp::BuildRenderItems()
 
         XMStoreFloat4x4(&leftCylRitem->World, rightCylWorld);
         leftCylRitem->ObjCBIndex = objCBIndex++;
-        leftCylRitem->Mat = materials["whiteMat"].get();
+        leftCylRitem->Mat = materials["stoneMat"].get();
         leftCylRitem->Geo = geometries["shapeGeo"].get();
         leftCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
@@ -704,7 +753,7 @@ void CameraApp::BuildRenderItems()
 
         XMStoreFloat4x4(&rightCylRitem->World, leftCylWorld);
         rightCylRitem->ObjCBIndex = objCBIndex++;
-        rightCylRitem->Mat = materials["whiteMat"].get();
+        rightCylRitem->Mat = materials["stoneMat"].get();
         rightCylRitem->Geo = geometries["shapeGeo"].get();
         rightCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
@@ -713,7 +762,7 @@ void CameraApp::BuildRenderItems()
 
         XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
         leftSphereRitem->ObjCBIndex = objCBIndex++;
-        leftSphereRitem->Mat = materials["whiteMat"].get();
+        leftSphereRitem->Mat = materials["stoneMat"].get();
         leftSphereRitem->Geo = geometries["shapeGeo"].get();
         leftSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
@@ -722,7 +771,7 @@ void CameraApp::BuildRenderItems()
 
         XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
         rightSphereRitem->ObjCBIndex = objCBIndex++;
-        rightSphereRitem->Mat = materials["whiteMat"].get();
+        rightSphereRitem->Mat = materials["stoneMat"].get();
         rightSphereRitem->Geo = geometries["shapeGeo"].get();
         rightSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
@@ -747,7 +796,6 @@ void CameraApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::v
     UINT matCBByteSize = DxUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
 
     auto objectCB = currFrameResource->ObjectCB->Resource();
-    auto matCB = currFrameResource->MaterialCB->Resource();
 
     // For each render item...
     for (size_t i = 0; i < ritems.size(); ++i)
@@ -765,11 +813,8 @@ void CameraApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::v
         tex.Offset(ri->Mat->DiffuseSrvHeapIndex, device->GetCbvSrvUavDescriptorSize());
 
         D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
-        D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + ri->Mat->MatCBIndex * matCBByteSize;
-
-        cmdList->SetGraphicsRootDescriptorTable(0, tex);
-        cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
-        cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+        
+        cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 
         cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
     }
