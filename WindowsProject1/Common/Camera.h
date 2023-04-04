@@ -57,6 +57,7 @@ public:
 
 	void Pitch(float angle);
 	void RotateY(float angle);
+	void Roll(float angle);
 
 	void UpdateViewMatrix();
 

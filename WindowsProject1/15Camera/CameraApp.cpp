@@ -233,7 +233,10 @@ void CameraApp::UpdateCamera(const GameTimer& gt)
         camera.Strafe(-10.0f * dt);
     if (GetAsyncKeyState('D') & 0x8000)
         camera.Strafe(10.0f * dt);
-
+    if (GetAsyncKeyState('E') & 0x8000)
+        camera.Roll(-1.0f * dt);
+    if (GetAsyncKeyState('Q') & 0x8000)
+        camera.Roll(1.0f * dt);
     camera.UpdateViewMatrix();
 }
 
