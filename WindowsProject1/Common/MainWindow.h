@@ -28,6 +28,7 @@ class MainWindow : public BaseWindow<MainWindow>
 protected:
 	GameTimer timer;
 	DxDevice* device;
+	std::wstring mainWndCaption;
 
 public:
 	MainWindow(HINSTANCE hInstance);

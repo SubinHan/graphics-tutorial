@@ -21,7 +21,8 @@ MainWindow::MainWindow(HINSTANCE hInstance) : BaseWindow(hInstance),
 
 float MainWindow::AspectRatio() const
 {
-    return static_cast<float>(device->GetClientWidth()) / device->GetClientHeight();
+    return static_cast<float>(device->GetClientWidth()) / 
+        static_cast<float>(device->GetClientHeight());
 }
 
 int MainWindow::Run()
@@ -351,7 +352,8 @@ void MainWindow::CalculateFrameStats()
         wstring fpsStr = to_wstring(fps);
         wstring mspfStr = to_wstring(mspf);
 
-        wstring windowText = L"  fps: " + fpsStr +
+        wstring windowText = mainWndCaption + 
+			L"  fps: " + fpsStr +
             L"  mspf: " + mspfStr;
 
         SetWindowText(m_hwnd, windowText.c_str());

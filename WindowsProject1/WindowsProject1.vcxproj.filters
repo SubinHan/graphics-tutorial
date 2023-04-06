@@ -171,6 +171,12 @@
     <ClInclude Include="15Camera\FrameResource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="16InstancingAndCulling\InstancingAndCullingApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="16InstancingAndCulling\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -314,6 +320,12 @@
     <ClCompile Include="15Camera\FrameResource.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="16InstancingAndCulling\InstancingAndCullingApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="16InstancingAndCulling\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -370,5 +382,10 @@
     <FxCompile Include="15Camera\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="15Camera\Shaders\Tessellation.hlsl" />
     <FxCompile Include="15Camera\Shaders\TreeSprite.hlsl" />
+    <FxCompile Include="16InstancingAndCulling\Shaders\Blur.hlsl" />
+    <FxCompile Include="16InstancingAndCulling\Shaders\Default.hlsl" />
+    <FxCompile Include="16InstancingAndCulling\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="16InstancingAndCulling\Shaders\Tessellation.hlsl" />
+    <FxCompile Include="16InstancingAndCulling\Shaders\TreeSprite.hlsl" />
   </ItemGroup>
 </Project>

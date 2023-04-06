@@ -19,7 +19,7 @@ Camera::Camera()
 	view(MathHelper::Identity4x4()),
 	proj(MathHelper::Identity4x4())
 {
-
+	SetLens(0.25f * MathHelper::Pi, 1.0f, 1.0f, 1000.0f);
 }
 
 Camera::~Camera()
@@ -119,7 +119,6 @@ float Camera::GetNearWindowHeight() const
 float Camera::GetFarWindowWidth() const
 {
 	return aspect * farWindowHeight;
-
 }
 
 float Camera::GetFarWindowHeight() const
@@ -143,9 +142,9 @@ void Camera::SetLens(float fovY, float aspect, float zn, float zf)
 
 void Camera::LookAt(DirectX::XMVECTOR pos, DirectX::XMVECTOR target, DirectX::XMVECTOR worldUp)
 {
-	XMVECTOR l = XMVector3Normalize(XMVectorSubtract(pos, target));
-	XMVECTOR r = XMVector2Cross(l, worldUp);
-	XMVECTOR u = XMVector2Cross(l, r);
+	XMVECTOR l = XMVector3Normalize(XMVectorSubtract(target, pos));
+	XMVECTOR r = XMVector3Normalize(XMVector3Cross(worldUp, l));
+	XMVECTOR u = XMVector3Cross(l, r);
 
 	XMStoreFloat3(&position, pos);
 	XMStoreFloat3(&look, l);
@@ -243,11 +242,10 @@ void Camera::UpdateViewMatrix()
 		return;
 
 	XMVECTOR r = XMLoadFloat3(&right);
-	XMVECTOR u = XMLoadFloat3(&up);
 	XMVECTOR l = XMLoadFloat3(&look);
 	XMVECTOR p = XMLoadFloat3(&position);
 	l = XMVector3Normalize(l);
-	u = XMVector3Normalize(XMVector3Cross(l, r));
+	XMVECTOR u = XMVector3Normalize(XMVector3Cross(l, r));
 	r = XMVector3Cross(u, l);
 
 	float x = -XMVectorGetX(XMVector3Dot(p, r));
