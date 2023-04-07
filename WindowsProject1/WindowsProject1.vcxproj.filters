@@ -177,6 +177,12 @@
     <ClInclude Include="16InstancingAndCulling\FrameResource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="17Picking\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="17Picking\PickingApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -326,6 +332,12 @@
     <ClCompile Include="16InstancingAndCulling\FrameResource.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="17Picking\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="17Picking\PickingApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -387,5 +399,10 @@
     <FxCompile Include="16InstancingAndCulling\Shaders\LightingUtil.hlsl" />
     <FxCompile Include="16InstancingAndCulling\Shaders\Tessellation.hlsl" />
     <FxCompile Include="16InstancingAndCulling\Shaders\TreeSprite.hlsl" />
+    <FxCompile Include="17Picking\Shaders\Blur.hlsl" />
+    <FxCompile Include="17Picking\Shaders\Default.hlsl" />
+    <FxCompile Include="17Picking\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="17Picking\Shaders\Tessellation.hlsl" />
+    <FxCompile Include="17Picking\Shaders\TreeSprite.hlsl" />
   </ItemGroup>
 </Project>

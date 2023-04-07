@@ -18,7 +18,8 @@
 //#include "14BasicTessellation/BasicTessellationApp.h"
 //#include "14Bezier/BezierApp.h"
 //#include "15Camera/CameraApp.h"
-#include "16InstancingAndCulling/InstancingAndCullingApp.h"
+//#include "16InstancingAndCulling/InstancingAndCullingApp.h"
+#include "17Picking/PickingApp.h"
 #include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -39,7 +40,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
         //BasicTessellationApp win(hInstance);
         //BezierApp win(hInstance);
         //CameraApp win(hInstance);
-        InstancingAndCullingApp win(hInstance);
+        //InstancingAndCullingApp win(hInstance);
+        PickingApp win(hInstance);
 
         if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
         {
