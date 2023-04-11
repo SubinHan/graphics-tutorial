@@ -192,6 +192,15 @@
     <ClInclude Include="Common\InstancedRenderItem.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="18DyanmicCubeMapping\DynamicCubeMapApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="18DyanmicCubeMapping\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CubeRenderTarget.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -356,6 +365,15 @@
     <ClCompile Include="Common\InstancedRenderItem.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="18DyanmicCubeMapping\DynamicCubeMapApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="18DyanmicCubeMapping\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\CubeRenderTarget.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -429,5 +447,12 @@
     <FxCompile Include="18CubeMapping\Shaders\TreeSprite.hlsl" />
     <FxCompile Include="18CubeMapping\Shaders\Sky.hlsl" />
     <FxCompile Include="18CubeMapping\Shaders\Common.hlsl" />
+    <FxCompile Include="18DyanmicCubeMapping\Shaders\Blur.hlsl" />
+    <FxCompile Include="18DyanmicCubeMapping\Shaders\Common.hlsl" />
+    <FxCompile Include="18DyanmicCubeMapping\Shaders\Default.hlsl" />
+    <FxCompile Include="18DyanmicCubeMapping\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="18DyanmicCubeMapping\Shaders\Sky.hlsl" />
+    <FxCompile Include="18DyanmicCubeMapping\Shaders\Tessellation.hlsl" />
+    <FxCompile Include="18DyanmicCubeMapping\Shaders\TreeSprite.hlsl" />
   </ItemGroup>
 </Project>

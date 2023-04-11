@@ -34,6 +34,8 @@ public:
 	ComPtr<ID3D12CommandAllocator>& GetCommandListAllocator();
 	ComPtr<ID3D12GraphicsCommandList>& GetCommandList();
 	ComPtr<IDXGISwapChain>& GetSwapChain();
+	ID3D12DescriptorHeap* GetRtvHeap();
+	ID3D12DescriptorHeap* GetDsvHeap();
 	void RSSetViewports(UINT numViewports);
 	void RSSetScissorRects(UINT numRects);
 	void SwapBuffers();
@@ -53,7 +55,9 @@ public:
 	ComPtr<ID3D12Fence> GetFence();
 	D3D12_VIEWPORT& GetScreenViewport();
 	tagRECT& GetScissorRect();
+	UINT GetRtvDescriptorSize();
 	UINT GetCbvSrvUavDescriptorSize();
+	UINT GetDsvDescriptorSize();
 
 	UINT GetCurrentFence();
 	UINT IncreaseFence();

@@ -1,4 +1,4 @@
-#include "CubeMapApp.h"
+#include "DynamicCubeMapApp.h"
 
 #include <iostream>
 
@@ -9,18 +9,18 @@ using namespace DirectX;
 
 const int gNumFrameResources = 3;
 
-CubeMapApp::CubeMapApp(HINSTANCE hInstance)
+DynamicCubeMapApp::DynamicCubeMapApp(HINSTANCE hInstance)
     : MainWindow(hInstance)
 {
 }
 
-CubeMapApp::~CubeMapApp()
+DynamicCubeMapApp::~DynamicCubeMapApp()
 {
     if (device->GetD3DDevice() != nullptr)
         device->FlushCommandQueue();
 }
 
-bool CubeMapApp::Initialize()
+bool DynamicCubeMapApp::Initialize()
 {
     if (!MainWindow::Initialize())
         return false;
@@ -33,10 +33,20 @@ bool CubeMapApp::Initialize()
     ThrowIfFailed(commandList->Reset(commandListAllocator.Get(), nullptr));
     
     camera.SetPosition(0.0f, 2.0f, -15.0f);
+    BuildCubeFaceCamera(0.0f, 2.0f, 0.0f);
+
+    dynamicCubeMap = std::make_unique<CubeRenderTarget>(device->GetD3DDevice().Get(),
+        CUBE_MAP_SIZE, CUBE_MAP_SIZE, DXGI_FORMAT_R8G8B8A8_UNORM);
+
+    cubeDsv = CD3DX12_CPU_DESCRIPTOR_HANDLE(
+        device->GetDsvHeap()->GetCPUDescriptorHandleForHeapStart(),
+        1,
+        device->GetDsvDescriptorSize());
 
     LoadTextures();
     BuildRootSignature();
     BuildDescriptorHeaps();
+    BuildCubeDepthStencil();
     BuildShadersAndInputLayout();
     BuildMaterials();
     BuildSkullGeometry();
@@ -56,7 +66,7 @@ bool CubeMapApp::Initialize()
     return true;
 }
 
-void CubeMapApp::OnResize()
+void DynamicCubeMapApp::OnResize()
 {
     MainWindow::OnResize();
 
@@ -70,7 +80,7 @@ void CubeMapApp::OnResize()
     BoundingFrustum::CreateFromMatrix(camFrustum, camera.GetProj());
 }
 
-void CubeMapApp::Update(const GameTimer& gt)
+void DynamicCubeMapApp::Update(const GameTimer& gt)
 {
     UpdateCamera(gt);
 
@@ -95,7 +105,7 @@ void CubeMapApp::Update(const GameTimer& gt)
 }
 
 
-void CubeMapApp::Draw(const GameTimer& gt)
+void DynamicCubeMapApp::Draw(const GameTimer& gt)
 {
     auto commandList = device->GetCommandList();
     auto commandQueue = device->GetCommandQueue();
@@ -116,27 +126,9 @@ void CubeMapApp::Draw(const GameTimer& gt)
         ThrowIfFailed(commandList->Reset(cmdListAlloc.Get(), pipelineStateObjects["opaque"].Get()));
     }
 
-    commandList->RSSetViewports(1, &device->GetScreenViewport());
-    commandList->RSSetScissorRects(1, &device->GetScissorRect());
-
     auto currentBackBuffer = device->CurrentBackBuffer();
     auto currentBackBufferView = device->CurrentBackBufferView();
     auto depthStencilView = device->DepthStencilView();
-
-    auto barrierReset = CD3DX12_RESOURCE_BARRIER::Transition(
-        currentBackBuffer,
-        D3D12_RESOURCE_STATE_PRESENT,
-        D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-    // Indicate a state transition on the resource usage.
-    commandList->ResourceBarrier(1, &barrierReset);
-
-    // Clear the back buffer and depth buffer.
-    commandList->ClearRenderTargetView(currentBackBufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
-    commandList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-    
-    // Specify the buffers we are going to render to.
-    commandList->OMSetRenderTargets(1, &currentBackBufferView, true, &depthStencilView);
 
     ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap.Get() };
     commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
@@ -147,18 +139,54 @@ void CubeMapApp::Draw(const GameTimer& gt)
     commandList->SetGraphicsRootShaderResourceView(
         1, matBuffer->GetGPUVirtualAddress());
 
-    auto passCB = currFrameResource->PassCB->Resource();
-    commandList->SetGraphicsRootConstantBufferView(
-        2, passCB->GetGPUVirtualAddress());
-
-    commandList->SetGraphicsRootDescriptorTable(
-        4, srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
     commandList->SetGraphicsRootDescriptorTable(
         3, cubeMapGpuHandle
     );
 
+    commandList->SetGraphicsRootDescriptorTable(
+        4, srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
+    DrawSceneToCubeMap();
+
+    auto passCB = currFrameResource->PassCB->Resource();
+    commandList->SetGraphicsRootConstantBufferView(
+        2, passCB->GetGPUVirtualAddress());
+
+    auto barrierReset = CD3DX12_RESOURCE_BARRIER::Transition(
+        currentBackBuffer,
+        D3D12_RESOURCE_STATE_PRESENT,
+        D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+    commandList->RSSetViewports(1, &device->GetScreenViewport());
+    commandList->RSSetScissorRects(1, &device->GetScissorRect());
+
+    // Indicate a state transition on the resource usage.
+    commandList->ResourceBarrier(1, &barrierReset);
+
+    // Clear the back buffer and depth buffer.
+    commandList->ClearRenderTargetView(currentBackBufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
+    commandList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+    // Specify the buffers we are going to render to.
+    commandList->OMSetRenderTargets(1, &currentBackBufferView, true, &depthStencilView);
+
     commandList->SetPipelineState(pipelineStateObjects["opaque"].Get());
+
+    CD3DX12_GPU_DESCRIPTOR_HANDLE dynamicTexDescriptor(
+        srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
+    );
+    dynamicTexDescriptor.Offset(dynamicTexHeapIndex, device->GetCbvSrvUavDescriptorSize());
+    commandList->SetGraphicsRootDescriptorTable(3, dynamicTexDescriptor);
+    DrawRenderItemsWithoutFrustumCulling(
+        commandList.Get(),
+        RitemLayer[static_cast<int>(RenderLayer::OpaqueDynamicReflectors)]
+    );
+
+    commandList->SetGraphicsRootDescriptorTable(
+        3, cubeMapGpuHandle
+    );
+
     DrawRenderItems(
 	    commandList.Get(),
         RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]
@@ -203,7 +231,60 @@ void CubeMapApp::Draw(const GameTimer& gt)
     commandQueue->Signal(device->GetFence().Get(), device->GetCurrentFence());
 }
 
-void CubeMapApp::OnMouseLeftDown(int x, int y, short keyState)
+void DynamicCubeMapApp::DrawSceneToCubeMap()
+{
+    auto commandList = device->GetCommandList();
+
+    auto viewport = dynamicCubeMap->Viewport();
+    commandList->RSSetViewports(1, &viewport);
+    auto scissorRect = dynamicCubeMap->ScissorRect();
+    commandList->RSSetScissorRects(1, &scissorRect);
+
+    auto makeRtvReadToReender = CD3DX12_RESOURCE_BARRIER::Transition(
+        dynamicCubeMap->Resource(),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+    // Change to RENDER_TARGET.
+    commandList->ResourceBarrier(1, &makeRtvReadToReender);
+
+    UINT passCBByteSize = DxUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
+
+    // For each cube map face.
+    for (int i = 0; i < 6; ++i)
+    {
+        // Clear the back buffer and depth buffer.
+        commandList->ClearRenderTargetView(dynamicCubeMap->Rtv(i), Colors::LightSteelBlue, 0, nullptr);
+        commandList->ClearDepthStencilView(cubeDsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+        // Specify the buffers we are going to render to.
+        auto currentRtv = dynamicCubeMap->Rtv(i);
+        commandList->OMSetRenderTargets(1, &currentRtv, true, &cubeDsv);
+
+        // Bind the pass constant buffer for this cube map face so we use 
+        // the right view/proj matrix for this cube face.
+        auto passCB = currFrameResource->PassCB->Resource();
+        D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCB->GetGPUVirtualAddress() + (1 + i) * passCBByteSize;
+        commandList->SetGraphicsRootConstantBufferView(2, passCBAddress);
+
+
+    	DrawRenderItemsWithoutFrustumCulling(commandList.Get(), RitemLayer[(int)RenderLayer::OpaqueNonFrustumCull]);
+
+        commandList->SetPipelineState(pipelineStateObjects["sky"].Get());
+        DrawRenderItemsWithoutFrustumCulling(commandList.Get(), RitemLayer[(int)RenderLayer::Sky]);
+
+        commandList->SetPipelineState(pipelineStateObjects["opaque"].Get());
+    }
+
+    // Change back to GENERIC_READ so we can read the texture in a shader.
+    auto makeRtvRead = CD3DX12_RESOURCE_BARRIER::Transition(
+        dynamicCubeMap->Resource(),
+        D3D12_RESOURCE_STATE_RENDER_TARGET,
+        D3D12_RESOURCE_STATE_GENERIC_READ);
+    commandList->ResourceBarrier(1, &makeRtvRead);
+}
+
+void DynamicCubeMapApp::OnMouseLeftDown(int x, int y, short keyState)
 {
     lastMousePos.x = x;
     lastMousePos.y = y;
@@ -211,12 +292,12 @@ void CubeMapApp::OnMouseLeftDown(int x, int y, short keyState)
     SetCapture(m_hwnd);
 }
 
-void CubeMapApp::OnMouseLeftUp(int x, int y, short keyState)
+void DynamicCubeMapApp::OnMouseLeftUp(int x, int y, short keyState)
 {
     ReleaseCapture();
 }
 
-void CubeMapApp::OnMouseMove(int x, int y, short keyState)
+void DynamicCubeMapApp::OnMouseMove(int x, int y, short keyState)
 {
     if ((keyState & MK_LBUTTON) != 0)
     {
@@ -232,7 +313,7 @@ void CubeMapApp::OnMouseMove(int x, int y, short keyState)
     lastMousePos.y = y;
 }
 
-void CubeMapApp::OnKeyDown(WPARAM windowVirtualKeyCode)
+void DynamicCubeMapApp::OnKeyDown(WPARAM windowVirtualKeyCode)
 {
     if (windowVirtualKeyCode != 'I')
         return;
@@ -240,7 +321,7 @@ void CubeMapApp::OnKeyDown(WPARAM windowVirtualKeyCode)
     isWireframe = !isWireframe;
 }
 
-void CubeMapApp::UpdateCamera(const GameTimer& gt)
+void DynamicCubeMapApp::UpdateCamera(const GameTimer& gt)
 {
     const float dt = gt.DeltaTime();
 
@@ -260,7 +341,7 @@ void CubeMapApp::UpdateCamera(const GameTimer& gt)
     camera.UpdateViewMatrix();
 }
 
-void CubeMapApp::UpdateInstanceBuffer(const GameTimer& gt)
+void DynamicCubeMapApp::UpdateInstanceBuffer(const GameTimer& gt)
 {
     int bufferOffset = 0;
     auto instanceBuffer = currFrameResource->InstanceBuffer.get();
@@ -283,7 +364,7 @@ void CubeMapApp::UpdateInstanceBuffer(const GameTimer& gt)
     }
 }
 
-void CubeMapApp::UpdateMainPassCB(const GameTimer& gt)
+void DynamicCubeMapApp::UpdateMainPassCB(const GameTimer& gt)
 {
 	XMMATRIX view = camera.GetView();
 	XMMATRIX proj = camera.GetProj();
@@ -325,9 +406,46 @@ void CubeMapApp::UpdateMainPassCB(const GameTimer& gt)
 
 	auto currPassCB = currFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mainPassCB);
+
+    UpdateCubeMapFacePassCBs();
 }
 
-void CubeMapApp::UpdateMaterialBuffer(const GameTimer& gt)
+void DynamicCubeMapApp::UpdateCubeMapFacePassCBs()
+{
+    for(int i = 0; i < 6; ++i)
+    {
+        PassConstants cubeFacePassCB = mainPassCB;
+
+        XMMATRIX view = cubeMapCamera[i].GetView();
+        XMMATRIX proj = cubeMapCamera[i].GetProj();
+
+        XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+        auto viewDeterminant = XMMatrixDeterminant(view);
+        XMMATRIX invView = XMMatrixInverse(&viewDeterminant, view);
+        auto projDeterminant = XMMatrixDeterminant(proj);
+        XMMATRIX invProj = XMMatrixInverse(&projDeterminant, proj);
+        auto viewProjDeterminant = XMMatrixDeterminant(viewProj);
+        XMMATRIX invViewProj = XMMatrixInverse(&viewProjDeterminant, viewProj);
+
+        XMStoreFloat4x4(&cubeFacePassCB.View, XMMatrixTranspose(view));
+        XMStoreFloat4x4(&cubeFacePassCB.InvView, XMMatrixTranspose(invView));
+        XMStoreFloat4x4(&cubeFacePassCB.Proj, XMMatrixTranspose(proj));
+        XMStoreFloat4x4(&cubeFacePassCB.InvProj, XMMatrixTranspose(invProj));
+        XMStoreFloat4x4(&cubeFacePassCB.ViewProj, XMMatrixTranspose(viewProj));
+        XMStoreFloat4x4(&cubeFacePassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+        cubeFacePassCB.EyePosW = cubeMapCamera[i].GetPosition3f();
+        cubeFacePassCB.RenderTargetSize = 
+            XMFLOAT2(static_cast<float>(CUBE_MAP_SIZE), static_cast<float>(CUBE_MAP_SIZE));
+        cubeFacePassCB.InvRenderTargetSize =
+            XMFLOAT2(1.0f / CUBE_MAP_SIZE, 1.0f / CUBE_MAP_SIZE);
+
+        auto currPassCB = currFrameResource->PassCB.get();
+
+        currPassCB->CopyData(1 + i, cubeFacePassCB);
+    }
+}
+
+void DynamicCubeMapApp::UpdateMaterialBuffer(const GameTimer& gt)
 {
     auto currMaterialBuffer = currFrameResource->MaterialBuffer.get();
     for (auto& e : materials)
@@ -355,7 +473,7 @@ void CubeMapApp::UpdateMaterialBuffer(const GameTimer& gt)
 
 }
 
-void CubeMapApp::LoadTexture(std::wstring filePath, std::string textureName)
+void DynamicCubeMapApp::LoadTexture(std::wstring filePath, std::string textureName)
 {
     auto texture = std::make_unique<Texture>();
     texture->Name = textureName;
@@ -367,7 +485,7 @@ void CubeMapApp::LoadTexture(std::wstring filePath, std::string textureName)
     textures[texture->Name] = std::move(texture);
 }
 
-void CubeMapApp::LoadCubeMap(std::wstring filePath, std::string textureName)
+void DynamicCubeMapApp::LoadCubeMap(std::wstring filePath, std::string textureName)
 {
     auto cubeMap = std::make_unique<Texture>();
     cubeMap->Name = textureName;
@@ -379,7 +497,41 @@ void CubeMapApp::LoadCubeMap(std::wstring filePath, std::string textureName)
     cubeMaps[cubeMap->Name] = std::move(cubeMap);
 }
 
-void CubeMapApp::LoadTextures()
+void DynamicCubeMapApp::BuildCubeFaceCamera(float x, float y, float z)
+{
+    XMFLOAT3 center(x, y, z);
+    XMFLOAT3 worldUp(0.0f, 1.0f, 0.0f);
+
+    XMFLOAT3 targets[6] =
+    {
+        XMFLOAT3(x + 1.0f, y, z),
+        XMFLOAT3(x - 1.0f, y, z),
+        XMFLOAT3(x, y + 1.0f, z),
+        XMFLOAT3(x, y - 1.0f, z),
+        XMFLOAT3(x, y, z + 1.0f),
+        XMFLOAT3(x, y, z - 1.0f),
+    };
+
+    XMFLOAT3 ups[6] =
+    {
+        XMFLOAT3(0.0f, 1.0f, 0.0f),
+        XMFLOAT3(0.0f, 1.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, -1.0f),
+        XMFLOAT3(0.0f, 0.0f, +1.0f),
+        XMFLOAT3(0.0f, 1.0f, 0.0f),
+        XMFLOAT3(0.0f, 1.0f, 0.0f),
+    };
+
+    for(int i = 0; i < 6; ++i)
+    {
+        cubeMapCamera[i].LookAt(center, targets[i], ups[i]);
+        cubeMapCamera[i].SetLens(0.5f * XM_PI, 1.0f, 0.1f, 1000.0f);
+        cubeMapCamera[i].UpdateViewMatrix();
+    }
+
+}
+
+void DynamicCubeMapApp::LoadTextures()
 {
     LoadTexture(L"Textures/white1x1.dds", "whiteTex");
     LoadTexture(L"Textures/tile.dds", "tileTex");
@@ -389,13 +541,13 @@ void CubeMapApp::LoadTextures()
     LoadCubeMap(L"Textures/grasscube1024.dds", "skyCubeMap");
 }
 
-void CubeMapApp::BuildDescriptorHeaps()
+void DynamicCubeMapApp::BuildDescriptorHeaps()
 {
     //
     // Create the SRV heap.
     //
     D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-    srvHeapDesc.NumDescriptors = textures.size() + cubeMaps.size();
+    srvHeapDesc.NumDescriptors = textures.size() + cubeMaps.size() + 6;
     srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     ThrowIfFailed(
@@ -453,9 +605,78 @@ void CubeMapApp::BuildDescriptorHeaps()
 
         descriptorIndex++;
     }
+
+    skyTexHeapIndex = descriptorIndex - 1;
+    dynamicTexHeapIndex = descriptorIndex;
+
+    auto srvCpuStart = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    auto srvGpuStart = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    auto rtvCpuStart = device->GetRtvHeap()->GetCPUDescriptorHandleForHeapStart();
+
+    // Cubemap RTV goes after the swap chain descriptors.
+    UINT rtvOffset = device->GetSwapChainBufferCount();
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cubeRtvHandles[6];
+    for (int i = 0; i < 6; ++i)
+        cubeRtvHandles[i] = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvCpuStart, rtvOffset + i, device->GetRtvDescriptorSize());
+    
+    // Dynamic cubemap SRV is after the sky SRV.
+    dynamicCubeMap->BuildDescriptors(
+        CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCpuStart, descriptorIndex, device->GetCbvSrvUavDescriptorSize()),
+        CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGpuStart, descriptorIndex, device->GetCbvSrvUavDescriptorSize()),
+        cubeRtvHandles);
 }
 
-void CubeMapApp::BuildRootSignature()
+void DynamicCubeMapApp::BuildCubeDepthStencil()
+{
+    D3D12_RESOURCE_DESC depthStencilDesc;
+    depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    depthStencilDesc.Alignment = 0;
+    depthStencilDesc.Width = CUBE_MAP_SIZE;
+    depthStencilDesc.Height = CUBE_MAP_SIZE;
+    depthStencilDesc.DepthOrArraySize = 1;
+    depthStencilDesc.MipLevels = 1;
+    depthStencilDesc.Format = device->GetDepthStencilFormat();
+    depthStencilDesc.SampleDesc.Count = 1;
+    depthStencilDesc.SampleDesc.Quality = 0;
+    depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    D3D12_CLEAR_VALUE optClear;
+    optClear.Format = device->GetDepthStencilFormat();
+    optClear.DepthStencil.Depth = 1.0f;
+    optClear.DepthStencil.Stencil = 0;
+
+    const auto heapProperteis = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+    ThrowIfFailed(
+        device->GetD3DDevice()->CreateCommittedResource(
+            &heapProperteis,
+            D3D12_HEAP_FLAG_NONE,
+            &depthStencilDesc,
+            D3D12_RESOURCE_STATE_COMMON,
+            &optClear,
+            IID_PPV_ARGS(cubeDepthStencilBuffer.GetAddressOf())
+        )
+    );
+
+    device->GetD3DDevice()->CreateDepthStencilView(
+        cubeDepthStencilBuffer.Get(), nullptr, cubeDsv
+    );
+
+    const auto makeDsvWritable = 
+        CD3DX12_RESOURCE_BARRIER::Transition(
+        cubeDepthStencilBuffer.Get(),
+        D3D12_RESOURCE_STATE_COMMON,
+        D3D12_RESOURCE_STATE_DEPTH_WRITE
+    );
+
+    device->GetCommandList()->ResourceBarrier(
+        1,
+        &makeDsvWritable
+    );
+}
+
+void DynamicCubeMapApp::BuildRootSignature()
 {
     CD3DX12_DESCRIPTOR_RANGE cubeMapTable;
     cubeMapTable.Init(
@@ -509,7 +730,7 @@ void CubeMapApp::BuildRootSignature()
 }
 
 
-void CubeMapApp::BuildShadersAndInputLayout()
+void DynamicCubeMapApp::BuildShadersAndInputLayout()
 {
     shaders["standardVS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
     shaders["opaquePS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
@@ -524,7 +745,7 @@ void CubeMapApp::BuildShadersAndInputLayout()
     };
 }
 
-void CubeMapApp::BuildMaterials()
+void DynamicCubeMapApp::BuildMaterials()
 {
     auto white = std::make_unique<Material>();
     white->Name = "whiteMat";
@@ -597,7 +818,7 @@ void CubeMapApp::BuildMaterials()
     materials["skyMat"] = std::move(skyMat);
 }
 
-void CubeMapApp::BuildSkullGeometry()
+void DynamicCubeMapApp::BuildSkullGeometry()
 {
     std::ifstream fin("Models/skull.txt");
 
@@ -705,7 +926,7 @@ void CubeMapApp::BuildSkullGeometry()
     geometries[geo->Name] = std::move(geo);
 }
 
-void CubeMapApp::BuildShapeGeometry()
+void DynamicCubeMapApp::BuildShapeGeometry()
 {
     GeometryGenerator geoGen;
     GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
@@ -831,7 +1052,7 @@ void CubeMapApp::BuildShapeGeometry()
     geometries[geo->Name] = std::move(geo);
 }
 
-void CubeMapApp::BuildPSOs()
+void DynamicCubeMapApp::BuildPSOs()
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
 
@@ -899,16 +1120,16 @@ void CubeMapApp::BuildPSOs()
 }
 
 
-void CubeMapApp::BuildFrameResources()
+void DynamicCubeMapApp::BuildFrameResources()
 {
     for (int i = 0; i < gNumFrameResources; ++i)
     {
         frameResources.push_back(std::make_unique<FrameResource>(device->GetD3DDevice().Get(),
-            1, instanceCount, static_cast<UINT>(materials.size())));
+            7, instanceCount, static_cast<UINT>(materials.size())));
     }
 }
 
-void CubeMapApp::BuildSkullRenderItem(std::unique_ptr<InstancedRenderItem>& skullRitem)
+void DynamicCubeMapApp::BuildSkullRenderItem(std::unique_ptr<InstancedRenderItem>& skullRitem)
 {
 	auto skullGeo = geometries["skullGeo"].get();
 	auto skullDrawArgs = skullGeo->DrawArgs["skull"];
@@ -960,7 +1181,7 @@ void CubeMapApp::BuildSkullRenderItem(std::unique_ptr<InstancedRenderItem>& skul
 	RitemLayer[static_cast<UINT>(RenderLayer::OpaqueFrustumCull)].push_back(skullRitem.get());
 }
 
-void CubeMapApp::BuildRenderItems()
+void DynamicCubeMapApp::BuildRenderItems()
 {
 	std::unique_ptr<InstancedRenderItem> skullRitem;
 
@@ -1095,7 +1316,7 @@ void CubeMapApp::BuildRenderItems()
     }
 
     RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)].push_back(cylinderRitem.get());
-    RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)].push_back(sphereRitem.get());
+    RitemLayer[static_cast<int>(RenderLayer::OpaqueDynamicReflectors)].push_back(sphereRitem.get());
 
 	allRitems.push_back(std::move(skullRitem));
     allRitems.push_back(std::move(skyRitem));
@@ -1111,7 +1332,7 @@ void CubeMapApp::BuildRenderItems()
 }
 
 
-void CubeMapApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<InstancedRenderItem*>& ritems)
+void DynamicCubeMapApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<InstancedRenderItem*>& ritems)
 {
     for(auto e : ritems)
     {
@@ -1119,7 +1340,7 @@ void CubeMapApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::
     }
 }
 
-void CubeMapApp::DrawRenderItemsWithoutFrustumCulling(ID3D12GraphicsCommandList* cmdList, const std::vector<InstancedRenderItem*>& ritems)
+void DynamicCubeMapApp::DrawRenderItemsWithoutFrustumCulling(ID3D12GraphicsCommandList* cmdList, const std::vector<InstancedRenderItem*>& ritems)
 {
     for (auto e : ritems)
     {

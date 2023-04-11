@@ -171,6 +171,16 @@ ComPtr<IDXGISwapChain>& DxDevice::GetSwapChain()
     return swapChain;
 }
 
+ID3D12DescriptorHeap* DxDevice::GetRtvHeap()
+{
+    return rtvHeap.Get();
+}
+
+ID3D12DescriptorHeap* DxDevice::GetDsvHeap()
+{
+    return dsvHeap.Get();
+}
+
 void DxDevice::RSSetViewports(UINT numViewports)
 {
     commandList->RSSetViewports(numViewports, &screenViewport);
@@ -252,9 +262,19 @@ tagRECT& DxDevice::GetScissorRect()
     return scissorRect;
 }
 
+UINT DxDevice::GetRtvDescriptorSize()
+{
+    return rtvDescriptorSize;
+}
+
 UINT DxDevice::GetCbvSrvUavDescriptorSize()
 {
     return cbvDescriptorSize;
+}
+
+UINT DxDevice::GetDsvDescriptorSize()
+{
+    return dsvDescriptorSize;
 }
 
 UINT DxDevice::GetCurrentFence()
@@ -360,14 +380,14 @@ void DxDevice::CreateSwapChain()
 void DxDevice::CreateRtvAndDsvDescriptorHeaps()
 {
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-    rtvHeapDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT;
+    rtvHeapDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT + 6;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     rtvHeapDesc.NodeMask = 0;
     ThrowIfFailed(pD3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(rtvHeap.GetAddressOf())));
 
     D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-    dsvHeapDesc.NumDescriptors = 1;
+    dsvHeapDesc.NumDescriptors = 2;
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     dsvHeapDesc.NodeMask = 0;
