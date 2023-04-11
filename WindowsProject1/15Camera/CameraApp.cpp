@@ -152,7 +152,7 @@ void CameraApp::Draw(const GameTimer& gt)
 
     commandList->SetPipelineState(pipelineStateObjects["opaque"].Get());
     DrawRenderItems(
-        commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
+        commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]);
 
     auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
         currentBackBuffer,
@@ -713,7 +713,7 @@ void CameraApp::BuildRenderItems()
     boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
     boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
     boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
-    RitemLayer[static_cast<int>(RenderLayer::Opaque)].push_back(boxRitem.get());
+    RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)].push_back(boxRitem.get());
     allRitems.push_back(std::move(boxRitem));
 
     auto gridRitem = std::make_unique<RenderItem>();
@@ -728,7 +728,7 @@ void CameraApp::BuildRenderItems()
     gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
     gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
     gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
-    RitemLayer[static_cast<int>(RenderLayer::Opaque)].push_back(gridRitem.get());
+    RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)].push_back(gridRitem.get());
     allRitems.push_back(std::move(gridRitem));
 
     UINT objCBIndex = 2;
@@ -781,10 +781,10 @@ void CameraApp::BuildRenderItems()
         rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
         rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
 
-        RitemLayer[static_cast<int>(RenderLayer::Opaque)].push_back(leftCylRitem.get());
-        RitemLayer[static_cast<int>(RenderLayer::Opaque)].push_back(rightCylRitem.get());
-        RitemLayer[static_cast<int>(RenderLayer::Opaque)].push_back(leftSphereRitem.get());
-        RitemLayer[static_cast<int>(RenderLayer::Opaque)].push_back(rightSphereRitem.get());
+        RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)].push_back(leftCylRitem.get());
+        RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)].push_back(rightCylRitem.get());
+        RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)].push_back(leftSphereRitem.get());
+        RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)].push_back(rightSphereRitem.get());
 
         allRitems.push_back(std::move(leftCylRitem));
         allRitems.push_back(std::move(rightCylRitem));

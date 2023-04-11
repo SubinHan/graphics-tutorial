@@ -1,4 +1,7 @@
-#include "InstancingAndCullingApp.h"
+#include "CubeMapApp.h"
+
+#include <iostream>
+
 #include "../Common/GeometryGenerator.h"
 #include "../Common/DDSTextureLoader.h"
 
@@ -6,18 +9,18 @@ using namespace DirectX;
 
 const int gNumFrameResources = 3;
 
-InstancingAndCullingApp::InstancingAndCullingApp(HINSTANCE hInstance)
+CubeMapApp::CubeMapApp(HINSTANCE hInstance)
     : MainWindow(hInstance)
 {
 }
 
-InstancingAndCullingApp::~InstancingAndCullingApp()
+CubeMapApp::~CubeMapApp()
 {
     if (device->GetD3DDevice() != nullptr)
         device->FlushCommandQueue();
 }
 
-bool InstancingAndCullingApp::Initialize()
+bool CubeMapApp::Initialize()
 {
     if (!MainWindow::Initialize())
         return false;
@@ -37,6 +40,7 @@ bool InstancingAndCullingApp::Initialize()
     BuildShadersAndInputLayout();
     BuildMaterials();
     BuildSkullGeometry();
+    BuildShapeGeometry();
     BuildRenderItems();
     BuildFrameResources();
     BuildPSOs();
@@ -52,7 +56,7 @@ bool InstancingAndCullingApp::Initialize()
     return true;
 }
 
-void InstancingAndCullingApp::OnResize()
+void CubeMapApp::OnResize()
 {
     MainWindow::OnResize();
 
@@ -66,7 +70,7 @@ void InstancingAndCullingApp::OnResize()
     BoundingFrustum::CreateFromMatrix(camFrustum, camera.GetProj());
 }
 
-void InstancingAndCullingApp::Update(const GameTimer& gt)
+void CubeMapApp::Update(const GameTimer& gt)
 {
     UpdateCamera(gt);
 
@@ -85,14 +89,13 @@ void InstancingAndCullingApp::Update(const GameTimer& gt)
         WaitForSingleObject(eventHandle, INFINITE);
         CloseHandle(eventHandle);
     }
-
     UpdateInstanceBuffer(gt);
     UpdateMaterialBuffer(gt);
     UpdateMainPassCB(gt);
 }
 
 
-void InstancingAndCullingApp::Draw(const GameTimer& gt)
+void CubeMapApp::Draw(const GameTimer& gt)
 {
     auto commandList = device->GetCommandList();
     auto commandQueue = device->GetCommandQueue();
@@ -149,12 +152,28 @@ void InstancingAndCullingApp::Draw(const GameTimer& gt)
         2, passCB->GetGPUVirtualAddress());
 
     commandList->SetGraphicsRootDescriptorTable(
-        3, srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+        4, srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
+    commandList->SetGraphicsRootDescriptorTable(
+        3, cubeMapGpuHandle
+    );
 
     commandList->SetPipelineState(pipelineStateObjects["opaque"].Get());
     DrawRenderItems(
-        commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]);
+	    commandList.Get(),
+        RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]
+    );
+
+    DrawRenderItemsWithoutFrustumCulling(
+        commandList.Get(),
+        RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)]
+    );
+
+    commandList->SetPipelineState(pipelineStateObjects["sky"].Get());
+    DrawRenderItemsWithoutFrustumCulling(
+        commandList.Get(),
+        RitemLayer[static_cast<int>(RenderLayer::Sky)]
+    );
 
     auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
         currentBackBuffer,
@@ -184,20 +203,20 @@ void InstancingAndCullingApp::Draw(const GameTimer& gt)
     commandQueue->Signal(device->GetFence().Get(), device->GetCurrentFence());
 }
 
-void InstancingAndCullingApp::OnMouseLeftDown(int x, int y, short keyState)
+void CubeMapApp::OnMouseLeftDown(int x, int y, short keyState)
 {
     lastMousePos.x = x;
     lastMousePos.y = y;
-
+    
     SetCapture(m_hwnd);
 }
 
-void InstancingAndCullingApp::OnMouseLeftUp(int x, int y, short keyState)
+void CubeMapApp::OnMouseLeftUp(int x, int y, short keyState)
 {
     ReleaseCapture();
 }
 
-void InstancingAndCullingApp::OnMouseMove(int x, int y, short keyState)
+void CubeMapApp::OnMouseMove(int x, int y, short keyState)
 {
     if ((keyState & MK_LBUTTON) != 0)
     {
@@ -213,7 +232,7 @@ void InstancingAndCullingApp::OnMouseMove(int x, int y, short keyState)
     lastMousePos.y = y;
 }
 
-void InstancingAndCullingApp::OnKeyDown(WPARAM windowVirtualKeyCode)
+void CubeMapApp::OnKeyDown(WPARAM windowVirtualKeyCode)
 {
     if (windowVirtualKeyCode != 'I')
         return;
@@ -221,7 +240,7 @@ void InstancingAndCullingApp::OnKeyDown(WPARAM windowVirtualKeyCode)
     isWireframe = !isWireframe;
 }
 
-void InstancingAndCullingApp::UpdateCamera(const GameTimer& gt)
+void CubeMapApp::UpdateCamera(const GameTimer& gt)
 {
     const float dt = gt.DeltaTime();
 
@@ -241,59 +260,30 @@ void InstancingAndCullingApp::UpdateCamera(const GameTimer& gt)
     camera.UpdateViewMatrix();
 }
 
-void InstancingAndCullingApp::UpdateInstanceBuffer(const GameTimer& gt)
+void CubeMapApp::UpdateInstanceBuffer(const GameTimer& gt)
 {
-    XMMATRIX view = camera.GetView();
-    auto viewDeterminant = XMMatrixDeterminant(view);
-    XMMATRIX invView = XMMatrixInverse(&viewDeterminant, view);
-
-    auto currInstanceBuffer = currFrameResource->InstanceBuffer.get();
-    for (auto& e : allRitems)
+    int bufferOffset = 0;
+    auto instanceBuffer = currFrameResource->InstanceBuffer.get();
+    for(auto& e : RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)])
     {
-        const auto& instanceData = e->Instances;
+        bufferOffset += 
+            e->UploadWithFrustumCulling(camera, *instanceBuffer, bufferOffset);
+    }
 
-        int visibleInstanceCount = 0;
+    for (auto& e : RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)])
+    {
+        bufferOffset +=
+            e->UploadWithoutFrustumCulling(*instanceBuffer, bufferOffset);
+    }
 
-        for (UINT i = 0; i < (UINT)instanceData.size(); ++i)
-        {
-            XMMATRIX world = XMLoadFloat4x4(&instanceData[i].World);
-            XMMATRIX texTransform = XMLoadFloat4x4(&instanceData[i].TexTransform);
-
-            auto worldDeterminant = XMMatrixDeterminant(world);
-            XMMATRIX invWorld = XMMatrixInverse(&worldDeterminant, world);
-
-            // View space to the object's local space.
-            XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
-
-            // Transform the camera frustum from view space to the object's local space.
-            BoundingFrustum localSpaceFrustum;
-            camFrustum.Transform(localSpaceFrustum, viewToLocal);
-
-            // Perform the box/frustum intersection test in local space.
-            if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT)
-            {
-                InstanceData data;
-                XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
-                XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(texTransform));
-                data.MaterialIndex = instanceData[i].MaterialIndex;
-
-                // Write the instance data to structured buffer for the visible objects.
-                currInstanceBuffer->CopyData(visibleInstanceCount++, data);
-            }
-        }
-
-        e->InstanceCount = visibleInstanceCount;
-
-        std::wostringstream outs;
-        outs.precision(6);
-        outs << L"Instancing and Culling Demo" <<
-            L"    " << e->InstanceCount <<
-            L" objects visible out of " << e->Instances.size();
-        mainWndCaption = outs.str();
+    for (auto& e : RitemLayer[static_cast<int>(RenderLayer::Sky)])
+    {
+        bufferOffset +=
+            e->UploadWithoutFrustumCulling(*instanceBuffer, bufferOffset);
     }
 }
 
-void InstancingAndCullingApp::UpdateMainPassCB(const GameTimer& gt)
+void CubeMapApp::UpdateMainPassCB(const GameTimer& gt)
 {
 	XMMATRIX view = camera.GetView();
 	XMMATRIX proj = camera.GetProj();
@@ -337,7 +327,7 @@ void InstancingAndCullingApp::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mainPassCB);
 }
 
-void InstancingAndCullingApp::UpdateMaterialBuffer(const GameTimer& gt)
+void CubeMapApp::UpdateMaterialBuffer(const GameTimer& gt)
 {
     auto currMaterialBuffer = currFrameResource->MaterialBuffer.get();
     for (auto& e : materials)
@@ -365,7 +355,7 @@ void InstancingAndCullingApp::UpdateMaterialBuffer(const GameTimer& gt)
 
 }
 
-void InstancingAndCullingApp::LoadTexture(std::wstring filePath, std::string textureName)
+void CubeMapApp::LoadTexture(std::wstring filePath, std::string textureName)
 {
     auto texture = std::make_unique<Texture>();
     texture->Name = textureName;
@@ -377,22 +367,35 @@ void InstancingAndCullingApp::LoadTexture(std::wstring filePath, std::string tex
     textures[texture->Name] = std::move(texture);
 }
 
-void InstancingAndCullingApp::LoadTextures()
+void CubeMapApp::LoadCubeMap(std::wstring filePath, std::string textureName)
+{
+    auto cubeMap = std::make_unique<Texture>();
+    cubeMap->Name = textureName;
+    cubeMap->Filename = filePath;
+    ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(device->GetD3DDevice().Get(),
+        device->GetCommandList().Get(), cubeMap->Filename.c_str(),
+        cubeMap->Resource, cubeMap->UploadHeap));
+
+    cubeMaps[cubeMap->Name] = std::move(cubeMap);
+}
+
+void CubeMapApp::LoadTextures()
 {
     LoadTexture(L"Textures/white1x1.dds", "whiteTex");
     LoadTexture(L"Textures/tile.dds", "tileTex");
     LoadTexture(L"Textures/stone.dds", "stoneTex");
     LoadTexture(L"Textures/bricks.dds", "bricksTex");
     LoadTexture(L"Textures/WoodCrate01.dds", "crateTex");
+    LoadCubeMap(L"Textures/grasscube1024.dds", "skyCubeMap");
 }
 
-void InstancingAndCullingApp::BuildDescriptorHeaps()
+void CubeMapApp::BuildDescriptorHeaps()
 {
     //
     // Create the SRV heap.
     //
     D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-    srvHeapDesc.NumDescriptors = textures.size();
+    srvHeapDesc.NumDescriptors = textures.size() + cubeMaps.size();
     srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     ThrowIfFailed(
@@ -424,22 +427,56 @@ void InstancingAndCullingApp::BuildDescriptorHeaps()
 
         descriptorIndex++;
     }
+    CD3DX12_GPU_DESCRIPTOR_HANDLE cubeMapGpuHandle(srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+    cubeMapGpuHandle.Offset(descriptorIndex, device->GetCbvSrvUavDescriptorSize());
+    this->cubeMapGpuHandle = cubeMapGpuHandle;
+
+    for (auto& each : cubeMaps)
+    {
+        CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+        hDescriptor.Offset(descriptorIndex, device->GetCbvSrvUavDescriptorSize());
+
+        auto cubeMap = each.second.get();
+        auto cubeMapResource = cubeMap->Resource;
+        each.second->SrvIndex = descriptorIndex;
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.Format = cubeMapResource->GetDesc().Format;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+        srvDesc.Texture2D.MostDetailedMip = 0;
+        srvDesc.Texture2D.MipLevels = cubeMapResource->GetDesc().MipLevels;
+        srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+        device->GetD3DDevice()->CreateShaderResourceView(
+            cubeMapResource.Get(), &srvDesc, hDescriptor);
+
+        descriptorIndex++;
+    }
 }
 
-void InstancingAndCullingApp::BuildRootSignature()
+void CubeMapApp::BuildRootSignature()
 {
+    CD3DX12_DESCRIPTOR_RANGE cubeMapTable;
+    cubeMapTable.Init(
+        D3D12_DESCRIPTOR_RANGE_TYPE_SRV, cubeMaps.size(), 0, 0
+    );
+
     CD3DX12_DESCRIPTOR_RANGE texTable;
     texTable.Init(
-        D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 0, 0
+        D3D12_DESCRIPTOR_RANGE_TYPE_SRV, textures.size(), 1, 0
     );
 
     // Root parameter can be a table, root descriptor or root constants.
-    CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+    CD3DX12_ROOT_PARAMETER slotRootParameter[5];
 
-    slotRootParameter[0].InitAsShaderResourceView(0, 1);
+
+	slotRootParameter[0].InitAsShaderResourceView(0, 1);
     slotRootParameter[1].InitAsShaderResourceView(1, 1);
     slotRootParameter[2].InitAsConstantBufferView(0);
-    slotRootParameter[3].InitAsDescriptorTable(1, &texTable,
+    slotRootParameter[3].InitAsDescriptorTable(1, &cubeMapTable,
+        D3D12_SHADER_VISIBILITY_PIXEL);
+    slotRootParameter[4].InitAsDescriptorTable(1, &texTable,
         D3D12_SHADER_VISIBILITY_PIXEL);
 
     auto staticSamplers = DxUtil::GetStaticSamplers();
@@ -472,11 +509,13 @@ void InstancingAndCullingApp::BuildRootSignature()
 }
 
 
-void InstancingAndCullingApp::BuildShadersAndInputLayout()
+void CubeMapApp::BuildShadersAndInputLayout()
 {
-    shaders["standardVS"] = DxUtil::CompileShader(L"16InstancingAndCulling\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
-    shaders["opaquePS"] = DxUtil::CompileShader(L"16InstancingAndCulling\\Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
-    
+    shaders["standardVS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
+    shaders["opaquePS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
+    shaders["skyVS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\sky.hlsl", nullptr, "VS", "vs_5_1");
+    shaders["skyPS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\sky.hlsl", nullptr, "PS", "ps_5_1");
+
     defaultInputLayout =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -485,7 +524,7 @@ void InstancingAndCullingApp::BuildShadersAndInputLayout()
     };
 }
 
-void InstancingAndCullingApp::BuildMaterials()
+void CubeMapApp::BuildMaterials()
 {
     auto white = std::make_unique<Material>();
     white->Name = "whiteMat";
@@ -536,9 +575,29 @@ void InstancingAndCullingApp::BuildMaterials()
     crateMat->Roughness = 0.5f;
 
     materials["crateMat"] = std::move(crateMat);
+
+    auto mirrorMat = std::make_unique<Material>();
+    mirrorMat->Name = "mirrorMat";
+    mirrorMat->MatCBIndex = 5;
+    mirrorMat->DiffuseSrvHeapIndex = 2;
+    mirrorMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.1f, 1.0f);
+    mirrorMat->FresnelR0 = XMFLOAT3(0.98f, 0.97f, 0.95f);
+    mirrorMat->Roughness = 0.1f;
+
+    materials["mirrorMat"] = std::move(mirrorMat);
+
+    auto skyMat = std::make_unique<Material>();
+    skyMat->Name = "skyMat";
+    skyMat->MatCBIndex = 6;
+    skyMat->DiffuseSrvHeapIndex = cubeMaps["skyCubeMap"]->SrvIndex;
+    skyMat->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    skyMat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+    skyMat->Roughness = 0.5f;
+
+    materials["skyMat"] = std::move(skyMat);
 }
 
-void InstancingAndCullingApp::BuildSkullGeometry()
+void CubeMapApp::BuildSkullGeometry()
 {
     std::ifstream fin("Models/skull.txt");
 
@@ -646,7 +705,133 @@ void InstancingAndCullingApp::BuildSkullGeometry()
     geometries[geo->Name] = std::move(geo);
 }
 
-void InstancingAndCullingApp::BuildPSOs()
+void CubeMapApp::BuildShapeGeometry()
+{
+    GeometryGenerator geoGen;
+    GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
+    GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
+    GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
+    GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
+
+    //
+    // We are concatenating all the geometry into one big vertex/index buffer.  So
+    // define the regions in the buffer each submesh covers.
+    //
+
+    // Cache the vertex offsets to each object in the concatenated vertex buffer.
+    UINT boxVertexOffset = 0;
+    UINT gridVertexOffset = (UINT)box.Vertices.size();
+    UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
+    UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
+
+    // Cache the starting index for each object in the concatenated index buffer.
+    UINT boxIndexOffset = 0;
+    UINT gridIndexOffset = (UINT)box.Indices32.size();
+    UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
+    UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
+
+    SubmeshGeometry boxSubmesh;
+    boxSubmesh.IndexCount = (UINT)box.Indices32.size();
+    boxSubmesh.StartIndexLocation = boxIndexOffset;
+    boxSubmesh.BaseVertexLocation = boxVertexOffset;
+
+    SubmeshGeometry gridSubmesh;
+    gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
+    gridSubmesh.StartIndexLocation = gridIndexOffset;
+    gridSubmesh.BaseVertexLocation = gridVertexOffset;
+
+    SubmeshGeometry sphereSubmesh;
+    sphereSubmesh.IndexCount = (UINT)sphere.Indices32.size();
+    sphereSubmesh.StartIndexLocation = sphereIndexOffset;
+    sphereSubmesh.BaseVertexLocation = sphereVertexOffset;
+
+    SubmeshGeometry cylinderSubmesh;
+    cylinderSubmesh.IndexCount = (UINT)cylinder.Indices32.size();
+    cylinderSubmesh.StartIndexLocation = cylinderIndexOffset;
+    cylinderSubmesh.BaseVertexLocation = cylinderVertexOffset;
+
+    //
+    // Extract the vertex elements we are interested in and pack the
+    // vertices of all the meshes into one vertex buffer.
+    //
+
+    auto totalVertexCount =
+        box.Vertices.size() +
+        grid.Vertices.size() +
+        sphere.Vertices.size() +
+        cylinder.Vertices.size();
+
+    std::vector<Vertex> vertices(totalVertexCount);
+
+    UINT k = 0;
+    for (size_t i = 0; i < box.Vertices.size(); ++i, ++k)
+    {
+        vertices[k].Pos = box.Vertices[i].Position;
+        vertices[k].Normal = box.Vertices[i].Normal;
+        vertices[k].TexC = box.Vertices[i].TexC;
+    }
+
+    for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
+    {
+        vertices[k].Pos = grid.Vertices[i].Position;
+        vertices[k].Normal = grid.Vertices[i].Normal;
+        vertices[k].TexC = grid.Vertices[i].TexC;
+    }
+
+    for (size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
+    {
+        vertices[k].Pos = sphere.Vertices[i].Position;
+        vertices[k].Normal = sphere.Vertices[i].Normal;
+        vertices[k].TexC = sphere.Vertices[i].TexC;
+    }
+
+    for (size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
+    {
+        vertices[k].Pos = cylinder.Vertices[i].Position;
+        vertices[k].Normal = cylinder.Vertices[i].Normal;
+        vertices[k].TexC = cylinder.Vertices[i].TexC;
+    }
+
+    std::vector<std::uint16_t> indices;
+    indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
+    indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
+    indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
+    indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
+
+    const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+    const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+    auto geo = std::make_unique<MeshGeometry>();
+    geo->Name = "shapeGeo";
+
+    ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+    CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+    ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+    CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+    auto commandList = device->GetCommandList();
+
+    geo->VertexBufferGPU = DxUtil::CreateDefaultBuffer(device->GetD3DDevice().Get(),
+        commandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+    geo->IndexBufferGPU = DxUtil::CreateDefaultBuffer(device->GetD3DDevice().Get(),
+        commandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+    geo->VertexByteStride = sizeof(Vertex);
+    geo->VertexBufferByteSize = vbByteSize;
+    geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+    geo->IndexBufferByteSize = ibByteSize;
+
+    geo->DrawArgs["box"] = boxSubmesh;
+    geo->DrawArgs["grid"] = gridSubmesh;
+    geo->DrawArgs["sphere"] = sphereSubmesh;
+    geo->DrawArgs["cylinder"] = cylinderSubmesh;
+
+    geometries[geo->Name] = std::move(geo);
+}
+
+void CubeMapApp::BuildPSOs()
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
 
@@ -690,30 +875,31 @@ void InstancingAndCullingApp::BuildPSOs()
     opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
     ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&pipelineStateObjects["opaque_wireframe"])));
 
-    auto transparentPsoDesc = opaquePsoDesc;
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = opaquePsoDesc;
 
-    D3D12_RENDER_TARGET_BLEND_DESC transparencyBlendDesc;
-    transparencyBlendDesc.BlendEnable = true;
-    transparencyBlendDesc.LogicOpEnable = false;
-    transparencyBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
-    transparencyBlendDesc.DestBlend = D3D12_BLEND_DEST_ALPHA;
-    transparencyBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
-    transparencyBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
-    transparencyBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
-    transparencyBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-    transparencyBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
-    transparencyBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    skyPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
-    transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
+    skyPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    skyPsoDesc.pRootSignature = rootSignature.Get();
+    skyPsoDesc.VS =
+    {
+        reinterpret_cast<BYTE*>(shaders["skyVS"]->GetBufferPointer()),
+        shaders["skyVS"]->GetBufferSize()
+    };
+    skyPsoDesc.PS =
+    {
+        reinterpret_cast<BYTE*>(shaders["skyPS"]->GetBufferPointer()),
+        shaders["skyPS"]->GetBufferSize()
+    };
     ThrowIfFailed(
-        device->GetD3DDevice()->CreateGraphicsPipelineState(
-            &transparentPsoDesc, IID_PPV_ARGS(&pipelineStateObjects["transparent"])
-        )
+        d3dDevice->CreateGraphicsPipelineState(
+			&skyPsoDesc, IID_PPV_ARGS(&pipelineStateObjects["sky"])
+		)
     );
 }
 
 
-void InstancingAndCullingApp::BuildFrameResources()
+void CubeMapApp::BuildFrameResources()
 {
     for (int i = 0; i < gNumFrameResources; ++i)
     {
@@ -722,84 +908,222 @@ void InstancingAndCullingApp::BuildFrameResources()
     }
 }
 
-void InstancingAndCullingApp::BuildRenderItems()
+void CubeMapApp::BuildSkullRenderItem(std::unique_ptr<InstancedRenderItem>& skullRitem)
 {
-    auto skullRitem = std::make_unique<RenderItem>();
-    skullRitem->World = MathHelper::Identity4x4();
-    skullRitem->TexTransform = MathHelper::Identity4x4();
-    skullRitem->ObjCBIndex = 0;
-    skullRitem->Mat = materials["whiteMat"].get();
-    skullRitem->Geo = geometries["skullGeo"].get();
-    skullRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-    skullRitem->InstanceCount = 0;
-    skullRitem->IndexCount = skullRitem->Geo->DrawArgs["skull"].IndexCount;
-    skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs["skull"].StartIndexLocation;
-    skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs["skull"].BaseVertexLocation;
-    skullRitem->Bounds = skullRitem->Geo->DrawArgs["skull"].Bounds;
+	auto skullGeo = geometries["skullGeo"].get();
+	auto skullDrawArgs = skullGeo->DrawArgs["skull"];
 
-    // Generate instance data.
-    const int n = 5;
-    instanceCount = n * n * n;
-    skullRitem->Instances.resize(instanceCount);
+	skullRitem = std::make_unique<InstancedRenderItem>(
+		skullGeo,
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+		skullDrawArgs.IndexCount,
+		skullDrawArgs.StartIndexLocation,
+		skullDrawArgs.BaseVertexLocation,
+		skullDrawArgs.Bounds
+	);
 
-    float width = 200.0f;
-    float height = 200.0f;
-    float depth = 200.0f;
+	// Generate instance data.
+	const int n = 5;
 
-    float x = -0.5f * width;
-    float y = -0.5f * height;
-    float z = -0.5f * depth;
-    float dx = width / (n - 1);
-    float dy = height / (n - 1);
-    float dz = depth / (n - 1);
-    for (int k = 0; k < n; ++k)
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            for (int j = 0; j < n; ++j)
-            {
-                int index = k * n * n + i * n + j;
-                // Position instanced along a 3D grid.
-                skullRitem->Instances[index].World = XMFLOAT4X4(
-                    1.0f, 0.0f, 0.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f, 0.0f,
-                    0.0f, 0.0f, 1.0f, 0.0f,
-                    x + j * dx, y + i * dy, z + k * dz, 1.0f);
+	float width = 200.0f;
+	float height = 200.0f;
+	float depth = 200.0f;
 
-                XMStoreFloat4x4(&skullRitem->Instances[index].TexTransform, XMMatrixScaling(2.0f, 2.0f, 1.0f));
-                skullRitem->Instances[index].MaterialIndex = index % materials.size();
-            }
-        }
-    }
+	float x = -0.5f * width;
+	float y = -0.5f * height;
+	float z = -0.5f * depth;
+	float dx = width / (n - 1);
+	float dy = height / (n - 1);
+	float dz = depth / (n - 1);
+	for (int k = 0; k < n; ++k)
+	{
+		for (int i = 0; i < n; ++i)
+		{
+			for (int j = 0; j < n; ++j)
+			{
+				int index = k * n * n + i * n + j;
 
+				InstanceData instance;
+				instance.World = XMFLOAT4X4(
+					1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 1.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					x + j * dx, y + i * dy, z + k * dz, 1.0f);
+				XMStoreFloat4x4(&instance.TexTransform, XMMatrixScaling(2.0f, 2.0f, 1.0f));
+				instance.MaterialIndex = index % materials.size();
 
-    allRitems.push_back(std::move(skullRitem));
+				skullRitem->AddInstance(instance);
+			}
+		}
+	}
 
-    // All the render items are opaque.
-    for (auto& e : allRitems)
-        RitemLayer[static_cast<UINT>(RenderLayer::OpaqueFrustumCull)].push_back(e.get());
+	RitemLayer[static_cast<UINT>(RenderLayer::OpaqueFrustumCull)].push_back(skullRitem.get());
 }
 
-void InstancingAndCullingApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
+void CubeMapApp::BuildRenderItems()
 {
-    // For each render item...
-    for (size_t i = 0; i < ritems.size(); ++i)
+	std::unique_ptr<InstancedRenderItem> skullRitem;
+
+	BuildSkullRenderItem(skullRitem);
+
+    auto skyGeo = geometries["shapeGeo"].get();
+    auto skyDrawArgs = skyGeo->DrawArgs["sphere"];
+    std::unique_ptr<InstancedRenderItem> skyRitem;
+
+    skyRitem = std::make_unique<InstancedRenderItem>(
+        skyGeo,
+        D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+        skyDrawArgs.IndexCount,
+        skyDrawArgs.StartIndexLocation,
+        skyDrawArgs.BaseVertexLocation,
+        skyDrawArgs.Bounds
+        );
+
+    InstanceData skyInstanceData;
+    skyInstanceData.TexTransform = MathHelper::Identity4x4();
+    skyInstanceData.MaterialIndex = materials["skyMat"]->MatCBIndex;
+	XMStoreFloat4x4(&skyInstanceData.World, XMMatrixScaling(5000.0f, 5000.0f, 5000.0f));
+    skyRitem->AddInstance(skyInstanceData);
+
+    RitemLayer[static_cast<int>(RenderLayer::Sky)].push_back(skyRitem.get());
+
+
+    auto boxGeo = geometries["shapeGeo"].get();
+    auto boxDrawArgs = boxGeo->DrawArgs["box"];
+    std::unique_ptr<InstancedRenderItem> boxRitem;
+
+    boxRitem = std::make_unique<InstancedRenderItem>(
+        boxGeo,
+        D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+        boxDrawArgs.IndexCount,
+        boxDrawArgs.StartIndexLocation,
+        boxDrawArgs.BaseVertexLocation,
+        boxDrawArgs.Bounds
+        );
+
+    InstanceData boxInstanceData;
+    boxInstanceData.MaterialIndex = materials["bricksMat"]->MatCBIndex;
+    XMStoreFloat4x4(&boxInstanceData.World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+    XMStoreFloat4x4(&boxInstanceData.TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+    boxRitem->AddInstance(boxInstanceData);
+
+    RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)].push_back(boxRitem.get());
+
+
+    auto gridGeo = geometries["shapeGeo"].get();
+    auto gridDrawArgs = gridGeo->DrawArgs["grid"];
+    std::unique_ptr<InstancedRenderItem> gridRitem;
+
+    gridRitem = std::make_unique<InstancedRenderItem>(
+        gridGeo,
+        D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+        gridDrawArgs.IndexCount,
+        gridDrawArgs.StartIndexLocation,
+        gridDrawArgs.BaseVertexLocation,
+        gridDrawArgs.Bounds
+        );
+
+    InstanceData gridInstanceData;
+    gridInstanceData.MaterialIndex = materials["tileMat"]->MatCBIndex;
+    gridInstanceData.World = MathHelper::Identity4x4();
+    XMStoreFloat4x4(&gridInstanceData.TexTransform, XMMatrixScaling(8.0f, 8.0f, 1.0f));
+    gridRitem->AddInstance(gridInstanceData);
+
+    RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)].push_back(gridRitem.get());
+
+
+    auto cylinderGeo = geometries["shapeGeo"].get();
+    auto cylinderDrawArgs = cylinderGeo->DrawArgs["cylinder"];
+    auto cylinderRitem = std::make_unique<InstancedRenderItem>(
+		cylinderGeo,
+        D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+        cylinderDrawArgs.IndexCount,
+        cylinderDrawArgs.StartIndexLocation,
+        cylinderDrawArgs.BaseVertexLocation,
+        cylinderDrawArgs.Bounds
+        );
+
+    auto sphereGeo = geometries["shapeGeo"].get();
+    auto sphereDrawArgs = sphereGeo->DrawArgs["sphere"];
+    auto sphereRitem = std::make_unique<InstancedRenderItem>(
+        sphereGeo,
+        D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+        sphereDrawArgs.IndexCount,
+        sphereDrawArgs.StartIndexLocation,
+        sphereDrawArgs.BaseVertexLocation,
+        sphereDrawArgs.Bounds
+        );
+
+    XMMATRIX brickTexTransform = XMMatrixScaling(1.5f, 2.0f, 1.0f);
+    UINT objCBIndex = 4;
+    for (int i = 0; i < 5; ++i)
     {
-        auto ri = ritems[i];
+        InstanceData leftCylInstanceData;
+        InstanceData rightCylInstanceData;
 
-        auto vertexBufferView = ri->Geo->VertexBufferView();
-        auto indexBufferView = ri->Geo->IndexBufferView();
+        XMMATRIX leftCylWorld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
+        XMMATRIX rightCylWorld = XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i * 5.0f);
 
-        cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
-        cmdList->IASetIndexBuffer(&indexBufferView);
-        cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
+        XMStoreFloat4x4(&leftCylInstanceData.World, leftCylWorld);
+        XMStoreFloat4x4(&leftCylInstanceData.TexTransform, brickTexTransform);
+    	leftCylInstanceData.MaterialIndex = materials["bricksMat"]->MatCBIndex;
 
-        auto instanceBuffer =
-            currFrameResource->InstanceBuffer->Resource();
+        XMStoreFloat4x4(&rightCylInstanceData.World, rightCylWorld);
+        XMStoreFloat4x4(&rightCylInstanceData.TexTransform, brickTexTransform);
+        rightCylInstanceData.MaterialIndex = materials["bricksMat"]->MatCBIndex;
 
-    	cmdList->SetGraphicsRootShaderResourceView(
-            0, instanceBuffer->GetGPUVirtualAddress());
+        cylinderRitem->AddInstance(leftCylInstanceData);
+        cylinderRitem->AddInstance(rightCylInstanceData);
 
-        cmdList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
+
+        InstanceData leftSphereInstanceData;
+        InstanceData rightSphereInstanceData;
+
+        XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i * 5.0f);
+        XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i * 5.0f);
+
+        XMStoreFloat4x4(&leftSphereInstanceData.World, leftSphereWorld);
+        XMStoreFloat4x4(&leftSphereInstanceData.TexTransform, brickTexTransform);
+        leftSphereInstanceData.MaterialIndex = materials["mirrorMat"]->MatCBIndex;
+
+        XMStoreFloat4x4(&rightSphereInstanceData.World, rightSphereWorld);
+        XMStoreFloat4x4(&rightSphereInstanceData.TexTransform, brickTexTransform);
+        rightSphereInstanceData.MaterialIndex = materials["mirrorMat"]->MatCBIndex;
+
+        sphereRitem->AddInstance(leftSphereInstanceData);
+        sphereRitem->AddInstance(rightSphereInstanceData);
+    }
+
+    RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)].push_back(cylinderRitem.get());
+    RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)].push_back(sphereRitem.get());
+
+
+	allRitems.push_back(std::move(skullRitem));
+    allRitems.push_back(std::move(skyRitem));
+    allRitems.push_back(std::move(boxRitem));
+    allRitems.push_back(std::move(gridRitem));
+	allRitems.push_back(std::move(cylinderRitem));
+    allRitems.push_back(std::move(sphereRitem));
+
+    for(auto& e : allRitems)
+    {
+        instanceCount += e->GetInstanceCount();
+    }
+}
+
+
+void CubeMapApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<InstancedRenderItem*>& ritems)
+{
+    for(auto e : ritems)
+    {
+        e->DrawFrustumCullednstances(cmdList, currFrameResource->InstanceBuffer->Resource(), 0);
+    }
+}
+
+void CubeMapApp::DrawRenderItemsWithoutFrustumCulling(ID3D12GraphicsCommandList* cmdList, const std::vector<InstancedRenderItem*>& ritems)
+{
+    for (auto e : ritems)
+    {
+        e->DrawAllInstances(cmdList, currFrameResource->InstanceBuffer->Resource(), 0);
     }
 }

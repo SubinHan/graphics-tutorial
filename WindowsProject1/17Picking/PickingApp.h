@@ -40,9 +40,9 @@ struct RenderItem
 
 enum class RenderLayer : int
 {
-	Opaque = 0,
-	Transparent = Opaque + 1,
-	Highlight = Transparent + 1,
+	OpaqueFrustumCull = 0,
+	OpaqueNonFrustumCull = OpaqueFrustumCull + 1,
+	Highlight = OpaqueNonFrustumCull + 1,
 	Count
 };
 

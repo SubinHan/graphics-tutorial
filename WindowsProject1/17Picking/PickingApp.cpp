@@ -155,7 +155,7 @@ void PickingApp::Draw(const GameTimer& gt)
 
     commandList->SetPipelineState(pipelineStateObjects["opaque"].Get());
     DrawRenderItemsWithInstancing(
-        commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
+        commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]);
 
     commandList->SetPipelineState(pipelineStateObjects["highlight"].Get());
     DrawRenderItemsWithInstancing(
@@ -243,7 +243,7 @@ void PickingApp::Pick(int sx, int sy)
 
     float tmin = MathHelper::Infinity;
 
-    for(auto ri : RitemLayer[static_cast<int>(RenderLayer::Opaque)])
+    for(auto ri : RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)])
     {
         auto geo = ri->Geo;
 
@@ -868,7 +868,7 @@ void PickingApp::BuildRenderItems()
         }
     }
 
-    RitemLayer[static_cast<UINT>(RenderLayer::Opaque)].push_back(skullRitem.get());
+    RitemLayer[static_cast<UINT>(RenderLayer::OpaqueFrustumCull)].push_back(skullRitem.get());
 
     auto picked = std::make_unique<RenderItem>();
     picked->Mat = materials["whiteMat"].get();

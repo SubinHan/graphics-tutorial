@@ -131,7 +131,7 @@ void CrateApp::Draw(const GameTimer& gt)
 	auto passCB = currFrameResource->PassCB->Resource();
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]);
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -603,7 +603,7 @@ void CrateApp::BuildRenderItems()
 	allRitems.push_back(std::move(boxRitem));
 
 	for (auto& e : allRitems)
-		RitemLayer[static_cast<int>(RenderLayer::Opaque)].push_back(e.get());
+		RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)].push_back(e.get());
 }
 
 void CrateApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)

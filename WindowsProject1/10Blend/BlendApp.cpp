@@ -165,10 +165,10 @@ void BlendApp::Draw(const GameTimer& gt)
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	commandList->SetPipelineState(PSOs["opaque"].Get());
-	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]);
 
 	commandList->SetPipelineState(PSOs["transparent"].Get());
-	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Transparent)]);
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)]);
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -878,7 +878,7 @@ void BlendApp::BuildRenderItems()
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
 
-	RitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
+	RitemLayer[(int)RenderLayer::OpaqueFrustumCull].push_back(gridRitem.get());
 
 	auto crateRitem = std::make_unique<RenderItem>();
 	auto translated = XMMatrixTranslation(-1.0f, 0.0f, 1.0f);
@@ -894,7 +894,7 @@ void BlendApp::BuildRenderItems()
 	crateRitem->BaseVertexLocation = crateRitem->Geo->DrawArgs["crate"].BaseVertexLocation;
 	XMStoreFloat4x4(&crateRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
-	RitemLayer[(int)RenderLayer::Opaque].push_back(crateRitem.get());
+	RitemLayer[(int)RenderLayer::OpaqueFrustumCull].push_back(crateRitem.get());
 
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
@@ -908,7 +908,7 @@ void BlendApp::BuildRenderItems()
 
 	this->wavesRitem = wavesRitem.get();
 
-	RitemLayer[(int)RenderLayer::Transparent].push_back(wavesRitem.get());
+	RitemLayer[(int)RenderLayer::OpaqueNonFrustumCull].push_back(wavesRitem.get());
 
 	allRitems.push_back(std::move(gridRitem));
 	allRitems.push_back(std::move(crateRitem));

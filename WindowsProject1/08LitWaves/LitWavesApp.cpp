@@ -131,7 +131,7 @@ void LitWavesApp::Draw(const GameTimer& gt)
 	auto passCB = currFrameResource->PassCB->Resource();
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]);
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -600,7 +600,7 @@ void LitWavesApp::BuildRenderItems()
 
 	this->wavesRitem = wavesRitem.get();
 
-	RitemLayer[(int)RenderLayer::Opaque].push_back(wavesRitem.get());
+	RitemLayer[(int)RenderLayer::OpaqueFrustumCull].push_back(wavesRitem.get());
 
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
@@ -612,7 +612,7 @@ void LitWavesApp::BuildRenderItems()
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 
-	RitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
+	RitemLayer[(int)RenderLayer::OpaqueFrustumCull].push_back(gridRitem.get());
 
 	allRitems.push_back(std::move(wavesRitem));
 	allRitems.push_back(std::move(gridRitem));

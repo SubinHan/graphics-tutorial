@@ -136,7 +136,7 @@ void BasicTessellationApp::Draw(const GameTimer& gt)
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	commandList->SetPipelineState(PSOs["opaque"].Get());
-	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]);
 	
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -638,7 +638,7 @@ void BasicTessellationApp::BuildRenderItems()
 	quadPatchRitem->IndexCount = quadPatchRitem->Geo->DrawArgs["quadpatch"].IndexCount;
 	quadPatchRitem->StartIndexLocation = quadPatchRitem->Geo->DrawArgs["quadpatch"].StartIndexLocation;
 	quadPatchRitem->BaseVertexLocation = quadPatchRitem->Geo->DrawArgs["quadpatch"].BaseVertexLocation;
-	RitemLayer[(int)RenderLayer::Opaque].push_back(quadPatchRitem.get());
+	RitemLayer[(int)RenderLayer::OpaqueFrustumCull].push_back(quadPatchRitem.get());
 
 	allRitems.push_back(std::move(quadPatchRitem));
 }

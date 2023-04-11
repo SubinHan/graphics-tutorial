@@ -175,7 +175,7 @@ void StencilApp::Draw(const GameTimer& gt)
 
 	commandList->OMSetStencilRef(0);
 	commandList->SetPipelineState(PSOs["opaque"].Get());
-	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Opaque)]);
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)]);
 	
 	//commandList->OMSetStencilRef(0);
 	//commandList->SetPipelineState(PSOs["shadow"].Get());
@@ -202,7 +202,7 @@ void StencilApp::Draw(const GameTimer& gt)
 	commandList->OMSetStencilRef(0);
 
 	commandList->SetPipelineState(PSOs["transparent"].Get());
-	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::Transparent)]);
+	DrawRenderItems(commandList.Get(), RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)]);
 	
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -1227,7 +1227,7 @@ void StencilApp::BuildRenderItems()
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
 
-	RitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
+	RitemLayer[(int)RenderLayer::OpaqueFrustumCull].push_back(gridRitem.get());
 
 	auto crateRitem = std::make_unique<RenderItem>();
 	auto translated = XMMatrixTranslation(-1.0f, 0.0f, 1.0f);
@@ -1243,7 +1243,7 @@ void StencilApp::BuildRenderItems()
 	crateRitem->BaseVertexLocation = crateRitem->Geo->DrawArgs["crate"].BaseVertexLocation;
 	XMStoreFloat4x4(&crateRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
-	RitemLayer[(int)RenderLayer::Opaque].push_back(crateRitem.get());
+	RitemLayer[(int)RenderLayer::OpaqueFrustumCull].push_back(crateRitem.get());
 
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
@@ -1257,7 +1257,7 @@ void StencilApp::BuildRenderItems()
 
 	this->wavesRitem = wavesRitem.get();
 
-	RitemLayer[(int)RenderLayer::Transparent].push_back(wavesRitem.get());
+	RitemLayer[(int)RenderLayer::OpaqueNonFrustumCull].push_back(wavesRitem.get());
 
 
 	allRitems.push_back(std::move(gridRitem));
@@ -1272,7 +1272,7 @@ void StencilApp::BuildRenderItems()
 
 	int objectCBIndex = 3;
 	
-	for (auto& each : RitemLayer[static_cast<int>(RenderLayer::Opaque)])
+	for (auto& each : RitemLayer[static_cast<int>(RenderLayer::OpaqueFrustumCull)])
 	{
 		auto reflectedRitem = std::make_unique<ReflectedRenderItem>();
 		XMStoreFloat4x4(&reflectedRitem->World,
@@ -1302,7 +1302,7 @@ void StencilApp::BuildRenderItems()
 	mirrorRitem->BaseVertexLocation = mirrorRitem->Geo->DrawArgs["mirror"].BaseVertexLocation;
 
 	RitemLayer[static_cast<int>(RenderLayer::Mirrors)].push_back(mirrorRitem.get());
-	RitemLayer[static_cast<int>(RenderLayer::Transparent)].push_back(mirrorRitem.get());
+	RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)].push_back(mirrorRitem.get());
 	allRitems.push_back(std::move(mirrorRitem));
 
 	auto wallRitem = std::make_unique<RenderItem>();
