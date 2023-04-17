@@ -178,14 +178,6 @@ void DynamicCubeMapApp::Draw(const GameTimer& gt)
     );
     dynamicTexDescriptor.Offset(dynamicTexHeapIndex, device->GetCbvSrvUavDescriptorSize());
     commandList->SetGraphicsRootDescriptorTable(3, dynamicTexDescriptor);
-    DrawRenderItemsWithoutFrustumCulling(
-        commandList.Get(),
-        RitemLayer[static_cast<int>(RenderLayer::OpaqueDynamicReflectors)]
-    );
-
-    commandList->SetGraphicsRootDescriptorTable(
-        3, cubeMapGpuHandle
-    );
 
     DrawRenderItems(
 	    commandList.Get(),
@@ -195,6 +187,17 @@ void DynamicCubeMapApp::Draw(const GameTimer& gt)
     DrawRenderItemsWithoutFrustumCulling(
         commandList.Get(),
         RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)]
+    );
+
+    commandList->SetPipelineState(pipelineStateObjects["refraction"].Get());
+
+    DrawRenderItemsWithoutFrustumCulling(
+        commandList.Get(),
+        RitemLayer[static_cast<int>(RenderLayer::OpaqueDynamicReflectors)]
+    );
+
+    commandList->SetGraphicsRootDescriptorTable(
+        3, cubeMapGpuHandle
     );
 
     commandList->SetPipelineState(pipelineStateObjects["sky"].Get());
@@ -732,10 +735,17 @@ void DynamicCubeMapApp::BuildRootSignature()
 
 void DynamicCubeMapApp::BuildShadersAndInputLayout()
 {
-    shaders["standardVS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
-    shaders["opaquePS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
-    shaders["skyVS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\sky.hlsl", nullptr, "VS", "vs_5_1");
-    shaders["skyPS"] = DxUtil::CompileShader(L"18CubeMapping\\Shaders\\sky.hlsl", nullptr, "PS", "ps_5_1");
+    const D3D_SHADER_MACRO refractionDefines[] =
+    { 
+		"REFRACTION", "1",
+        NULL, NULL
+    };
+
+    shaders["standardVS"] = DxUtil::CompileShader(L"18DynamicCubeMapping\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
+    shaders["opaquePS"] = DxUtil::CompileShader(L"18DynamicCubeMapping\\Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
+    shaders["skyVS"] = DxUtil::CompileShader(L"18DynamicCubeMapping\\Shaders\\sky.hlsl", nullptr, "VS", "vs_5_1");
+    shaders["skyPS"] = DxUtil::CompileShader(L"18DynamicCubeMapping\\Shaders\\sky.hlsl", nullptr, "PS", "ps_5_1");
+    shaders["refractionPS"] = DxUtil::CompileShader(L"18DynamicCubeMapping\\Shaders\\Default.hlsl", refractionDefines, "PS", "ps_5_1");
 
     defaultInputLayout =
     {
@@ -1095,6 +1105,17 @@ void DynamicCubeMapApp::BuildPSOs()
     D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
     opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
     ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&pipelineStateObjects["opaque_wireframe"])));
+
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC refracctionPsoDesc = opaquePsoDesc;
+    refracctionPsoDesc.PS =
+    {
+        reinterpret_cast<BYTE*>(shaders["refractionPS"]->GetBufferPointer()),
+        shaders["refractionPS"]->GetBufferSize()
+    };
+    ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&refracctionPsoDesc, IID_PPV_ARGS(&pipelineStateObjects["refraction"])));
+
+
+
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = opaquePsoDesc;
 

@@ -298,8 +298,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="18DyanmicCubeMapping\DynamicCubeMapApp.h" />
-    <ClInclude Include="18DyanmicCubeMapping\FrameResource.h" />
+    <ClInclude Include="18DynamicCubeMapping\DynamicCubeMapApp.h" />
+    <ClInclude Include="18DynamicCubeMapping\FrameResource.h" />
     <ClInclude Include="Common\BaseWindow.h" />
     <ClInclude Include="06\BoxApp.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -484,8 +484,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="18DyanmicCubeMapping\DynamicCubeMapApp.cpp" />
-    <ClCompile Include="18DyanmicCubeMapping\FrameResource.cpp" />
+    <ClCompile Include="18DynamicCubeMapping\DynamicCubeMapApp.cpp" />
+    <ClCompile Include="18DynamicCubeMapping\FrameResource.cpp" />
     <ClCompile Include="Common\Camera.cpp" />
     <ClCompile Include="Common\CubeRenderTarget.cpp" />
     <ClCompile Include="Common\DDSTextureLoader.cpp" />
@@ -770,31 +770,31 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="18DyanmicCubeMapping\Shaders\Blur.hlsl">
+    <FxCompile Include="18DynamicCubeMapping\Shaders\Blur.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="18DyanmicCubeMapping\Shaders\Common.hlsl">
+    <FxCompile Include="18DynamicCubeMapping\Shaders\Common.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="18DyanmicCubeMapping\Shaders\Default.hlsl">
+    <FxCompile Include="18DynamicCubeMapping\Shaders\Default.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="18DyanmicCubeMapping\Shaders\LightingUtil.hlsl">
+    <FxCompile Include="18DynamicCubeMapping\Shaders\LightingUtil.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="18DyanmicCubeMapping\Shaders\Sky.hlsl">
+    <FxCompile Include="18DynamicCubeMapping\Shaders\Sky.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="18DyanmicCubeMapping\Shaders\Tessellation.hlsl">
+    <FxCompile Include="18DynamicCubeMapping\Shaders\Tessellation.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="18DyanmicCubeMapping\Shaders\TreeSprite.hlsl">
+    <FxCompile Include="18DynamicCubeMapping\Shaders\TreeSprite.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>

@@ -21,7 +21,7 @@
 //#include "16InstancingAndCulling/InstancingAndCullingApp.h"
 //#include "17Picking/PickingApp.h"
 //#include "18CubeMapping/CubeMapApp.h"
-#include "18DyanmicCubeMapping/DynamicCubeMapApp.h"
+#include "18DynamicCubeMapping/DynamicCubeMapApp.h"
 #include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)

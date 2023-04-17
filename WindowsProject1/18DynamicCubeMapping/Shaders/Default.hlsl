@@ -83,11 +83,19 @@ float4 PS(VertexOut pin) : SV_Target
     litColor = lerp(litColor, gFogColor, fogAmount);
 #endif
 
+#ifndef REFRACTION
     float3 r = reflect(-toEyeW, pin.NormalW);
     float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, r);
     float3 fresnelFactor = SchlickFresnel(fresnelR0, pin.NormalW, r);
     litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
+#endif
 
+#ifdef REFRACTION
+    float3 refraction = refract(-toEyeW, pin.NormalW, 0.9);
+    float4 refractionColor = gCubeMap.Sample(gsamLinearWrap, refraction);
+    float3 refFresnelFactor = SchlickFresnel(fresnelR0, pin.NormalW, refraction);
+    litColor.rgb += refFresnelFactor * refractionColor.rgb;
+#endif
     // Common convention to take alpha from diffuse material.
     litColor.a = diffuseAlbedo.a;
 
