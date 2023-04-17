@@ -192,6 +192,12 @@
     <ClInclude Include="Common\InstancedRenderItem.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="19NormalMapping\NormalMapApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="19NormalMapping\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -356,6 +362,12 @@
     <ClCompile Include="Common\InstancedRenderItem.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="19NormalMapping\NormalMapApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="19NormalMapping\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -429,5 +441,12 @@
     <FxCompile Include="18CubeMapping\Shaders\TreeSprite.hlsl" />
     <FxCompile Include="18CubeMapping\Shaders\Sky.hlsl" />
     <FxCompile Include="18CubeMapping\Shaders\Common.hlsl" />
+    <FxCompile Include="19NormalMapping\Shaders\Blur.hlsl" />
+    <FxCompile Include="19NormalMapping\Shaders\Common.hlsl" />
+    <FxCompile Include="19NormalMapping\Shaders\Default.hlsl" />
+    <FxCompile Include="19NormalMapping\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="19NormalMapping\Shaders\Sky.hlsl" />
+    <FxCompile Include="19NormalMapping\Shaders\Tessellation.hlsl" />
+    <FxCompile Include="19NormalMapping\Shaders\TreeSprite.hlsl" />
   </ItemGroup>
 </Project>
