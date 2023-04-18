@@ -2,7 +2,6 @@
 // Tessellation.hlsl by Frank Luna (C) 2015 All Rights Reserved.
 //***************************************************************************************
 
-
 // Include structures and functions for lighting.
 #include "LightingUtil.hlsl"
 
