@@ -12,12 +12,15 @@ struct MaterialData
     DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
     float Roughness = 64.0f;
 
-    DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
+    DirectX::XMFLOAT4X4 MatTransform1 = MathHelper::Identity4x4();
+    DirectX::XMFLOAT4X4 MatTransform2 = MathHelper::Identity4x4();
 
     UINT DiffuseMapIndex = 0;
-    UINT NormalMapIndex = 0;
-    UINT DisplacementMapIndex = 0;
-	UINT MaterialPad;
+    UINT NormalMapIndex1 = 0;
+    UINT NormalMapIndex2 = 0;
+    UINT DisplacementMapIndex1 = 0;
+    UINT DisplacementMapIndex2 = 0;
+	DirectX::XMUINT3 MaterialPad;
 };
 
 struct PassConstants

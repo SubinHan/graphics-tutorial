@@ -73,6 +73,7 @@ void DisplacementMapApp::OnResize()
 void DisplacementMapApp::Update(const GameTimer& gt)
 {
     UpdateCamera(gt);
+    AnimateMaterials(gt);
 
     // Cycle through the circular frame resource array.
     currFrameResourceIndex = (currFrameResourceIndex + 1) % gNumFrameResources;
@@ -264,6 +265,51 @@ void DisplacementMapApp::UpdateCamera(const GameTimer& gt)
     camera.UpdateViewMatrix();
 }
 
+void DisplacementMapApp::AnimateMaterials(const GameTimer& gt)
+{
+    auto waterMat = materials["waterMat"].get();
+
+    auto& tu1 = waterMat->MatTransform1(3, 0);
+    auto& tv1 = waterMat->MatTransform1(3, 1);
+
+    tu1 += 0.03f * gt.DeltaTime();
+    tv1 += 0.03f * gt.DeltaTime();
+
+    if (tu1 >= 1.0f)
+    {
+        tu1 -= 1.0f;
+    }
+
+    if(tv1 >= 1.0f)
+    {
+        tv1 -= 1.0f;
+    }
+
+    waterMat->MatTransform1(3, 0) = tu1;
+    waterMat->MatTransform1(3, 1) = tv1;
+
+    auto& tu2 = waterMat->MatTransform2(3, 0);
+    auto& tv2 = waterMat->MatTransform2(3, 1);
+
+    tu2 -= 0.15f * gt.DeltaTime();
+    tv2 -= 0.03f * gt.DeltaTime();
+
+    if (tu2 <= 0.0f)
+    {
+        tu2 += 1.0f;
+    }
+
+    if (tv2 <= 0.0f)
+    {
+        tv2 += 1.0f;
+    }
+
+    waterMat->MatTransform2(3, 0) = tu2;
+    waterMat->MatTransform2(3, 1) = tv2;
+
+    waterMat->NumFramesDirty = gNumFrameResources;
+}
+
 void DisplacementMapApp::UpdateInstanceBuffer(const GameTimer& gt)
 {
     int bufferOffset = 0;
@@ -341,16 +387,20 @@ void DisplacementMapApp::UpdateMaterialBuffer(const GameTimer& gt)
         Material* mat = e.second.get();
         if (mat->NumFramesDirty > 0)
         {
-            XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
+            XMMATRIX matTransform1 = XMLoadFloat4x4(&mat->MatTransform1);
+            XMMATRIX matTransform2 = XMLoadFloat4x4(&mat->MatTransform2);
 
             MaterialData matData;
             matData.DiffuseAlbedo = mat->DiffuseAlbedo;
             matData.FresnelR0 = mat->FresnelR0;
             matData.Roughness = mat->Roughness;
-            XMStoreFloat4x4(&matData.MatTransform, XMMatrixTranspose(matTransform));
+            XMStoreFloat4x4(&matData.MatTransform1, XMMatrixTranspose(matTransform1));
+            XMStoreFloat4x4(&matData.MatTransform2, XMMatrixTranspose(matTransform2));
             matData.DiffuseMapIndex = mat->DiffuseSrvHeapIndex;
-            matData.NormalMapIndex = mat->NormalSrvHeapIndex;
-            matData.DisplacementMapIndex = mat->DisplacementSrvHeapIndex;
+            matData.NormalMapIndex1 = mat->NormalSrvHeapIndex1;
+            matData.NormalMapIndex2 = mat->NormalSrvHeapIndex2;
+            matData.DisplacementMapIndex1 = mat->DisplacementSrvHeapIndex1;
+            matData.DisplacementMapIndex2 = mat->DisplacementSrvHeapIndex2;
 
             currMaterialBuffer->CopyData(mat->MatCBIndex, matData);
 
@@ -392,7 +442,7 @@ void DisplacementMapApp::LoadTextures()
     LoadTexture(L"Textures/stone.dds", "stoneTex");
     LoadTexture(L"Textures/bricks.dds", "bricksTex");
     LoadTexture(L"Textures/WoodCrate01.dds", "crateTex");
-    LoadTexture(L"Textures/water1.dds", "waterTex");
+    LoadTexture(L"Textures/water.dds", "waterTex");
     LoadCubeMap(L"Textures/grasscube1024.dds", "skyCubeMap");
     LoadTexture(L"Textures/tile_nmap.dds", "tileNormal");
     LoadTexture(L"Textures/bricks_nmap.dds", "bricksNormal");
@@ -533,7 +583,7 @@ void DisplacementMapApp::BuildShadersAndInputLayout()
     shaders["tessHS"] = DxUtil::CompileShader(L"19DisplacementMapping\\Shaders\\Tessellation.hlsl", nullptr, "HS", "hs_5_1");
     shaders["tessDS"] = DxUtil::CompileShader(L"19DisplacementMapping\\Shaders\\Tessellation.hlsl", nullptr, "DS", "ds_5_1");
     shaders["tessPS"] = DxUtil::CompileShader(L"19DisplacementMapping\\Shaders\\Tessellation.hlsl", nullptr, "PS", "ps_5_1");
-
+    
     defaultInputLayout =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -550,8 +600,10 @@ void DisplacementMapApp::BuildMaterials()
     white->MatCBIndex = 0;
     white->DiffuseSrvHeapIndex = textures["whiteTex"]->SrvIndex;
     white->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    white->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
-    white->DisplacementSrvHeapIndex = textures["emptyDisplacement"]->SrvIndex;
+    white->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
+    white->NormalSrvHeapIndex2 = textures["whiteTex"]->SrvIndex;
+    white->DisplacementSrvHeapIndex1 = textures["emptyDisplacement"]->SrvIndex;
+    white->DisplacementSrvHeapIndex2 = textures["emptyDisplacement"]->SrvIndex;
     white->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
     white->Roughness = 0.0f;
 
@@ -562,8 +614,10 @@ void DisplacementMapApp::BuildMaterials()
     stone->MatCBIndex = 1;
     stone->DiffuseSrvHeapIndex = textures["stoneTex"]->SrvIndex;
     stone->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    stone->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
-    stone->DisplacementSrvHeapIndex = textures["emptyDisplacement"]->SrvIndex;
+    stone->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
+    stone->NormalSrvHeapIndex2 = textures["whiteTex"]->SrvIndex;
+    stone->DisplacementSrvHeapIndex1 = textures["emptyDisplacement"]->SrvIndex;
+    stone->DisplacementSrvHeapIndex2 = textures["emptyDisplacement"]->SrvIndex;
     stone->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
     stone->Roughness = 0.0f;
 
@@ -574,8 +628,10 @@ void DisplacementMapApp::BuildMaterials()
     tile->MatCBIndex = 2;
     tile->DiffuseSrvHeapIndex = textures["tileTex"]->SrvIndex;
     tile->DiffuseAlbedo = XMFLOAT4(0.6f, 0.6f, 0.6f, 1.0f);
-    tile->NormalSrvHeapIndex = textures["tileNormal"]->SrvIndex;
-    tile->DisplacementSrvHeapIndex = textures["emptyDisplacement"]->SrvIndex;
+    tile->NormalSrvHeapIndex1 = textures["tileNormal"]->SrvIndex;
+    tile->NormalSrvHeapIndex2 = textures["tileNormal"]->SrvIndex;
+    tile->DisplacementSrvHeapIndex1 = textures["emptyDisplacement"]->SrvIndex;
+    tile->DisplacementSrvHeapIndex2 = textures["emptyDisplacement"]->SrvIndex;
     tile->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
     tile->Roughness = 0.0f;
 
@@ -586,8 +642,10 @@ void DisplacementMapApp::BuildMaterials()
     bricks->MatCBIndex = 3;
     bricks->DiffuseSrvHeapIndex = textures["bricksTex"]->SrvIndex;
     bricks->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    bricks->NormalSrvHeapIndex = textures["bricksNormal"]->SrvIndex;
-    bricks->DisplacementSrvHeapIndex = textures["emptyDisplacement"]->SrvIndex;
+    bricks->NormalSrvHeapIndex1 = textures["bricksNormal"]->SrvIndex;
+    bricks->NormalSrvHeapIndex2 = textures["bricksNormal"]->SrvIndex;
+    bricks->DisplacementSrvHeapIndex1 = textures["emptyDisplacement"]->SrvIndex;
+    bricks->DisplacementSrvHeapIndex2 = textures["emptyDisplacement"]->SrvIndex;
     bricks->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
     bricks->Roughness = 0.0f;
 
@@ -598,8 +656,10 @@ void DisplacementMapApp::BuildMaterials()
     crateMat->MatCBIndex = 4;
     crateMat->DiffuseSrvHeapIndex = textures["crateTex"]->SrvIndex;
     crateMat->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    crateMat->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
-    crateMat->DisplacementSrvHeapIndex = textures["emptyDisplacement"]->SrvIndex;
+    crateMat->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
+    crateMat->NormalSrvHeapIndex2 = textures["whiteTex"]->SrvIndex;
+    crateMat->DisplacementSrvHeapIndex1 = textures["emptyDisplacement"]->SrvIndex;
+    crateMat->DisplacementSrvHeapIndex2 = textures["emptyDisplacement"]->SrvIndex;
     crateMat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
     crateMat->Roughness = 0.5f;
 
@@ -610,8 +670,10 @@ void DisplacementMapApp::BuildMaterials()
     mirrorMat->MatCBIndex = 5;
     mirrorMat->DiffuseSrvHeapIndex = 2;
     mirrorMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.1f, 1.0f);
-    mirrorMat->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
-    mirrorMat->DisplacementSrvHeapIndex = textures["emptyDisplacement"]->SrvIndex;
+    mirrorMat->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
+    mirrorMat->NormalSrvHeapIndex2 = textures["whiteTex"]->SrvIndex;
+    mirrorMat->DisplacementSrvHeapIndex1 = textures["emptyDisplacement"]->SrvIndex;
+    mirrorMat->DisplacementSrvHeapIndex2 = textures["emptyDisplacement"]->SrvIndex;
     mirrorMat->FresnelR0 = XMFLOAT3(0.98f, 0.97f, 0.95f);
     mirrorMat->Roughness = 0.1f;
 
@@ -622,8 +684,10 @@ void DisplacementMapApp::BuildMaterials()
     skyMat->MatCBIndex = 6;
     skyMat->DiffuseSrvHeapIndex = cubeMaps["skyCubeMap"]->SrvIndex;
     skyMat->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    skyMat->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
-    skyMat->DisplacementSrvHeapIndex = textures["emptyDisplacement"]->SrvIndex;
+    skyMat->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
+    skyMat->NormalSrvHeapIndex2 = textures["whiteTex"]->SrvIndex;
+    skyMat->DisplacementSrvHeapIndex1 = textures["emptyDisplacement"]->SrvIndex;
+    skyMat->DisplacementSrvHeapIndex2 = textures["emptyDisplacement"]->SrvIndex;
     skyMat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
     skyMat->Roughness = 0.5f;
 
@@ -634,9 +698,13 @@ void DisplacementMapApp::BuildMaterials()
     waterMat->Name = "waterMat";
     waterMat->MatCBIndex = 7;
     waterMat->DiffuseSrvHeapIndex = textures["waterTex"]->SrvIndex;
-    waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.2f, 1.0f);
-    waterMat->NormalSrvHeapIndex = textures["waves0Normal"]->SrvIndex;
-    waterMat->DisplacementSrvHeapIndex = textures["waves0Displacement"]->SrvIndex;
+    waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.07f, 0.15f, 0.8f);
+    waterMat->NormalSrvHeapIndex1 = textures["waves0Normal"]->SrvIndex;
+    waterMat->NormalSrvHeapIndex2 = textures["waves1Normal"]->SrvIndex;
+    waterMat->DisplacementSrvHeapIndex1 = textures["waves0Displacement"]->SrvIndex;
+    waterMat->DisplacementSrvHeapIndex2 = textures["waves1Displacement"]->SrvIndex;
+    XMStoreFloat4x4(&waterMat->MatTransform1, XMMatrixScaling(0.5f, 0.5f, 1.0f));
+    XMStoreFloat4x4(&waterMat->MatTransform2, XMMatrixScaling(0.5f, 0.5f, 1.0f));
     waterMat->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
     waterMat->Roughness = 0.1f;
 
@@ -1091,7 +1159,7 @@ void DisplacementMapApp::BuildRenderItems()
     InstanceData gridInstanceData;
     gridInstanceData.MaterialIndex = materials["waterMat"]->MatCBIndex;
     gridInstanceData.World = MathHelper::Identity4x4();
-    XMStoreFloat4x4(&gridInstanceData.TexTransform, XMMatrixScaling(8.0f, 8.0f, 1.0f));
+    XMStoreFloat4x4(&gridInstanceData.TexTransform, XMMatrixScaling(3.0f, 3.0f, 1.0f));
     gridRitem->AddInstance(gridInstanceData);
 
     RitemLayer[static_cast<int>(RenderLayer::OpaqueNonFrustumCull)].push_back(gridRitem.get());

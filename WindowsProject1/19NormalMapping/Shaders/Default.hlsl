@@ -43,7 +43,7 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 
     // Output vertex attributes for interpolation across triangle.
     float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), texTransform);
-    vout.TexC = mul(texC, matData.MatTransform).xy;
+    vout.TexC = mul(texC, matData.MatTransform1).xy;
 
     return vout;
 }
@@ -55,7 +55,7 @@ float4 PS(VertexOut pin) : SV_Target
     float3 fresnelR0 = matData.FresnelR0;
     float roughness = matData.Roughness;
     uint diffuseMapIndex = matData.DiffuseMapIndex;
-    uint normalMapIndex = matData.NormalMapIndex;
+    uint normalMapIndex = matData.NormalMapIndex1;
 
     diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
 

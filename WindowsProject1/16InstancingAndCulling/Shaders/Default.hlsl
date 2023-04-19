@@ -33,7 +33,7 @@ struct MaterialData
     float4 DiffuseAlbedo;
     float3 FresnelR0;
     float Roughness;
-    float4x4 MatTransform;
+    float4x4 MatTransform1;
     uint DiffuseMapIndex;
     uint3 MatPad;
 };
@@ -119,7 +119,7 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 
     // Output vertex attributes for interpolation across triangle.
     float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), texTransform);
-    vout.TexC = mul(texC, matData.MatTransform).xy;
+    vout.TexC = mul(texC, matData.MatTransform1).xy;
 
     return vout;
 }

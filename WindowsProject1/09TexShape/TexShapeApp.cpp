@@ -145,7 +145,7 @@ void TexShapeApp::UpdateMaterialCBs(const GameTimer& gt)
 
         MaterialConstants matConstants;
         matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
-        matConstants.MatTransform = mat->MatTransform;
+        matConstants.MatTransform = mat->MatTransform1;
         matConstants.FresnelR0 = mat->FresnelR0;
         matConstants.Roughness = mat->Roughness;
 

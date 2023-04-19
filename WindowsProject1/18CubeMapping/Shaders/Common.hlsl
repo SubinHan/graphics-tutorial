@@ -27,7 +27,7 @@ struct MaterialData
     float4 DiffuseAlbedo;
     float3 FresnelR0;
     float Roughness;
-    float4x4 MatTransform;
+    float4x4 MatTransform1;
     uint DiffuseMapIndex;
     uint3 MatPad;
 };

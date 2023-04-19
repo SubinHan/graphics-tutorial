@@ -198,8 +198,6 @@ float4 PS(DomainOut pin) : SV_Target
 	uint diffuseMapIndex = matData.DiffuseMapIndex;
 	uint normalMapIndex1 = matData.NormalMapIndex1;
 	uint normalMapIndex2 = matData.NormalMapIndex2;
-	uint displacementMapIndex1 = matData.DisplacementMapIndex1;
-	uint displacementMapIndex2 = matData.DisplacementMapIndex2;
 
 	diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC1);
 
@@ -220,7 +218,7 @@ float4 PS(DomainOut pin) : SV_Target
 	float3 bumpedNormalW2 = NormalSampleToWorldSpace(
 		normalMapSample2.rgb, pin.NormalW, pin.TangentW);
 
-	float3 bumpedNormalW = normalize(bumpedNormalW1 * 0.8f + bumpedNormalW2);
+	float3 bumpedNormalW = normalize(bumpedNormalW1 * 0.8f + bumpedNormalW2 * 0.4f);
 
 	// Vector from point being lit to eye. 
 	float3 toEyeW = gEyePosW - pin.PosW;
@@ -251,17 +249,6 @@ float4 PS(DomainOut pin) : SV_Target
 	// Common convention to take alpha from diffuse material.
 	litColor.a = diffuseAlbedo.a;
 
-	float displacementMapSample1 = gTextureMaps[displacementMapIndex1].SampleLevel(
-		gsamAnisotropicWrap, pin.TexC1, 0).x;
-
-	float displacementMapSample2 = gTextureMaps[displacementMapIndex2].SampleLevel(
-		gsamAnisotropicWrap, pin.TexC2, 0).x;
-
-	float height = displacementMapSample1 + displacementMapSample2;
-	float bubble = (exp2(exp2(height)) - 1.0f) / 15.0f ;
-	litColor.r = clamp(litColor.r + bubble, 0.0f, 1.0f);
-	litColor.g = clamp(litColor.g + bubble, 0.0f, 1.0f);
-	litColor.b = clamp(litColor.b + bubble, 0.0f, 1.0f);
 
 	return litColor;
 }

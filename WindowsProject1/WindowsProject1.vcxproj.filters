@@ -467,5 +467,6 @@
     <FxCompile Include="19DisplacementMapping\Shaders\Sky.hlsl" />
     <FxCompile Include="19DisplacementMapping\Shaders\Tessellation.hlsl" />
     <FxCompile Include="19DisplacementMapping\Shaders\TreeSprite.hlsl" />
+    <FxCompile Include="19DisplacementMapping\Shaders\Wave.hlsl" />
   </ItemGroup>
 </Project>

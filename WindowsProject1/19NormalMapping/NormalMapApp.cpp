@@ -337,7 +337,7 @@ void NormalMapApp::UpdateMaterialBuffer(const GameTimer& gt)
         Material* mat = e.second.get();
         if (mat->NumFramesDirty > 0)
         {
-            XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
+            XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform1);
 
             MaterialData matData;
             matData.DiffuseAlbedo = mat->DiffuseAlbedo;
@@ -345,7 +345,7 @@ void NormalMapApp::UpdateMaterialBuffer(const GameTimer& gt)
             matData.Roughness = mat->Roughness;
             XMStoreFloat4x4(&matData.MatTransform, XMMatrixTranspose(matTransform));
             matData.DiffuseMapIndex = mat->DiffuseSrvHeapIndex;
-            matData.NormalMapIndex = mat->NormalSrvHeapIndex;
+            matData.NormalMapIndex1 = mat->NormalSrvHeapIndex1;
 
             currMaterialBuffer->CopyData(mat->MatCBIndex, matData);
 
@@ -535,7 +535,7 @@ void NormalMapApp::BuildMaterials()
     white->MatCBIndex = 0;
     white->DiffuseSrvHeapIndex = textures["whiteTex"]->SrvIndex;
     white->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    white->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
+    white->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
     white->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
     white->Roughness = 0.0f;
 
@@ -546,7 +546,7 @@ void NormalMapApp::BuildMaterials()
     stone->MatCBIndex = 1;
     stone->DiffuseSrvHeapIndex = textures["stoneTex"]->SrvIndex;
     stone->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    stone->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
+    stone->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
     stone->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
     stone->Roughness = 0.0f;
 
@@ -557,7 +557,7 @@ void NormalMapApp::BuildMaterials()
     tile->MatCBIndex = 2;
     tile->DiffuseSrvHeapIndex = textures["tileTex"]->SrvIndex;
     tile->DiffuseAlbedo = XMFLOAT4(0.6f, 0.6f, 0.6f, 1.0f);
-    tile->NormalSrvHeapIndex = textures["tileNormal"]->SrvIndex;
+    tile->NormalSrvHeapIndex1 = textures["tileNormal"]->SrvIndex;
     tile->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
     tile->Roughness = 0.0f;
 
@@ -568,7 +568,7 @@ void NormalMapApp::BuildMaterials()
     bricks->MatCBIndex = 3;
     bricks->DiffuseSrvHeapIndex = textures["bricksTex"]->SrvIndex;
     bricks->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    bricks->NormalSrvHeapIndex = textures["bricksNormal"]->SrvIndex;
+    bricks->NormalSrvHeapIndex1 = textures["bricksNormal"]->SrvIndex;
     bricks->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
     bricks->Roughness = 0.0f;
 
@@ -579,7 +579,7 @@ void NormalMapApp::BuildMaterials()
     crateMat->MatCBIndex = 4;
     crateMat->DiffuseSrvHeapIndex = textures["crateTex"]->SrvIndex;
     crateMat->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    crateMat->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
+    crateMat->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
     crateMat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
     crateMat->Roughness = 0.5f;
 
@@ -590,7 +590,7 @@ void NormalMapApp::BuildMaterials()
     mirrorMat->MatCBIndex = 5;
     mirrorMat->DiffuseSrvHeapIndex = 2;
     mirrorMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.1f, 1.0f);
-    mirrorMat->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
+    mirrorMat->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
     mirrorMat->FresnelR0 = XMFLOAT3(0.98f, 0.97f, 0.95f);
     mirrorMat->Roughness = 0.1f;
 
@@ -601,7 +601,7 @@ void NormalMapApp::BuildMaterials()
     skyMat->MatCBIndex = 6;
     skyMat->DiffuseSrvHeapIndex = cubeMaps["skyCubeMap"]->SrvIndex;
     skyMat->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    skyMat->NormalSrvHeapIndex = textures["whiteTex"]->SrvIndex;
+    skyMat->NormalSrvHeapIndex1 = textures["whiteTex"]->SrvIndex;
     skyMat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
     skyMat->Roughness = 0.5f;
 

@@ -15,7 +15,7 @@ struct MaterialData
     DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 
     UINT DiffuseMapIndex = 0;
-    UINT NormalMapIndex = 0;
+    UINT NormalMapIndex1 = 0;
     DirectX::XMUINT2 MaterialPad;
 };
 

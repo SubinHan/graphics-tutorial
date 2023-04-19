@@ -229,9 +229,11 @@ struct Material
 	int DiffuseSrvHeapIndex = -1;
 
 	// Index into SRV heap for normal texture.
-	int NormalSrvHeapIndex = -1;
+	int NormalSrvHeapIndex1 = -1;
+	int NormalSrvHeapIndex2 = -1;
 
-	int DisplacementSrvHeapIndex = -1;
+	int DisplacementSrvHeapIndex1 = -1;
+	int DisplacementSrvHeapIndex2 = -1;
 
 	// Dirty flag indicating the material has changed and we need to update the constant buffer.
 	// Because we have a material constant buffer for each FrameResource, we have to apply the
@@ -243,7 +245,8 @@ struct Material
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
 	float Roughness = .25f;
-	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 MatTransform1 = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 MatTransform2 = MathHelper::Identity4x4();
 };
 
 struct Texture

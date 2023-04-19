@@ -72,8 +72,8 @@ void TreeApp::AnimateMaterials(const GameTimer& gt)
 {
 	auto waterMat = materials["water"].get();
 
-	float& tu = waterMat->MatTransform(3, 0);
-	float& tv = waterMat->MatTransform(3, 1);
+	float& tu = waterMat->MatTransform1(3, 0);
+	float& tv = waterMat->MatTransform1(3, 1);
 
 	tu += 0.1f * gt.DeltaTime();
 	tv += 0.02f * gt.DeltaTime();
@@ -88,8 +88,8 @@ void TreeApp::AnimateMaterials(const GameTimer& gt)
 		tv -= 1.0f;
 	}
 
-	waterMat->MatTransform(3, 0) = tu;
-	waterMat->MatTransform(3, 1) = tv;
+	waterMat->MatTransform1(3, 0) = tu;
+	waterMat->MatTransform1(3, 1) = tv;
 
 	waterMat->NumFramesDirty = gNumFrameResources;
 	
@@ -320,7 +320,7 @@ void TreeApp::UpdateMaterialCBs(const GameTimer& gt)
 		Material* mat = e.second.get();
 		if (mat->NumFramesDirty > 0)
 		{
-			XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
+			XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform1);
 
 			MaterialConstants matConstants;
 			matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;

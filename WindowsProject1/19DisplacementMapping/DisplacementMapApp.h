@@ -63,6 +63,7 @@ private:
 	void Draw(const GameTimer& gt) override;
 	
 	void UpdateCamera(const GameTimer& gt);
+	void AnimateMaterials(const GameTimer& gt);
 	void UpdateInstanceBuffer(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 	void UpdateMaterialBuffer(const GameTimer& gt);
