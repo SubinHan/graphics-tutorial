@@ -54,6 +54,7 @@ public:
 	D3D12_VIEWPORT& GetScreenViewport();
 	tagRECT& GetScissorRect();
 	UINT GetCbvSrvUavDescriptorSize();
+	UINT GetDsvDescriptorSize();
 
 	UINT GetCurrentFence();
 	UINT IncreaseFence();
@@ -61,6 +62,8 @@ public:
 public:
 	static constexpr UINT SWAP_CHAIN_BUFFER_COUNT = 2;
 
+	ComPtr<ID3D12DescriptorHeap> rtvHeap;
+	ComPtr<ID3D12DescriptorHeap> dsvHeap;
 private:
 	void Init();
 	void CreateDevice();
@@ -84,8 +87,6 @@ private:
 	ComPtr<ID3D12CommandAllocator> commandListAllocator;
 	ComPtr<ID3D12GraphicsCommandList> commandList;
 	ComPtr<IDXGISwapChain> swapChain;
-	ComPtr<ID3D12DescriptorHeap> rtvHeap;
-	ComPtr<ID3D12DescriptorHeap> dsvHeap;
 	ComPtr<ID3D12Resource> swapChainBuffer[SWAP_CHAIN_BUFFER_COUNT];
 	ComPtr<ID3D12Resource> depthStencilBuffer;
 

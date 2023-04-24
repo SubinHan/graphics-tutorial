@@ -121,6 +121,7 @@ public:
 		const std::string& target);
 
 	static std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
+	static std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> GetStaticSamplersWithShadowSampler();
 };
 
 // Defines a subrange of geometry in a MeshGeometry.  This is for when multiple

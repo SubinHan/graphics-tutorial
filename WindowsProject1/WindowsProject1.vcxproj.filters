@@ -204,6 +204,15 @@
     <ClInclude Include="19DisplacementMapping\DisplacementMapApp.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="20ShadowMapping\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="20ShadowMapping\ShadowMapApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="20ShadowMapping\ShadowMap.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -380,6 +389,15 @@
     <ClCompile Include="19DisplacementMapping\DisplacementMapApp.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="20ShadowMapping\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="20ShadowMapping\ShadowMapApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="20ShadowMapping\ShadowMap.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -467,5 +485,14 @@
     <FxCompile Include="19DisplacementMapping\Shaders\Sky.hlsl" />
     <FxCompile Include="19DisplacementMapping\Shaders\Tessellation.hlsl" />
     <FxCompile Include="19DisplacementMapping\Shaders\TreeSprite.hlsl" />
+    <FxCompile Include="20ShadowMapping\Shaders\Blur.hlsl" />
+    <FxCompile Include="20ShadowMapping\Shaders\Common.hlsl" />
+    <FxCompile Include="20ShadowMapping\Shaders\Default.hlsl" />
+    <FxCompile Include="20ShadowMapping\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="20ShadowMapping\Shaders\Sky.hlsl" />
+    <FxCompile Include="20ShadowMapping\Shaders\Tessellation.hlsl" />
+    <FxCompile Include="20ShadowMapping\Shaders\TreeSprite.hlsl" />
+    <FxCompile Include="20ShadowMapping\Shaders\Shadow.hlsl" />
+    <FxCompile Include="20ShadowMapping\Shaders\ShadowDebug.hlsl" />
   </ItemGroup>
 </Project>
