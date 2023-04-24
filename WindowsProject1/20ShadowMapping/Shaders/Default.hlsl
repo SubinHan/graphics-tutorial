@@ -95,6 +95,18 @@ float4 PS(VertexOut pin) : SV_Target
 
     float4 litColor = ambient + directLight;
 
+
+    if (shadowFactor[0] > 0.9f)
+    {
+        // Complete projection by doing division by w.
+        pin.ShadowPosH.xyz /= pin.ShadowPosH.w;
+
+        float4 sampled = gTextureMaps[4].Sample(
+            gsamAnisotropicWrap, pin.ShadowPosH.xy);
+
+        litColor.xyz += sampled.xyz;
+    }
+
 #ifdef FOG
     float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
     litColor = lerp(litColor, gFogColor, fogAmount);
