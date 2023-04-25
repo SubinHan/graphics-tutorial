@@ -213,6 +213,18 @@
     <ClInclude Include="20ShadowMapping\ShadowMap.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="21AmbientOcclusion\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="21AmbientOcclusion\SsaoApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="21AmbientOcclusion\ShadowMap.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="21AmbientOcclusion\Ssao.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -398,6 +410,18 @@
     <ClCompile Include="20ShadowMapping\ShadowMap.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="21AmbientOcclusion\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="21AmbientOcclusion\SsaoApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="21AmbientOcclusion\ShadowMap.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="21AmbientOcclusion\Ssao.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -494,5 +518,14 @@
     <FxCompile Include="20ShadowMapping\Shaders\TreeSprite.hlsl" />
     <FxCompile Include="20ShadowMapping\Shaders\Shadow.hlsl" />
     <FxCompile Include="20ShadowMapping\Shaders\ShadowDebug.hlsl" />
+    <FxCompile Include="21AmbientOcclusion\Shaders\Default.hlsl" />
+    <FxCompile Include="21AmbientOcclusion\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="21AmbientOcclusion\Shaders\Common.hlsl" />
+    <FxCompile Include="21AmbientOcclusion\Shaders\DrawNormals.hlsl" />
+    <FxCompile Include="21AmbientOcclusion\Shaders\ShadowDebug.hlsl" />
+    <FxCompile Include="21AmbientOcclusion\Shaders\Shadows.hlsl" />
+    <FxCompile Include="21AmbientOcclusion\Shaders\Sky.hlsl" />
+    <FxCompile Include="21AmbientOcclusion\Shaders\Ssao.hlsl" />
+    <FxCompile Include="21AmbientOcclusion\Shaders\SsaoBlur.hlsl" />
   </ItemGroup>
 </Project>

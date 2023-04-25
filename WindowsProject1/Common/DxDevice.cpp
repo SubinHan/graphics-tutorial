@@ -252,6 +252,11 @@ tagRECT& DxDevice::GetScissorRect()
     return scissorRect;
 }
 
+ID3D12Resource* DxDevice::GetDepthStencilBuffer()
+{
+    return depthStencilBuffer.Get();
+}
+
 UINT DxDevice::GetCbvSrvUavDescriptorSize()
 {
     return cbvDescriptorSize;
@@ -260,6 +265,21 @@ UINT DxDevice::GetCbvSrvUavDescriptorSize()
 UINT DxDevice::GetDsvDescriptorSize()
 {
     return dsvDescriptorSize;
+}
+
+UINT DxDevice::GetRtvDescriptorSize()
+{
+    return rtvDescriptorSize;
+}
+
+ComPtr<ID3D12DescriptorHeap> DxDevice::GetDsvHeap()
+{
+    return dsvHeap;
+}
+
+ComPtr<ID3D12DescriptorHeap> DxDevice::GetRtvHeap()
+{
+    return rtvHeap;
 }
 
 UINT DxDevice::GetCurrentFence()
@@ -365,7 +385,7 @@ void DxDevice::CreateSwapChain()
 void DxDevice::CreateRtvAndDsvDescriptorHeaps()
 {
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-    rtvHeapDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT;
+    rtvHeapDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT + 3;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     rtvHeapDesc.NodeMask = 0;

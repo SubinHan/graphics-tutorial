@@ -53,8 +53,13 @@ public:
 	ComPtr<ID3D12Fence> GetFence();
 	D3D12_VIEWPORT& GetScreenViewport();
 	tagRECT& GetScissorRect();
+	ID3D12Resource* GetDepthStencilBuffer();
 	UINT GetCbvSrvUavDescriptorSize();
 	UINT GetDsvDescriptorSize();
+	UINT GetRtvDescriptorSize();
+
+	ComPtr<ID3D12DescriptorHeap> GetDsvHeap();
+	ComPtr<ID3D12DescriptorHeap> GetRtvHeap();
 
 	UINT GetCurrentFence();
 	UINT IncreaseFence();
