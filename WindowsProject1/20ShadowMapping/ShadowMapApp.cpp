@@ -36,7 +36,7 @@ bool ShadowMapApp::Initialize()
     
     camera.SetPosition(0.0f, 2.0f, -15.0f);
     mShadowMap = std::make_unique<ShadowMap>(
-        device->GetD3DDevice().Get(), 2048, 2048);
+        device->GetD3DDevice().Get(), 256, 256);
 
     LoadTextures();
     BuildRootSignature();
