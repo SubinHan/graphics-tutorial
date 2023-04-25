@@ -36,7 +36,7 @@ bool ShadowMapApp::Initialize()
     
     camera.SetPosition(0.0f, 2.0f, -15.0f);
     mShadowMap = std::make_unique<ShadowMap>(
-        device->GetD3DDevice().Get(), 2048, 2048);
+        device->GetD3DDevice().Get(), 512, 512);
 
     LoadTextures();
     BuildRootSignature();
@@ -1045,7 +1045,7 @@ void ShadowMapApp::BuildPSOs()
     // PSO for shadow map pass.
     //
     D3D12_GRAPHICS_PIPELINE_STATE_DESC smapPsoDesc = opaquePsoDesc;
-    smapPsoDesc.RasterizerState.DepthBias = 100000;
+    smapPsoDesc.RasterizerState.DepthBias = -30000;
     smapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
     smapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
     smapPsoDesc.pRootSignature = rootSignature.Get();
