@@ -1045,9 +1045,9 @@ void ShadowMapApp::BuildPSOs()
     // PSO for shadow map pass.
     //
     D3D12_GRAPHICS_PIPELINE_STATE_DESC smapPsoDesc = opaquePsoDesc;
-    smapPsoDesc.RasterizerState.DepthBias = -30000;
+    smapPsoDesc.RasterizerState.DepthBias = 100000;
     smapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
-    smapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
+    smapPsoDesc.RasterizerState.SlopeScaledDepthBias = -2.0f;
     smapPsoDesc.pRootSignature = rootSignature.Get();
     smapPsoDesc.VS =
     {
