@@ -24,7 +24,8 @@
 //#include "19NormalMapping/NormalMapApp.h"
 //#include "19DisplacementMapping/DisplacementMapApp.h"
 //#include "20ShadowMapping/ShadowMapApp.h"
-#include "21AmbientOcclusion/SsaoApp.h"
+//#include "21AmbientOcclusion/SsaoApp.h"
+#include "22Quaternion/QuaternionApp.h"
 #include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -51,7 +52,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
         //NormalMapApp win(hInstance);
         //DisplacementMapApp win(hInstance);
         //ShadowMapApp win(hInstance);
-        SsaoApp win(hInstance);
+        //SsaoApp win(hInstance);
+        QuaternionApp win(hInstance);
 
         if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
         {

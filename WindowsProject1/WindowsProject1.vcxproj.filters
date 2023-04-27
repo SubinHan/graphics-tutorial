@@ -225,6 +225,21 @@
     <ClInclude Include="21AmbientOcclusion\Ssao.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="22Quaternion\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="22Quaternion\ShadowMap.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="22Quaternion\Ssao.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="22Quaternion\QuaternionApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="22Quaternion\AnimationHelper.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -422,6 +437,21 @@
     <ClCompile Include="21AmbientOcclusion\Ssao.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="22Quaternion\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="22Quaternion\ShadowMap.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="22Quaternion\Ssao.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="22Quaternion\QuaternionApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="22Quaternion\AnimationHelper.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -527,5 +557,14 @@
     <FxCompile Include="21AmbientOcclusion\Shaders\Sky.hlsl" />
     <FxCompile Include="21AmbientOcclusion\Shaders\Ssao.hlsl" />
     <FxCompile Include="21AmbientOcclusion\Shaders\SsaoBlur.hlsl" />
+    <FxCompile Include="22Quaternion\Shaders\Common.hlsl" />
+    <FxCompile Include="22Quaternion\Shaders\Default.hlsl" />
+    <FxCompile Include="22Quaternion\Shaders\DrawNormals.hlsl" />
+    <FxCompile Include="22Quaternion\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="22Quaternion\Shaders\ShadowDebug.hlsl" />
+    <FxCompile Include="22Quaternion\Shaders\Shadows.hlsl" />
+    <FxCompile Include="22Quaternion\Shaders\Sky.hlsl" />
+    <FxCompile Include="22Quaternion\Shaders\Ssao.hlsl" />
+    <FxCompile Include="22Quaternion\Shaders\SsaoBlur.hlsl" />
   </ItemGroup>
 </Project>
