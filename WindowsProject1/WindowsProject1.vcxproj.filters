@@ -240,6 +240,24 @@
     <ClInclude Include="22Quaternion\AnimationHelper.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="23Skinning\SkinnedData.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="23Skinning\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="23Skinning\SkinningApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="23Skinning\ShadowMap.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="23Skinning\Ssao.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="23Skinning\M3dLoader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -452,6 +470,24 @@
     <ClCompile Include="22Quaternion\AnimationHelper.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="23Skinning\SkinnedData.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="23Skinning\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="23Skinning\SkinningApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="23Skinning\ShadowMap.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="23Skinning\Ssao.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="23Skinning\M3dLoader.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -566,5 +602,14 @@
     <FxCompile Include="22Quaternion\Shaders\Sky.hlsl" />
     <FxCompile Include="22Quaternion\Shaders\Ssao.hlsl" />
     <FxCompile Include="22Quaternion\Shaders\SsaoBlur.hlsl" />
+    <FxCompile Include="23Skinning\Shaders\Common.hlsl" />
+    <FxCompile Include="23Skinning\Shaders\Default.hlsl" />
+    <FxCompile Include="23Skinning\Shaders\DrawNormals.hlsl" />
+    <FxCompile Include="23Skinning\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="23Skinning\Shaders\ShadowDebug.hlsl" />
+    <FxCompile Include="23Skinning\Shaders\Shadows.hlsl" />
+    <FxCompile Include="23Skinning\Shaders\Sky.hlsl" />
+    <FxCompile Include="23Skinning\Shaders\Ssao.hlsl" />
+    <FxCompile Include="23Skinning\Shaders\SsaoBlur.hlsl" />
   </ItemGroup>
 </Project>
