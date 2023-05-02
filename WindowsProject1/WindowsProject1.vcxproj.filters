@@ -258,6 +258,21 @@
     <ClInclude Include="23Skinning\M3dLoader.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="24Ocean\FrameResource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="24Ocean\ShadowMap.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="24Ocean\Ssao.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="24Ocean\OceanApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="24Ocean\Shaders\FftUtil.hlsl">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject1.cpp">
@@ -488,6 +503,18 @@
     <ClCompile Include="23Skinning\M3dLoader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="24Ocean\FrameResource.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="24Ocean\ShadowMap.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="24Ocean\Ssao.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="24Ocean\OceanApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -611,5 +638,14 @@
     <FxCompile Include="23Skinning\Shaders\Sky.hlsl" />
     <FxCompile Include="23Skinning\Shaders\Ssao.hlsl" />
     <FxCompile Include="23Skinning\Shaders\SsaoBlur.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\Common.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\Default.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\DrawNormals.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\LightingUtil.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\ShadowDebug.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\Shadows.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\Sky.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\Ssao.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\SsaoBlur.hlsl" />
   </ItemGroup>
 </Project>

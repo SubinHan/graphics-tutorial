@@ -26,7 +26,8 @@
 //#include "20ShadowMapping/ShadowMapApp.h"
 //#include "21AmbientOcclusion/SsaoApp.h"
 //#include "22Quaternion/QuaternionApp.h"
-#include "23Skinning/SkinningApp.h"
+//#include "23Skinning/SkinningApp.h"
+#include "24Ocean/OceanApp.h"
 #include "Common/DxDebug.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -55,7 +56,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
         //ShadowMapApp win(hInstance);
         //SsaoApp win(hInstance);
         //QuaternionApp win(hInstance);
-        SkinningApp win(hInstance);
+        //SkinningApp win(hInstance);
+        OceanApp win(hInstance);
 
         if (!win.Create(L"Learn to Program Windows", WS_OVERLAPPEDWINDOW))
         {
