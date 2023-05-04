@@ -231,7 +231,7 @@ void SsaoApp::Draw(const GameTimer& gt)
 	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Opaque]);
 
 	commandList->SetPipelineState(mPSOs["debug"].Get());
-	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Debug]);
+	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugSsao]);
 
 	commandList->SetPipelineState(mPSOs["sky"].Get());
 	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Sky]);
@@ -1332,7 +1332,7 @@ void SsaoApp::BuildRenderItems()
 	quadRitem->StartIndexLocation = quadRitem->Geo->DrawArgs["quad"].StartIndexLocation;
 	quadRitem->BaseVertexLocation = quadRitem->Geo->DrawArgs["quad"].BaseVertexLocation;
 
-	mRitemLayer[(int)RenderLayer::Debug].push_back(quadRitem.get());
+	mRitemLayer[(int)RenderLayer::DebugSsao].push_back(quadRitem.get());
 	mAllRitems.push_back(std::move(quadRitem));
 
 	auto boxRitem = std::make_unique<RenderItem>();

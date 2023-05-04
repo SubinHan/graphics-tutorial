@@ -5,6 +5,7 @@
 #include "../Common/DxUtil.h"
 #include "../Common/DDSTextureLoader.h"
 #include "FrameResource.h"
+#include "OceanMap.h"
 #include "ShadowMap.h"
 #include "../Common/Camera.h"
 #include "Ssao.h"
@@ -45,7 +46,8 @@ struct RenderItem
 enum class RenderLayer : int
 {
 	Opaque = 0,
-	Debug,
+	DebugSsao,
+	DebugOcean,
 	Sky,
 	Count
 };
@@ -57,7 +59,7 @@ public:
 	OceanApp(const OceanApp& rhs) = delete;
 	OceanApp& operator=(const OceanApp& rhs) = delete;
 	~OceanApp();
-	
+
 	bool Initialize() override;
 
 private:
@@ -78,6 +80,9 @@ private:
 	void LoadTextures();
 	void BuildRootSignature();
 	void BuildSsaoRootSignature();
+	void BuildOceanBasisRootSignature();
+	void BuildOceanDisplacementRootSignature();
+	void BuildOceanDebugRootSignature();
 	void BuildDescriptorHeaps();
 	void BuildShadersAndInputLayout();
 	void BuildShapeGeometry();
@@ -100,6 +105,28 @@ public:
 	void OnMouseMove(int x, int y, short keyState) override;
 
 private:
+	static constexpr int MAIN_ROOT_SLOT_OBJECT_CB = 0;
+	static constexpr int MAIN_ROOT_SLOT_PASS_CB = 1;
+	static constexpr int MAIN_ROOT_SLOT_MATERIAL_SRV = 2;
+	static constexpr int MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE = 3;
+	static constexpr int MAIN_ROOT_SLOT_OCEAN_TABLE = 4;
+	static constexpr int MAIN_ROOT_SLOT_TEXTURE_TABLE = 5;
+
+	static constexpr int SSAO_ROOT_SLOT_PASS_CB = 0;
+	static constexpr int SSAO_ROOT_SLOT_CONSTANTS = 1;
+	static constexpr int SSAO_ROOT_SLOT_NORMAL_DEPTH_SRV = 2;
+	static constexpr int SSAO_ROOT_SLOT_RANDOM_VECTOR_SRV = 3;
+
+	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_PASS_CB = 0;
+	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_HTILDE0_HTILDE0CONJ_SRV = 1;
+	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_DISPLACEMENT_UAV = 2;
+
+	static constexpr int OCEAN_BASIS_ROOT_SLOT_PASS_CB = 0;
+	static constexpr int OCEAN_BASIS_ROOT_SLOT_HTILDE0_UAV = 1;
+	static constexpr int OCEAN_BASIS_ROOT_SLOT_HTILDE0CONJ_UAV = 2;
+
+	static constexpr int OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV = 0;
+	static constexpr int OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV = 1;
 
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrFrameResource = nullptr;
@@ -107,6 +134,9 @@ private:
 
 	ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> mSsaoRootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> mOceanDisplacementRootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> mOceanBasisRootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> mOceanDebugRootSignature = nullptr;
 
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 
@@ -126,8 +156,14 @@ private:
 
 	UINT mSkyTexHeapIndex = 0;
 	UINT mShadowMapHeapIndex = 0;
+
 	UINT mSsaoHeapIndexStart = 0;
 	UINT mSsaoAmbientMapIndex = 0;
+
+	UINT mOceanMapHeapIndex;
+	UINT mOceanMapHTilde0Index = 0;
+	UINT mOceanMapHTilde0ConjIndex = 0;
+	UINT mOceanMapDisplacementMapIndex = 0;
 
 	UINT mNullCubeSrvIndex = 0;
 	UINT mNullTexSrvIndex1 = 0;
@@ -143,6 +179,7 @@ private:
 	std::unique_ptr<ShadowMap> mShadowMap;
 
 	std::unique_ptr<Ssao> mSsao;
+	std::unique_ptr<OceanMap> mOceanMap;
 
 	DirectX::BoundingSphere mSceneBounds;
 

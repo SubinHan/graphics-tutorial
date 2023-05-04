@@ -14,6 +14,8 @@ OceanApp::OceanApp(HINSTANCE hInstance)
 	// position and compute the bounding sphere.
 	mSceneBounds.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	mSceneBounds.Radius = sqrtf(10.0f * 10.0f + 15.0f * 15.0f);
+
+
 }
 
 OceanApp::~OceanApp()
@@ -44,9 +46,18 @@ bool OceanApp::Initialize()
 		commandList.Get(),
 		device->GetClientWidth(), device->GetClientHeight());
 
+	mOceanMap = std::make_unique<OceanMap>(
+		device->GetD3DDevice().Get(),
+		256,
+		256
+		);
+
 	LoadTextures();
 	BuildRootSignature();
 	BuildSsaoRootSignature();
+	BuildOceanBasisRootSignature();
+	BuildOceanDisplacementRootSignature();
+	BuildOceanDebugRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
 	BuildShapeGeometry();
@@ -56,6 +67,11 @@ bool OceanApp::Initialize()
 	BuildPSOs();
 
 	mSsao->SetPSOs(mPSOs["ssao"].Get(), mPSOs["ssaoBlur"].Get());
+	mOceanMap->BuildOceanBasis(
+		commandList.Get(), 
+		mOceanBasisRootSignature.Get(), 
+		mPSOs["oceanBasis"].Get()
+	);
 
 	// Execute the initialization commands.
 	ThrowIfFailed(commandList->Close());
@@ -148,15 +164,15 @@ void OceanApp::Draw(const GameTimer& gt)
 	// Bind all the mMaterials used in this scene.  For structured buffers, we can bypass the heap and 
 	// set as a root descriptor.
 	auto matBuffer = mCurrFrameResource->MaterialBuffer->Resource();
-	commandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootShaderResourceView(MAIN_ROOT_SLOT_MATERIAL_SRV, matBuffer->GetGPUVirtualAddress());
 
 	// Bind null SRV for shadow map pass.
-	commandList->SetGraphicsRootDescriptorTable(3, mNullSrv);
+	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE, mNullSrv);
 
 	// Bind all the mTextures used in this scene.  Observe
 	// that we only have to specify the first descriptor in the table.  
 	// The root signature knows how many descriptors are expected in the table.
-	commandList->SetGraphicsRootDescriptorTable(4, mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_TEXTURE_TABLE, mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 	DrawSceneToShadowMap();
 
@@ -184,7 +200,7 @@ void OceanApp::Draw(const GameTimer& gt)
 	// Bind all the mMaterials used in this scene.  For structured buffers, we can bypass the heap and 
 	// set as a root descriptor.
 	matBuffer = mCurrFrameResource->MaterialBuffer->Resource();
-	commandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootShaderResourceView(MAIN_ROOT_SLOT_MATERIAL_SRV, matBuffer->GetGPUVirtualAddress());
 
 
 	commandList->RSSetViewports(1, &device->GetScreenViewport());
@@ -212,10 +228,10 @@ void OceanApp::Draw(const GameTimer& gt)
 	// Bind all the mTextures used in this scene.  Observe
 	// that we only have to specify the first descriptor in the table.  
 	// The root signature knows how many descriptors are expected in the table.
-	commandList->SetGraphicsRootDescriptorTable(4, mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_TEXTURE_TABLE, mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 	auto passCB = mCurrFrameResource->PassCB->Resource();
-	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(MAIN_ROOT_SLOT_PASS_CB, passCB->GetGPUVirtualAddress());
 
 	// Bind the sky cube map.  For our demos, we just use one "world" cube map representing the environment
 	// from far away, so all objects will use the same cube map and we only need to set it once per-frame.  
@@ -224,16 +240,31 @@ void OceanApp::Draw(const GameTimer& gt)
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	skyTexDescriptor.Offset(mSkyTexHeapIndex, device->GetCbvSrvUavDescriptorSize());
-	commandList->SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
+	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE, skyTexDescriptor);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE oceanMapDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	oceanMapDescriptor.Offset(mOceanMapDisplacementMapIndex, device->GetCbvSrvUavDescriptorSize());
+	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_OCEAN_TABLE, oceanMapDescriptor);
 
 	commandList->SetPipelineState(mPSOs["opaque"].Get());
 	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Opaque]);
 
-	commandList->SetPipelineState(mPSOs["debug"].Get());
-	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Debug]);
+	commandList->SetPipelineState(mPSOs["debugSsao"].Get());
+	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugSsao]);
 
 	commandList->SetPipelineState(mPSOs["sky"].Get());
 	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Sky]);
+
+
+	commandList->SetGraphicsRootSignature(mOceanDebugRootSignature.Get());
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE oceanDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	oceanDescriptor.Offset(mOceanMapHTilde0Index, device->GetCbvSrvUavDescriptorSize());
+	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV, skyTexDescriptor);
+	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV, oceanDescriptor);
+
+	commandList->SetPipelineState(mPSOs["debugOcean"].Get());
+	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -562,26 +593,30 @@ void OceanApp::LoadTextures()
 
 void OceanApp::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE texTable0;
-	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0, 0);
+	CD3DX12_DESCRIPTOR_RANGE cubeShadowSsaoTable;
+	cubeShadowSsaoTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE oceanTable;
+	oceanTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE texTable1;
-	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 10, 3, 0);
+	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 10, 4, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[5];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[6];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsConstantBufferView(0);
-	slotRootParameter[1].InitAsConstantBufferView(1);
-	slotRootParameter[2].InitAsShaderResourceView(0, 1);
-	slotRootParameter[3].InitAsDescriptorTable(1, &texTable0, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[4].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[MAIN_ROOT_SLOT_OBJECT_CB].InitAsConstantBufferView(0);
+	slotRootParameter[MAIN_ROOT_SLOT_PASS_CB].InitAsConstantBufferView(1);
+	slotRootParameter[MAIN_ROOT_SLOT_MATERIAL_SRV].InitAsShaderResourceView(0, 1);
+	slotRootParameter[MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE].InitAsDescriptorTable(1, &cubeShadowSsaoTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[MAIN_ROOT_SLOT_OCEAN_TABLE].InitAsDescriptorTable(1, &oceanTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[MAIN_ROOT_SLOT_TEXTURE_TABLE].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = DxUtil::GetStaticSamplersWithShadowSampler();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(5, slotRootParameter,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(_countof(slotRootParameter), slotRootParameter,
 		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -617,10 +652,10 @@ void OceanApp::BuildSsaoRootSignature()
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsConstantBufferView(0);
-	slotRootParameter[1].InitAsConstants(1, 1);
-	slotRootParameter[2].InitAsDescriptorTable(1, &texTable0, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[3].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[SSAO_ROOT_SLOT_PASS_CB].InitAsConstantBufferView(0);
+	slotRootParameter[SSAO_ROOT_SLOT_CONSTANTS].InitAsConstants(1, 1);
+	slotRootParameter[SSAO_ROOT_SLOT_NORMAL_DEPTH_SRV].InitAsDescriptorTable(1, &texTable0, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[SSAO_ROOT_SLOT_RANDOM_VECTOR_SRV].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	const CD3DX12_STATIC_SAMPLER_DESC pointClamp(
 		0, // shaderRegister
@@ -660,7 +695,7 @@ void OceanApp::BuildSsaoRootSignature()
 	};
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(_countof(slotRootParameter), slotRootParameter,
 		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -683,6 +718,129 @@ void OceanApp::BuildSsaoRootSignature()
 		IID_PPV_ARGS(mSsaoRootSignature.GetAddressOf())));
 }
 
+void OceanApp::BuildOceanBasisRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE texTable0;
+	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE texTable1;
+	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1, 0);
+
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[OCEAN_BASIS_ROOT_SLOT_PASS_CB].InitAsConstants(mOceanMap->GetNumBasisConstants(), 0);
+	slotRootParameter[OCEAN_BASIS_ROOT_SLOT_HTILDE0_UAV].InitAsDescriptorTable(1, &texTable0);
+	slotRootParameter[OCEAN_BASIS_ROOT_SLOT_HTILDE0CONJ_UAV].InitAsDescriptorTable(1, &texTable1);
+	
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(_countof(slotRootParameter), slotRootParameter,
+		0, nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	ThrowIfFailed(hr);
+
+	ThrowIfFailed(device->GetD3DDevice()->CreateRootSignature(
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(mOceanBasisRootSignature.GetAddressOf())));
+}
+
+void OceanApp::BuildOceanDisplacementRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE texTable0;
+	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE texTable1;
+	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2, 0);
+
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[OCEAN_DISPLACEMENT_ROOT_SLOT_PASS_CB].InitAsConstantBufferView(0);
+	slotRootParameter[OCEAN_DISPLACEMENT_ROOT_SLOT_HTILDE0_HTILDE0CONJ_SRV].InitAsDescriptorTable(1, &texTable0);
+	slotRootParameter[OCEAN_DISPLACEMENT_ROOT_SLOT_DISPLACEMENT_UAV].InitAsDescriptorTable(1, &texTable1);
+
+	auto staticSamplers = DxUtil::GetStaticSamplers();
+
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(_countof(slotRootParameter), slotRootParameter,
+		(UINT)staticSamplers.size(), staticSamplers.data(),
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	ThrowIfFailed(hr);
+
+	ThrowIfFailed(device->GetD3DDevice()->CreateRootSignature(
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(mOceanDisplacementRootSignature.GetAddressOf())));
+}
+
+void OceanApp::BuildOceanDebugRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE texTable0;
+	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE texTable1;
+	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0);
+
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV].InitAsDescriptorTable(1, &texTable0);
+	slotRootParameter[OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV].InitAsDescriptorTable(1, &texTable1);
+
+	auto staticSamplers = DxUtil::GetStaticSamplers();
+
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(_countof(slotRootParameter), slotRootParameter,
+		staticSamplers.size(), staticSamplers.data(),
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	ThrowIfFailed(hr);
+
+	ThrowIfFailed(device->GetD3DDevice()->CreateRootSignature(
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(mOceanDebugRootSignature.GetAddressOf())));
+}
+
 
 void OceanApp::BuildDescriptorHeaps()
 {
@@ -690,7 +848,7 @@ void OceanApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 18;
+	srvHeapDesc.NumDescriptors = 22;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(
@@ -737,12 +895,35 @@ void OceanApp::BuildDescriptorHeaps()
 	device->GetD3DDevice()->CreateShaderResourceView(skyCubeMap.Get(), &srvDesc, hDescriptor);
 
 	mSkyTexHeapIndex = (UINT)tex2DList.size();
-	mShadowMapHeapIndex = mSkyTexHeapIndex + 1;
+	mSsaoAmbientMapIndex = mShadowMapHeapIndex = mSkyTexHeapIndex + 1;
 	mSsaoHeapIndexStart = mShadowMapHeapIndex + 1;
-	mSsaoAmbientMapIndex = mSsaoHeapIndexStart + 3;
-	mNullCubeSrvIndex = mSsaoHeapIndexStart + 5;
+
+	mOceanMapHeapIndex = mSsaoHeapIndexStart + 5;
+	mOceanMapHTilde0Index = mOceanMapHeapIndex + mOceanMap->GetHTilde0SrvIndexRelative();
+	mOceanMapHTilde0ConjIndex = mOceanMapHeapIndex + mOceanMap->GetHTilde0ConjSrvIndexRelative();
+	mOceanMapDisplacementMapIndex = mOceanMapHeapIndex + mOceanMap->GetDisplacementMapSrvIndexRelative();
+
+	mShadowMap->BuildDescriptors(
+		GetCpuSrv(mShadowMapHeapIndex),
+		GetGpuSrv(mShadowMapHeapIndex),
+		GetDsv(1));
+
+	mSsao->BuildDescriptors(
+		device->GetDepthStencilBuffer(),
+		GetCpuSrv(mSsaoHeapIndexStart),
+		GetGpuSrv(mSsaoHeapIndexStart),
+		GetRtv(device->GetSwapChainBufferCount()),
+		device->GetCbvSrvUavDescriptorSize(),
+		device->GetRtvDescriptorSize());
+
+	mOceanMap->BuildDescriptors(
+		GetCpuSrv(mOceanMapHeapIndex),
+		GetGpuSrv(mOceanMapHeapIndex));
+
+	mNullCubeSrvIndex = mOceanMapHeapIndex + mOceanMap->GetNumDescriptors();
 	mNullTexSrvIndex1 = mNullCubeSrvIndex + 1;
 	mNullTexSrvIndex2 = mNullTexSrvIndex1 + 1;
+
 
 	auto nullSrv = GetCpuSrv(mNullCubeSrvIndex);
 	mNullSrv = GetGpuSrv(mNullCubeSrvIndex);
@@ -760,18 +941,6 @@ void OceanApp::BuildDescriptorHeaps()
 	nullSrv.Offset(1, device->GetCbvSrvUavDescriptorSize());
 	device->GetD3DDevice()->CreateShaderResourceView(nullptr, &srvDesc, nullSrv);
 
-	mShadowMap->BuildDescriptors(
-		GetCpuSrv(mShadowMapHeapIndex),
-		GetGpuSrv(mShadowMapHeapIndex),
-		GetDsv(1));
-
-	mSsao->BuildDescriptors(
-		device->GetDepthStencilBuffer(),
-		GetCpuSrv(mSsaoHeapIndexStart),
-		GetGpuSrv(mSsaoHeapIndexStart),
-		GetRtv(device->GetSwapChainBufferCount()),
-		device->GetCbvSrvUavDescriptorSize(),
-		device->GetRtvDescriptorSize());
 }
 
 void OceanApp::BuildShadersAndInputLayout()
@@ -782,27 +951,33 @@ void OceanApp::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
-	mShaders["standardVS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["opaquePS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["standardVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["opaquePS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
 
-	mShaders["shadowVS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\Shadows.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["shadowOpaquePS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\Shadows.hlsl", nullptr, "PS", "ps_5_1");
-	mShaders["shadowAlphaTestedPS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\Shadows.hlsl", alphaTestDefines, "PS", "ps_5_1");
+	mShaders["shadowVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Shadows.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["shadowOpaquePS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Shadows.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["shadowAlphaTestedPS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Shadows.hlsl", alphaTestDefines, "PS", "ps_5_1");
 
-	mShaders["debugVS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\ShadowDebug.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["debugPS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\ShadowDebug.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["debugSsaoVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\ShadowDebug.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["debugSsaoPS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\ShadowDebug.hlsl", nullptr, "PS", "ps_5_1");
 
-	mShaders["drawNormalsVS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\DrawNormals.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["drawNormalsPS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\DrawNormals.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["debugOceanVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanDebug.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["debugOceanPS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanDebug.hlsl", nullptr, "PS", "ps_5_1");
 
-	mShaders["ssaoVS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\Ssao.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["ssaoPS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\Ssao.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["drawNormalsVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\DrawNormals.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["drawNormalsPS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\DrawNormals.hlsl", nullptr, "PS", "ps_5_1");
 
-	mShaders["ssaoBlurVS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\SsaoBlur.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["ssaoBlurPS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\SsaoBlur.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["ssaoVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Ssao.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["ssaoPS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Ssao.hlsl", nullptr, "PS", "ps_5_1");
 
-	mShaders["skyVS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\Sky.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["skyPS"] = DxUtil::CompileShader(L"21AmbientOcclusion\\Shaders\\Sky.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["ssaoBlurVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\SsaoBlur.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["ssaoBlurPS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\SsaoBlur.hlsl", nullptr, "PS", "ps_5_1");
+
+	mShaders["skyVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Sky.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["skyPS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Sky.hlsl", nullptr, "PS", "ps_5_1");
+
+	mShaders["oceanCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Ocean.hlsl", nullptr, "OceanCS", "cs_5_1");
+	mShaders["oceanBasisCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanBasis.hlsl", nullptr, "OceanBasisCS", "cs_5_1");
 
 	mInputLayout =
 	{
@@ -820,7 +995,8 @@ void OceanApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
-	GeometryGenerator::MeshData quad = geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+	GeometryGenerator::MeshData quadSsao = geoGen.CreateQuad(0.5f, 0.0f, 0.5f, 0.5f, 0.0f);
+	GeometryGenerator::MeshData quadOcean = geoGen.CreateQuad(0.5f, 0.5f, 0.5f, 0.5f, 0.0f);
 
 	//
 	// We are concatenating all the geometry into one big vertex/index buffer.  So
@@ -832,14 +1008,16 @@ void OceanApp::BuildShapeGeometry()
 	UINT gridVertexOffset = (UINT)box.Vertices.size();
 	UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
 	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
-	UINT quadVertexOffset = cylinderVertexOffset + (UINT)cylinder.Vertices.size();
+	UINT quadSsaoVertexOffset = cylinderVertexOffset + (UINT)cylinder.Vertices.size();
+	UINT quadOceanVertexOffset = quadSsaoVertexOffset + (UINT)quadSsao.Vertices.size();
 
 	// Cache the starting index for each object in the concatenated index buffer.
 	UINT boxIndexOffset = 0;
 	UINT gridIndexOffset = (UINT)box.Indices32.size();
 	UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
 	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
-	UINT quadIndexOffset = cylinderIndexOffset + (UINT)cylinder.Indices32.size();
+	UINT quadSsaoIndexOffset = cylinderIndexOffset + (UINT)cylinder.Indices32.size();
+	UINT quadOceanIndexOffset = quadSsaoIndexOffset + (UINT)quadSsao.Indices32.size();
 
 	SubmeshGeometry boxSubmesh;
 	boxSubmesh.IndexCount = (UINT)box.Indices32.size();
@@ -861,10 +1039,15 @@ void OceanApp::BuildShapeGeometry()
 	cylinderSubmesh.StartIndexLocation = cylinderIndexOffset;
 	cylinderSubmesh.BaseVertexLocation = cylinderVertexOffset;
 
-	SubmeshGeometry quadSubmesh;
-	quadSubmesh.IndexCount = (UINT)quad.Indices32.size();
-	quadSubmesh.StartIndexLocation = quadIndexOffset;
-	quadSubmesh.BaseVertexLocation = quadVertexOffset;
+	SubmeshGeometry quadSsaoSubmesh;
+	quadSsaoSubmesh.IndexCount = (UINT)quadSsao.Indices32.size();
+	quadSsaoSubmesh.StartIndexLocation = quadSsaoIndexOffset;
+	quadSsaoSubmesh.BaseVertexLocation = quadSsaoVertexOffset;
+
+	SubmeshGeometry quadOceanSubmesh;
+	quadOceanSubmesh.IndexCount = (UINT)quadOcean.Indices32.size();
+	quadOceanSubmesh.StartIndexLocation = quadOceanIndexOffset;
+	quadOceanSubmesh.BaseVertexLocation = quadOceanVertexOffset;
 
 	//
 	// Extract the vertex elements we are interested in and pack the
@@ -876,7 +1059,8 @@ void OceanApp::BuildShapeGeometry()
 		grid.Vertices.size() +
 		sphere.Vertices.size() +
 		cylinder.Vertices.size() +
-		quad.Vertices.size();
+		quadSsao.Vertices.size() +
+		quadOcean.Vertices.size();
 
 	std::vector<Vertex> vertices(totalVertexCount);
 
@@ -913,12 +1097,20 @@ void OceanApp::BuildShapeGeometry()
 		vertices[k].TangentU = cylinder.Vertices[i].TangentU;
 	}
 
-	for (int i = 0; i < quad.Vertices.size(); ++i, ++k)
+	for (int i = 0; i < quadSsao.Vertices.size(); ++i, ++k)
 	{
-		vertices[k].Pos = quad.Vertices[i].Position;
-		vertices[k].Normal = quad.Vertices[i].Normal;
-		vertices[k].TexC = quad.Vertices[i].TexC;
-		vertices[k].TangentU = quad.Vertices[i].TangentU;
+		vertices[k].Pos = quadSsao.Vertices[i].Position;
+		vertices[k].Normal = quadSsao.Vertices[i].Normal;
+		vertices[k].TexC = quadSsao.Vertices[i].TexC;
+		vertices[k].TangentU = quadSsao.Vertices[i].TangentU;
+	}
+
+	for (int i = 0; i < quadOcean.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = quadOcean.Vertices[i].Position;
+		vertices[k].Normal = quadOcean.Vertices[i].Normal;
+		vertices[k].TexC = quadOcean.Vertices[i].TexC;
+		vertices[k].TangentU = quadOcean.Vertices[i].TangentU;
 	}
 
 	std::vector<std::uint16_t> indices;
@@ -926,7 +1118,8 @@ void OceanApp::BuildShapeGeometry()
 	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
 	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
-	indices.insert(indices.end(), std::begin(quad.GetIndices16()), std::end(quad.GetIndices16()));
+	indices.insert(indices.end(), std::begin(quadSsao.GetIndices16()), std::end(quadSsao.GetIndices16()));
+	indices.insert(indices.end(), std::begin(quadOcean.GetIndices16()), std::end(quadOcean.GetIndices16()));
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
@@ -955,7 +1148,8 @@ void OceanApp::BuildShapeGeometry()
 	geo->DrawArgs["grid"] = gridSubmesh;
 	geo->DrawArgs["sphere"] = sphereSubmesh;
 	geo->DrawArgs["cylinder"] = cylinderSubmesh;
-	geo->DrawArgs["quad"] = quadSubmesh;
+	geo->DrawArgs["quadSsao"] = quadSsaoSubmesh;
+	geo->DrawArgs["quadOcean"] = quadOceanSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -1024,19 +1218,37 @@ void OceanApp::BuildPSOs()
 	//
 	// PSO for debug layer.
 	//
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC debugPsoDesc = basePsoDesc;
-	debugPsoDesc.pRootSignature = mRootSignature.Get();
-	debugPsoDesc.VS =
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC debugSsaoPsoDesc = basePsoDesc;
+	debugSsaoPsoDesc.pRootSignature = mRootSignature.Get();
+	debugSsaoPsoDesc.VS =
 	{
-		reinterpret_cast<BYTE*>(mShaders["debugVS"]->GetBufferPointer()),
-		mShaders["debugVS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["debugSsaoVS"]->GetBufferPointer()),
+		mShaders["debugSsaoVS"]->GetBufferSize()
 	};
-	debugPsoDesc.PS =
+	debugSsaoPsoDesc.PS =
 	{
-		reinterpret_cast<BYTE*>(mShaders["debugPS"]->GetBufferPointer()),
-		mShaders["debugPS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["debugSsaoPS"]->GetBufferPointer()),
+		mShaders["debugSsaoPS"]->GetBufferSize()
 	};
-	ThrowIfFailed(device->GetD3DDevice()->CreateGraphicsPipelineState(&debugPsoDesc, IID_PPV_ARGS(&mPSOs["debug"])));
+	ThrowIfFailed(device->GetD3DDevice()->CreateGraphicsPipelineState(&debugSsaoPsoDesc, IID_PPV_ARGS(&mPSOs["debugSsao"])));
+
+
+	//
+	// PSO for debug layer.
+	//
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC debugOceanPsoDesc = basePsoDesc;
+	debugOceanPsoDesc.pRootSignature = mOceanDebugRootSignature.Get();
+	debugOceanPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["debugOceanVS"]->GetBufferPointer()),
+		mShaders["debugOceanVS"]->GetBufferSize()
+	};
+	debugOceanPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["debugOceanPS"]->GetBufferPointer()),
+		mShaders["debugOceanPS"]->GetBufferSize()
+	};
+	ThrowIfFailed(device->GetD3DDevice()->CreateGraphicsPipelineState(&debugOceanPsoDesc, IID_PPV_ARGS(&mPSOs["debugOcean"])));
 
 	//
 	// PSO for drawing normals.
@@ -1125,6 +1337,34 @@ void OceanApp::BuildPSOs()
 	};
 	ThrowIfFailed(device->GetD3DDevice()->CreateGraphicsPipelineState(&skyPsoDesc, IID_PPV_ARGS(&mPSOs["sky"])));
 
+	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanPSO = {};
+	oceanPSO.pRootSignature = mOceanDisplacementRootSignature.Get();
+	oceanPSO.CS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["oceanCS"]->GetBufferPointer()),
+		mShaders["oceanCS"]->GetBufferSize()
+	};
+	oceanPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateComputePipelineState(
+			&oceanPSO, IID_PPV_ARGS(&mPSOs["ocean"])
+		)
+	);
+
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanBasisPSO = {};
+	oceanBasisPSO.pRootSignature = mOceanBasisRootSignature.Get();
+	oceanBasisPSO.CS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["oceanBasisCS"]->GetBufferPointer()),
+		mShaders["oceanBasisCS"]->GetBufferSize()
+	};
+	oceanBasisPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateComputePipelineState(
+			&oceanBasisPSO, IID_PPV_ARGS(&mPSOs["oceanBasis"])
+		)
+	);
 }
 
 void OceanApp::BuildFrameResources()
@@ -1213,12 +1453,26 @@ void OceanApp::BuildRenderItems()
 	quadRitem->Mat = mMaterials["bricks0"].get();
 	quadRitem->Geo = mGeometries["shapeGeo"].get();
 	quadRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	quadRitem->IndexCount = quadRitem->Geo->DrawArgs["quad"].IndexCount;
-	quadRitem->StartIndexLocation = quadRitem->Geo->DrawArgs["quad"].StartIndexLocation;
-	quadRitem->BaseVertexLocation = quadRitem->Geo->DrawArgs["quad"].BaseVertexLocation;
+	quadRitem->IndexCount = quadRitem->Geo->DrawArgs["quadSsao"].IndexCount;
+	quadRitem->StartIndexLocation = quadRitem->Geo->DrawArgs["quadSsao"].StartIndexLocation;
+	quadRitem->BaseVertexLocation = quadRitem->Geo->DrawArgs["quadSsao"].BaseVertexLocation;
 
-	mRitemLayer[(int)RenderLayer::Debug].push_back(quadRitem.get());
+	mRitemLayer[(int)RenderLayer::DebugSsao].push_back(quadRitem.get());
 	mAllRitems.push_back(std::move(quadRitem));
+
+	auto quadOceanRitem = std::make_unique<RenderItem>();
+	quadOceanRitem->World = MathHelper::Identity4x4();
+	quadOceanRitem->TexTransform = MathHelper::Identity4x4();
+	quadOceanRitem->ObjCBIndex = 1;
+	quadOceanRitem->Mat = mMaterials["bricks0"].get();
+	quadOceanRitem->Geo = mGeometries["shapeGeo"].get();
+	quadOceanRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	quadOceanRitem->IndexCount = quadOceanRitem->Geo->DrawArgs["quadOcean"].IndexCount;
+	quadOceanRitem->StartIndexLocation = quadOceanRitem->Geo->DrawArgs["quadOcean"].StartIndexLocation;
+	quadOceanRitem->BaseVertexLocation = quadOceanRitem->Geo->DrawArgs["quadOcean"].BaseVertexLocation;
+
+	mRitemLayer[(int)RenderLayer::DebugOcean].push_back(quadOceanRitem.get());
+	mAllRitems.push_back(std::move(quadOceanRitem));
 
 	auto boxRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
@@ -1247,72 +1501,6 @@ void OceanApp::BuildRenderItems()
 
 	mRitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
-
-	//XMMATRIX brickTexTransform = XMMatrixScaling(1.5f, 2.0f, 1.0f);
-	//UINT objCBIndex = 4;
-	//for (int i = 0; i < 5; ++i)
-	//{
-	//	auto leftCylRitem = std::make_unique<RenderItem>();
-	//	auto rightCylRitem = std::make_unique<RenderItem>();
-	//	auto leftSphereRitem = std::make_unique<RenderItem>();
-	//	auto rightSphereRitem = std::make_unique<RenderItem>();
-
-	//	XMMATRIX leftCylWorld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
-	//	XMMATRIX rightCylWorld = XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i * 5.0f);
-
-	//	XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i * 5.0f);
-	//	XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i * 5.0f);
-
-	//	XMStoreFloat4x4(&leftCylRitem->World, rightCylWorld);
-	//	XMStoreFloat4x4(&leftCylRitem->TexTransform, brickTexTransform);
-	//	leftCylRitem->ObjCBIndex = objCBIndex++;
-	//	leftCylRitem->Mat = mMaterials["bricks0"].get();
-	//	leftCylRitem->Geo = mGeometries["shapeGeo"].get();
-	//	leftCylRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
-	//	leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	//	leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-
-	//	XMStoreFloat4x4(&rightCylRitem->World, leftCylWorld);
-	//	XMStoreFloat4x4(&rightCylRitem->TexTransform, brickTexTransform);
-	//	rightCylRitem->ObjCBIndex = objCBIndex++;
-	//	rightCylRitem->Mat = mMaterials["bricks0"].get();
-	//	rightCylRitem->Geo = mGeometries["shapeGeo"].get();
-	//	rightCylRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
-	//	rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	//	rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-
-	//	XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
-	//	leftSphereRitem->TexTransform = MathHelper::Identity4x4();
-	//	leftSphereRitem->ObjCBIndex = objCBIndex++;
-	//	leftSphereRitem->Mat = mMaterials["mirror0"].get();
-	//	leftSphereRitem->Geo = mGeometries["shapeGeo"].get();
-	//	leftSphereRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
-	//	leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
-	//	leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
-
-	//	XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
-	//	rightSphereRitem->TexTransform = MathHelper::Identity4x4();
-	//	rightSphereRitem->ObjCBIndex = objCBIndex++;
-	//	rightSphereRitem->Mat = mMaterials["mirror0"].get();
-	//	rightSphereRitem->Geo = mGeometries["shapeGeo"].get();
-	//	rightSphereRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
-	//	rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
-	//	rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
-
-	//	mRitemLayer[(int)RenderLayer::Opaque].push_back(leftCylRitem.get());
-	//	mRitemLayer[(int)RenderLayer::Opaque].push_back(rightCylRitem.get());
-	//	mRitemLayer[(int)RenderLayer::Opaque].push_back(leftSphereRitem.get());
-	//	mRitemLayer[(int)RenderLayer::Opaque].push_back(rightSphereRitem.get());
-
-	//	mAllRitems.push_back(std::move(leftCylRitem));
-	//	mAllRitems.push_back(std::move(rightCylRitem));
-	//	mAllRitems.push_back(std::move(leftSphereRitem));
-	//	mAllRitems.push_back(std::move(rightSphereRitem));
-	//}
 }
 
 
@@ -1333,7 +1521,7 @@ void OceanApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::ve
 
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
 
-		cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+		cmdList->SetGraphicsRootConstantBufferView(MAIN_ROOT_SLOT_OBJECT_CB, objCBAddress);
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}
@@ -1361,7 +1549,7 @@ void OceanApp::DrawSceneToShadowMap()
 	UINT passCBByteSize = DxUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCB->GetGPUVirtualAddress() + 1 * passCBByteSize;
-	commandList->SetGraphicsRootConstantBufferView(1, passCBAddress);
+	commandList->SetGraphicsRootConstantBufferView(MAIN_ROOT_SLOT_PASS_CB, passCBAddress);
 
 	commandList->SetPipelineState(mPSOs["shadow_opaque"].Get());
 
@@ -1395,7 +1583,7 @@ void OceanApp::DrawNormalsAndDepth()
 
 	// Bind the constant buffer for this pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
-	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(MAIN_ROOT_SLOT_PASS_CB, passCB->GetGPUVirtualAddress());
 
 	commandList->SetPipelineState(mPSOs["drawNormals"].Get());
 

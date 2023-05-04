@@ -270,7 +270,10 @@
     <ClInclude Include="24Ocean\OceanApp.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="24Ocean\Shaders\FftUtil.hlsl">
+    <ClInclude Include="24Ocean\Shaders\OceanUtil.hlsl">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="24Ocean\OceanMap.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -515,6 +518,9 @@
     <ClCompile Include="24Ocean\OceanApp.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="24Ocean\OceanMap.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject1.rc">
@@ -647,5 +653,9 @@
     <FxCompile Include="24Ocean\Shaders\Sky.hlsl" />
     <FxCompile Include="24Ocean\Shaders\Ssao.hlsl" />
     <FxCompile Include="24Ocean\Shaders\SsaoBlur.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\Ocean.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\Complex.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\OceanDebug.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\OceanBasis.hlsl" />
   </ItemGroup>
 </Project>

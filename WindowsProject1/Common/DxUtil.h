@@ -61,13 +61,13 @@ inline void d3dSetDebugName(ID3D12DeviceChild* obj, const char* name)
         static bool ignoreAssert = false;                           \
         if(!ignoreAssert && !(x))                                   \
         {                                                           \
-            Debug::AssertResult result = Debug::ShowAssertDialog(   \
+            DebugSsao::AssertResult result = DebugSsao::ShowAssertDialog(   \
             (L#x), description, AnsiToWString(__FILE__), __LINE__); \
-        if(result == Debug::AssertIgnore)                           \
+        if(result == DebugSsao::AssertIgnore)                           \
         {                                                           \
             ignoreAssert = true;                                    \
         }                                                           \
-                    else if(result == Debug::AssertBreak)           \
+                    else if(result == DebugSsao::AssertBreak)           \
         {                                                           \
             __debugbreak();                                         \
         }                                                           \

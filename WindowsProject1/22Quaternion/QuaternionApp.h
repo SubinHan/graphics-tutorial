@@ -46,7 +46,7 @@ struct RenderItem
 enum class RenderLayer : int
 {
 	Opaque = 0,
-	Debug,
+	DebugSsao,
 	Sky,
 	Count
 };
