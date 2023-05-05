@@ -67,6 +67,11 @@ bool OceanApp::Initialize()
 	BuildPSOs();
 
 	mSsao->SetPSOs(mPSOs["ssao"].Get(), mPSOs["ssaoBlur"].Get());
+
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
 	mOceanMap->BuildOceanBasis(
 		commandList.Get(), 
 		mOceanBasisRootSignature.Get(), 
@@ -242,9 +247,9 @@ void OceanApp::Draw(const GameTimer& gt)
 	skyTexDescriptor.Offset(mSkyTexHeapIndex, device->GetCbvSrvUavDescriptorSize());
 	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE, skyTexDescriptor);
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE oceanMapDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	oceanMapDescriptor.Offset(mOceanMapDisplacementMapIndex, device->GetCbvSrvUavDescriptorSize());
-	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_OCEAN_TABLE, oceanMapDescriptor);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE oceanDisplacementDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	oceanDisplacementDescriptor.Offset(mOceanMapDisplacementMapIndex, device->GetCbvSrvUavDescriptorSize());
+	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_OCEAN_TABLE, oceanDisplacementDescriptor);
 
 	commandList->SetPipelineState(mPSOs["opaque"].Get());
 	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Opaque]);
@@ -255,16 +260,18 @@ void OceanApp::Draw(const GameTimer& gt)
 	commandList->SetPipelineState(mPSOs["sky"].Get());
 	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Sky]);
 
-
 	commandList->SetGraphicsRootSignature(mOceanDebugRootSignature.Get());
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE oceanDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	oceanDescriptor.Offset(mOceanMapHTilde0Index, device->GetCbvSrvUavDescriptorSize());
-	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV, skyTexDescriptor);
-	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV, oceanDescriptor);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE oceanBasisDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	oceanBasisDescriptor.Offset(mOceanMapHTilde0Index, device->GetCbvSrvUavDescriptorSize());
+	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV, oceanBasisDescriptor);
+	
+	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV, oceanDisplacementDescriptor);
 
 	commandList->SetPipelineState(mPSOs["debugOcean"].Get());
-	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -1522,6 +1529,21 @@ void OceanApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::ve
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
 
 		cmdList->SetGraphicsRootConstantBufferView(MAIN_ROOT_SLOT_OBJECT_CB, objCBAddress);
+
+		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
+	}
+}
+
+void OceanApp::DrawOceanDebug(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
+{
+	// For each render item...
+	for (size_t i = 0; i < ritems.size(); ++i)
+	{
+		auto ri = ritems[i];
+
+		cmdList->IASetVertexBuffers(0, 1, &ri->Geo->VertexBufferView());
+		cmdList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
+		cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}

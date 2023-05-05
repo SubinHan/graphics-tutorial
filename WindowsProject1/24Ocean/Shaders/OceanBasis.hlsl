@@ -18,6 +18,15 @@ void OceanBasisCS(
 	int3 groupThreadID : SV_GroupThreadID,
 	int3 dispatchThreadID : SV_DispatchThreadID)
 {
+	float2 hTilde0 = HTilde0(
+		dispatchThreadID.x,
+		dispatchThreadID.y,
+		gAmplitude,
+		gWind,
+		gResolutionSize,
+		gWaveLength
+	);
+
 	float2 beforeConj = HTilde0(
 		gResolutionSize - dispatchThreadID.x,
 		gResolutionSize - dispatchThreadID.y,
@@ -26,7 +35,7 @@ void OceanBasisCS(
 		gResolutionSize,
 		gWaveLength
 	);
-
-	gHTilde0[dispatchThreadID.xy] = float4(0.0f, 0.5f, 1.0f, 1.0f);
-	gHTilde0Conj[dispatchThreadID.xy] = float4(0.0f, 0.5f, 1.0f, 1.0f);
+	
+	gHTilde0[dispatchThreadID.xy] = float4(hTilde0.xy, 0.0f, 0.0f);
+	gHTilde0Conj[dispatchThreadID.xy] = float4(beforeConj.yx, 0.0f, 0.0f);
 }

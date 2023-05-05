@@ -45,18 +45,18 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 	ID3D12PipelineState* oceanBasisPSO
 	)
 {
-	OceanBasisConstants c = { 1.0f, DirectX::XMFLOAT2{0.5f, 0.5f}, 256, 1.0f };
+	OceanBasisConstants c = { 150000000000.0f, DirectX::XMFLOAT2{0.5f, 0.5f}, 256, 1.0f };
 
 	cmdList->SetComputeRootSignature(rootSig);
 
 	const auto barrierHTilde0ToUav = CD3DX12_RESOURCE_BARRIER::Transition(
 		mHTilde0.Get(),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
+		D3D12_RESOURCE_STATE_COMMON,
 		D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	const auto barrierHTilde0ConjToUav = CD3DX12_RESOURCE_BARRIER::Transition(
 		mHTilde0Conj.Get(),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
+		D3D12_RESOURCE_STATE_COMMON,
 		D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	cmdList->ResourceBarrier(1, &barrierHTilde0ToUav);
