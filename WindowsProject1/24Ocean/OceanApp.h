@@ -81,6 +81,7 @@ private:
 	void BuildRootSignature();
 	void BuildSsaoRootSignature();
 	void BuildOceanBasisRootSignature();
+	void BuildOceanFrequencyRootSignature();
 	void BuildOceanDisplacementRootSignature();
 	void BuildOceanDebugRootSignature();
 	void BuildDescriptorHeaps();
@@ -118,13 +119,19 @@ private:
 	static constexpr int SSAO_ROOT_SLOT_NORMAL_DEPTH_SRV = 2;
 	static constexpr int SSAO_ROOT_SLOT_RANDOM_VECTOR_SRV = 3;
 
-	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_PASS_CB = 0;
-	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_HTILDE0_HTILDE0CONJ_SRV = 1;
-	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_DISPLACEMENT_UAV = 2;
-
 	static constexpr int OCEAN_BASIS_ROOT_SLOT_PASS_CB = 0;
 	static constexpr int OCEAN_BASIS_ROOT_SLOT_HTILDE0_UAV = 1;
 	static constexpr int OCEAN_BASIS_ROOT_SLOT_HTILDE0CONJ_UAV = 2;
+	static constexpr int OCEAN_BASIS_ROOT_SLOT_HTILDE_UAV = 3;
+
+	static constexpr int OCEAN_FREQUENCY_ROOT_SLOT_PASS_CB = 0;
+	static constexpr int OCEAN_FREQUENCY_ROOT_SLOT_HTILDE0_SRV = 1;
+	static constexpr int OCEAN_FREQUENCY_ROOT_SLOT_HTILDE0CONJ_SRV = 2;
+	static constexpr int OCEAN_FREQUENCY_ROOT_SLOT_HTILDE_UAV = 3;
+
+	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_PASS_CB = 0;
+	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_HTILDE_UAV = 1;
+	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_DISPLACEMENT_UAV = 2;
 
 	static constexpr int OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV = 0;
 	static constexpr int OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV = 1;
@@ -135,8 +142,9 @@ private:
 
 	ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> mSsaoRootSignature = nullptr;
-	ComPtr<ID3D12RootSignature> mOceanDisplacementRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> mOceanBasisRootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> mOceanFrequencyRootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> mOceanDisplacementRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> mOceanDebugRootSignature = nullptr;
 
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
@@ -162,9 +170,6 @@ private:
 	UINT mSsaoAmbientMapIndex = 0;
 
 	UINT mOceanMapHeapIndex;
-	UINT mOceanMapHTilde0Index = 0;
-	UINT mOceanMapHTilde0ConjIndex = 0;
-	UINT mOceanMapDisplacementMapIndex = 0;
 
 	UINT mNullCubeSrvIndex = 0;
 	UINT mNullTexSrvIndex1 = 0;

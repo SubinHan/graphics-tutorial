@@ -34,6 +34,10 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	return float4(gOceanHTilde0.Sample(gsamAnisotropicWrap, pin.TexC).rgb, 1.0f);
+	float4 sampled = gOceanHTilde0.Sample(gsamAnisotropicWrap, pin.TexC);
+
+	sampled = clamp(sampled, 0.1f, 1.0f);
+
+	return float4(sampled.rgb, 1.0f);
 }
 

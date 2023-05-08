@@ -10,14 +10,14 @@ OceanMap::OceanMap(ID3D12Device* device, UINT width, UINT height)
 	mBasisFormat{ DXGI_FORMAT_R32G32B32A32_FLOAT },
 	mHTilde0{ nullptr},
 	mHTilde0Conj{ nullptr },
-	mDisplacementMap{ nullptr }
+	mDisplacementMap0{ nullptr }
 {
 	BuildResource();
 }
 
 ID3D12Resource* OceanMap::Output() const
 {
-	return mDisplacementMap.Get();
+	return mDisplacementMap0.Get();
 }
 
 void OceanMap::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE hGpuSrv)
@@ -27,15 +27,23 @@ void OceanMap::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuSrv, CD3DX12_G
 	mhCpuUavHTilde0 = hCpuSrv.Offset(1, descriptorSize);
 	mhCpuSrvHTilde0Conj = hCpuSrv.Offset(1, descriptorSize);
 	mhCpuUavHTilde0Conj = hCpuSrv.Offset(1, descriptorSize);
-	mhCpuSrvDisplacementMap = hCpuSrv.Offset(1, descriptorSize);
-	mhCpuUavDisplacementMap = hCpuSrv.Offset(1, descriptorSize);
+	mhCpuSrvHTilde = hCpuSrv.Offset(1, descriptorSize);
+	mhCpuUavHTilde = hCpuSrv.Offset(1, descriptorSize);
+	mhCpuSrvDisplacementMap0 = hCpuSrv.Offset(1, descriptorSize);
+	mhCpuUavDisplacementMap0 = hCpuSrv.Offset(1, descriptorSize);
+	mhCpuSrvDisplacementMap1 = hCpuSrv.Offset(1, descriptorSize);
+	mhCpuUavDisplacementMap1 = hCpuSrv.Offset(1, descriptorSize);
 
 	mhGpuSrvHTilde0 = hGpuSrv;
 	mhGpuUavHTilde0 = hGpuSrv.Offset(1, descriptorSize);
 	mhGpuSrvHTilde0Conj = hGpuSrv.Offset(1, descriptorSize);
 	mhGpuUavHTilde0Conj = hGpuSrv.Offset(1, descriptorSize);
-	mhGpuSrvDisplacementMap = hGpuSrv.Offset(1, descriptorSize);
-	mhGpuUavDisplacementMap = hGpuSrv.Offset(1, descriptorSize);
+	mhGpuSrvHTilde = hGpuSrv.Offset(1, descriptorSize);
+	mhGpuUavHTilde = hGpuSrv.Offset(1, descriptorSize);
+	mhGpuSrvDisplacementMap0 = hGpuSrv.Offset(1, descriptorSize);
+	mhGpuUavDisplacementMap0 = hGpuSrv.Offset(1, descriptorSize);
+	mhGpuSrvDisplacementMap1 = hGpuSrv.Offset(1, descriptorSize);
+	mhGpuUavDisplacementMap1 = hGpuSrv.Offset(1, descriptorSize);
 
 	BuildDescriptors();
 }
@@ -45,7 +53,7 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 	ID3D12PipelineState* oceanBasisPSO
 	)
 {
-	OceanBasisConstants c = { 150000000000.0f, DirectX::XMFLOAT2{0.5f, 0.5f}, 256, 1.0f };
+	OceanBasisConstants c = { 1000000000.0f, DirectX::XMFLOAT2{5.0f, 0.5f}, 256, 1.0f };
 
 	cmdList->SetComputeRootSignature(rootSig);
 
@@ -86,29 +94,205 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 	cmdList->ResourceBarrier(1, &barrierHTilde0ConjToSrv);
 }
 
-UINT OceanMap::GetHTilde0SrvIndexRelative()
+void OceanMap::ComputeOceanFrequency(ID3D12GraphicsCommandList* cmdList,
+	ID3D12RootSignature* rootSig,
+	ID3D12PipelineState* oceanFrequencyPSO,
+	float waveTime
+)
 {
-	return 0;
+	FrequencyConstants c = { 256u, 1.0f, waveTime };
+
+	cmdList->SetComputeRootSignature(rootSig);
+
+	const auto barrierHTildeToUav = CD3DX12_RESOURCE_BARRIER::Transition(
+		mHTilde.Get(),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	
+	cmdList->ResourceBarrier(1, &barrierHTildeToUav);
+
+	cmdList->SetPipelineState(oceanFrequencyPSO);
+
+	cmdList->SetComputeRoot32BitConstants(0, 3, &c, 0);
+	cmdList->SetComputeRootDescriptorTable(1, mhGpuSrvHTilde0);
+	cmdList->SetComputeRootDescriptorTable(2, mhGpuSrvHTilde0Conj);
+	cmdList->SetComputeRootDescriptorTable(3, mhGpuUavHTilde);
+
+	const auto numGroupsX = static_cast<UINT>(ceilf(mWidth / 256.0f));
+	const auto numGroupsY = mHeight;
+	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+
+	const auto barrierHTildeToSrv = CD3DX12_RESOURCE_BARRIER::Transition(
+		mHTilde.Get(),
+		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+		D3D12_RESOURCE_STATE_GENERIC_READ);
+	cmdList->ResourceBarrier(1, &barrierHTildeToSrv);
 }
 
-UINT OceanMap::GetHTilde0UavIndexRelative()
+
+void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
+	ID3D12RootSignature* rootSig,
+	ID3D12PipelineState* oceanDisplacementPso
+)
 {
-	return 1;
+	FftConstants c = { mWidth, 1 };
+
+	cmdList->SetComputeRootSignature(rootSig);
+
+	{
+		const auto barrierHTilde0ToCopySrc = CD3DX12_RESOURCE_BARRIER::Transition(
+			mHTilde.Get(),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+		const auto barrierDisplacementMap0ToCopyDest = CD3DX12_RESOURCE_BARRIER::Transition(
+			mDisplacementMap0.Get(),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			D3D12_RESOURCE_STATE_COPY_DEST);
+
+		cmdList->ResourceBarrier(1, &barrierHTilde0ToCopySrc);
+		cmdList->ResourceBarrier(1, &barrierDisplacementMap0ToCopyDest);
+		cmdList->CopyResource(mDisplacementMap0.Get(), mHTilde.Get());
+	}
+
+	{
+		const auto barrierHTilde0ToSrv = CD3DX12_RESOURCE_BARRIER::Transition(
+			mHTilde.Get(),
+			D3D12_RESOURCE_STATE_COPY_SOURCE,
+			D3D12_RESOURCE_STATE_GENERIC_READ);
+
+		const auto barrierDisplacementMap0ToUav = CD3DX12_RESOURCE_BARRIER::Transition(
+			mDisplacementMap0.Get(),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+		const auto barrierDisplacementMap1ToUav = CD3DX12_RESOURCE_BARRIER::Transition(
+			mDisplacementMap1.Get(),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+		cmdList->ResourceBarrier(1, &barrierHTilde0ToSrv);
+		cmdList->ResourceBarrier(1, &barrierDisplacementMap0ToUav);
+		cmdList->ResourceBarrier(1, &barrierDisplacementMap1ToUav);
+	}
+
+	cmdList->SetPipelineState(oceanDisplacementPso);
+
+	cmdList->SetComputeRoot32BitConstants(0, 2, &c, 0);
+	cmdList->SetComputeRootDescriptorTable(1, mhGpuUavDisplacementMap0);
+	cmdList->SetComputeRootDescriptorTable(2, mhGpuUavDisplacementMap1);
+
+	const auto numGroupsX = static_cast<UINT>(ceilf(mWidth / 256.0f));
+	const auto numGroupsY = mHeight;
+	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+
+	// discrete fourier transform »ç¿ë ½Ã
+	//const auto numGroupsY = static_cast<UINT>(ceilf(mHeight / 256.0f));
+	//cmdList->Dispatch(mWidth, numGroupsY, 1);
+
+	{
+		const auto barrierDisplacementMap0ToSrv = CD3DX12_RESOURCE_BARRIER::Transition(
+			mDisplacementMap0.Get(),
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			D3D12_RESOURCE_STATE_GENERIC_READ);
+
+		const auto barrierDisplacementMap1ToSrv = CD3DX12_RESOURCE_BARRIER::Transition(
+			mDisplacementMap1.Get(),
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			D3D12_RESOURCE_STATE_GENERIC_READ);
+		
+		cmdList->ResourceBarrier(1, &barrierDisplacementMap0ToSrv);
+		cmdList->ResourceBarrier(1, &barrierDisplacementMap1ToSrv);
+	}
+	
 }
 
-UINT OceanMap::GetHTilde0ConjSrvIndexRelative()
+CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuHTilde0Srv()
 {
-	return 2;
+	return mhCpuSrvHTilde0;
 }
 
-UINT OceanMap::GetHTilde0ConjUavIndexRelative()
+CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuHTilde0Uav()
 {
-	return 3;
+	return mhCpuUavHTilde0;
 }
 
-UINT OceanMap::GetDisplacementMapSrvIndexRelative()
+CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuHTilde0Srv()
 {
-	return 4;
+	return mhGpuSrvHTilde0;
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuHTilde0Uav()
+{
+	return mhGpuUavHTilde0;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuHTilde0ConjSrv()
+{
+	return mhCpuSrvHTilde0Conj;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuHTilde0ConjUav()
+{
+	return mhCpuUavHTilde0Conj;
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuHTilde0ConjSrv()
+{
+	return mhGpuSrvHTilde0Conj;
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuHTilde0ConjUav()
+{
+	return mhGpuUavHTilde0Conj;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuHTildeSrv()
+{
+	return mhCpuSrvHTilde;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuHTildeUav()
+{
+	return mhCpuUavHTilde;
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuHTildeSrv()
+{
+	return mhGpuSrvHTilde;
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuHTildeUav()
+{
+	return mhGpuUavHTilde;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuDisplacementMapSrv()
+{
+	return mhCpuSrvDisplacementMap1;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuDisplacementMapUav()
+{
+	return mhCpuUavDisplacementMap1;
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuDisplacementMapSrv()
+{
+	return mhGpuSrvDisplacementMap1;
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuDisplacementMapUav()
+{
+	return mhGpuUavDisplacementMap1;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuDescriptorEnd()
+{
+	auto end = mhCpuUavDisplacementMap1;
+	end.Offset(1, mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+
+	return end;
 }
 
 UINT OceanMap::GetNumBasisConstants()
@@ -116,9 +300,19 @@ UINT OceanMap::GetNumBasisConstants()
 	return 5;
 }
 
+UINT OceanMap::GetNumFrequencyConstants()
+{
+	return 3;
+}
+
+UINT OceanMap::GetNumFftConstants()
+{
+	return 2;
+}
+
 UINT OceanMap::GetNumDescriptors()
 {
-	return 6;
+	return 10;
 }
 
 void OceanMap::Execute(ID3D12GraphicsCommandList* cmdList, ID3D12RootSignature* rootSig, ID3D12PipelineState* pso)
@@ -144,12 +338,16 @@ void OceanMap::BuildDescriptors()
 	mD3dDevice->CreateUnorderedAccessView(mHTilde0.Get(), nullptr, &uavDesc, mhCpuUavHTilde0);
 	mD3dDevice->CreateShaderResourceView(mHTilde0Conj.Get(), &srvDesc, mhCpuSrvHTilde0Conj);
 	mD3dDevice->CreateUnorderedAccessView(mHTilde0Conj.Get(), nullptr, &uavDesc, mhCpuUavHTilde0Conj);
+	mD3dDevice->CreateShaderResourceView(mHTilde.Get(), &srvDesc, mhCpuSrvHTilde);
+	mD3dDevice->CreateUnorderedAccessView(mHTilde.Get(), nullptr, &uavDesc, mhCpuUavHTilde);
 
 	srvDesc.Format = mDisplacementMapFormat;
 	uavDesc.Format = mDisplacementMapFormat;
 
-	mD3dDevice->CreateShaderResourceView(mDisplacementMap.Get(), &srvDesc, mhCpuSrvDisplacementMap);
-	mD3dDevice->CreateUnorderedAccessView(mDisplacementMap.Get(), nullptr, &uavDesc, mhCpuUavDisplacementMap);
+	mD3dDevice->CreateShaderResourceView(mDisplacementMap0.Get(), &srvDesc, mhCpuSrvDisplacementMap0);
+	mD3dDevice->CreateUnorderedAccessView(mDisplacementMap0.Get(), nullptr, &uavDesc, mhCpuUavDisplacementMap0);
+	mD3dDevice->CreateShaderResourceView(mDisplacementMap1.Get(), &srvDesc, mhCpuSrvDisplacementMap1);
+	mD3dDevice->CreateUnorderedAccessView(mDisplacementMap1.Get(), nullptr, &uavDesc, mhCpuUavDisplacementMap1);
 }
 
 void OceanMap::BuildResource()
@@ -177,7 +375,18 @@ void OceanMap::BuildResource()
 			&texDesc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(&mDisplacementMap)
+			IID_PPV_ARGS(&mDisplacementMap0)
+		)
+	);
+
+	ThrowIfFailed(
+		mD3dDevice->CreateCommittedResource(
+			&heapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&texDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&mDisplacementMap1)
 		)
 	);
 
@@ -201,6 +410,17 @@ void OceanMap::BuildResource()
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&mHTilde0Conj)
+		)
+	);
+
+	ThrowIfFailed(
+		mD3dDevice->CreateCommittedResource(
+			&heapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&texDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&mHTilde)
 		)
 	);
 }

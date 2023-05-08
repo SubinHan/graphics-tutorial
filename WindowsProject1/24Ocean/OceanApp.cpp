@@ -56,6 +56,7 @@ bool OceanApp::Initialize()
 	BuildRootSignature();
 	BuildSsaoRootSignature();
 	BuildOceanBasisRootSignature();
+	BuildOceanFrequencyRootSignature();
 	BuildOceanDisplacementRootSignature();
 	BuildOceanDebugRootSignature();
 	BuildDescriptorHeaps();
@@ -160,6 +161,17 @@ void OceanApp::Draw(const GameTimer& gt)
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
+	mOceanMap->ComputeOceanFrequency(
+		commandList.Get(),
+		mOceanFrequencyRootSignature.Get(),
+		mPSOs["oceanFrequency"].Get(),
+		gt.TotalTime());
+
+	mOceanMap->ComputeOceanDisplacement(
+		commandList.Get(),
+		mOceanDisplacementRootSignature.Get(),
+		mPSOs["oceanDisplacement"].Get());
+
 	commandList->SetGraphicsRootSignature(mRootSignature.Get());
 
 	//
@@ -193,6 +205,7 @@ void OceanApp::Draw(const GameTimer& gt)
 
 	commandList->SetGraphicsRootSignature(mSsaoRootSignature.Get());
 	mSsao->ComputeSsao(commandList.Get(), mCurrFrameResource, 3);
+
 
 	//
 	// Main rendering pass.
@@ -247,8 +260,7 @@ void OceanApp::Draw(const GameTimer& gt)
 	skyTexDescriptor.Offset(mSkyTexHeapIndex, device->GetCbvSrvUavDescriptorSize());
 	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE, skyTexDescriptor);
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE oceanDisplacementDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	oceanDisplacementDescriptor.Offset(mOceanMapDisplacementMapIndex, device->GetCbvSrvUavDescriptorSize());
+	auto oceanDisplacementDescriptor = mOceanMap->GetGpuDisplacementMapSrv();
 	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_OCEAN_TABLE, oceanDisplacementDescriptor);
 
 	commandList->SetPipelineState(mPSOs["opaque"].Get());
@@ -262,16 +274,13 @@ void OceanApp::Draw(const GameTimer& gt)
 
 	commandList->SetGraphicsRootSignature(mOceanDebugRootSignature.Get());
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE oceanBasisDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	oceanBasisDescriptor.Offset(mOceanMapHTilde0Index, device->GetCbvSrvUavDescriptorSize());
-	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV, oceanBasisDescriptor);
+	auto oceanDebugDescriptor = mOceanMap->GetGpuDisplacementMapSrv();
+	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV, oceanDebugDescriptor);
 	
 	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV, oceanDisplacementDescriptor);
 
 	commandList->SetPipelineState(mPSOs["debugOcean"].Get());
 	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -733,6 +742,9 @@ void OceanApp::BuildOceanBasisRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE texTable1;
 	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1, 0);
 
+	CD3DX12_DESCRIPTOR_RANGE texTable2;
+	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1, 0);
+
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
@@ -765,20 +777,66 @@ void OceanApp::BuildOceanBasisRootSignature()
 		IID_PPV_ARGS(mOceanBasisRootSignature.GetAddressOf())));
 }
 
+void OceanApp::BuildOceanFrequencyRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE hTilde0Table;
+	hTilde0Table.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE hTilde0ConjTable;
+	hTilde0ConjTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE hTildeTable;
+	hTildeTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0);
+
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[OCEAN_FREQUENCY_ROOT_SLOT_PASS_CB].InitAsConstants(mOceanMap->GetNumFrequencyConstants(), 0);
+	slotRootParameter[OCEAN_FREQUENCY_ROOT_SLOT_HTILDE0_SRV].InitAsDescriptorTable(1, &hTilde0Table);
+	slotRootParameter[OCEAN_FREQUENCY_ROOT_SLOT_HTILDE0CONJ_SRV].InitAsDescriptorTable(1, &hTilde0ConjTable);
+	slotRootParameter[OCEAN_FREQUENCY_ROOT_SLOT_HTILDE_UAV].InitAsDescriptorTable(1, &hTildeTable);
+
+	auto staticSamplers = DxUtil::GetStaticSamplers();
+
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(_countof(slotRootParameter), slotRootParameter,
+		(UINT)staticSamplers.size(), staticSamplers.data(),
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	ThrowIfFailed(hr);
+
+	ThrowIfFailed(device->GetD3DDevice()->CreateRootSignature(
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(mOceanFrequencyRootSignature.GetAddressOf())));
+}
+
 void OceanApp::BuildOceanDisplacementRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable0;
-	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0, 0);
+	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE texTable1;
-	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2, 0);
+	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[OCEAN_DISPLACEMENT_ROOT_SLOT_PASS_CB].InitAsConstantBufferView(0);
-	slotRootParameter[OCEAN_DISPLACEMENT_ROOT_SLOT_HTILDE0_HTILDE0CONJ_SRV].InitAsDescriptorTable(1, &texTable0);
+	slotRootParameter[OCEAN_DISPLACEMENT_ROOT_SLOT_PASS_CB].InitAsConstants(mOceanMap->GetNumFftConstants(), 0);
+	slotRootParameter[OCEAN_DISPLACEMENT_ROOT_SLOT_HTILDE_UAV].InitAsDescriptorTable(1, &texTable0);
 	slotRootParameter[OCEAN_DISPLACEMENT_ROOT_SLOT_DISPLACEMENT_UAV].InitAsDescriptorTable(1, &texTable1);
 
 	auto staticSamplers = DxUtil::GetStaticSamplers();
@@ -855,7 +913,7 @@ void OceanApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 22;
+	srvHeapDesc.NumDescriptors = 26;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(
@@ -906,9 +964,6 @@ void OceanApp::BuildDescriptorHeaps()
 	mSsaoHeapIndexStart = mShadowMapHeapIndex + 1;
 
 	mOceanMapHeapIndex = mSsaoHeapIndexStart + 5;
-	mOceanMapHTilde0Index = mOceanMapHeapIndex + mOceanMap->GetHTilde0SrvIndexRelative();
-	mOceanMapHTilde0ConjIndex = mOceanMapHeapIndex + mOceanMap->GetHTilde0ConjSrvIndexRelative();
-	mOceanMapDisplacementMapIndex = mOceanMapHeapIndex + mOceanMap->GetDisplacementMapSrvIndexRelative();
 
 	mShadowMap->BuildDescriptors(
 		GetCpuSrv(mShadowMapHeapIndex),
@@ -983,8 +1038,9 @@ void OceanApp::BuildShadersAndInputLayout()
 	mShaders["skyVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Sky.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["skyPS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Sky.hlsl", nullptr, "PS", "ps_5_1");
 
-	mShaders["oceanCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Ocean.hlsl", nullptr, "OceanCS", "cs_5_1");
 	mShaders["oceanBasisCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanBasis.hlsl", nullptr, "OceanBasisCS", "cs_5_1");
+	mShaders["oceanFrequencyCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanFrequency.hlsl", nullptr, "HTildeCS", "cs_5_1");
+	mShaders["oceanDisplacementCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Fft.hlsl", nullptr, "Fft2dCS", "cs_5_1");
 
 	mInputLayout =
 	{
@@ -1003,7 +1059,7 @@ void OceanApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 	GeometryGenerator::MeshData quadSsao = geoGen.CreateQuad(0.5f, 0.0f, 0.5f, 0.5f, 0.0f);
-	GeometryGenerator::MeshData quadOcean = geoGen.CreateQuad(0.5f, 0.5f, 0.5f, 0.5f, 0.0f);
+	GeometryGenerator::MeshData quadOcean = geoGen.CreateQuad(-1.0f, 1.0f, 1.0f, 1.0f, 0.0f);
 
 	//
 	// We are concatenating all the geometry into one big vertex/index buffer.  So
@@ -1348,13 +1404,13 @@ void OceanApp::BuildPSOs()
 	oceanPSO.pRootSignature = mOceanDisplacementRootSignature.Get();
 	oceanPSO.CS =
 	{
-		reinterpret_cast<BYTE*>(mShaders["oceanCS"]->GetBufferPointer()),
-		mShaders["oceanCS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["oceanDisplacementCS"]->GetBufferPointer()),
+		mShaders["oceanDisplacementCS"]->GetBufferSize()
 	};
 	oceanPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	ThrowIfFailed(
 		device->GetD3DDevice()->CreateComputePipelineState(
-			&oceanPSO, IID_PPV_ARGS(&mPSOs["ocean"])
+			&oceanPSO, IID_PPV_ARGS(&mPSOs["oceanDisplacement"])
 		)
 	);
 
@@ -1370,6 +1426,20 @@ void OceanApp::BuildPSOs()
 	ThrowIfFailed(
 		device->GetD3DDevice()->CreateComputePipelineState(
 			&oceanBasisPSO, IID_PPV_ARGS(&mPSOs["oceanBasis"])
+		)
+	);
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanFrequencyPSO = {};
+	oceanFrequencyPSO.pRootSignature = mOceanFrequencyRootSignature.Get();
+	oceanFrequencyPSO.CS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["oceanFrequencyCS"]->GetBufferPointer()),
+		mShaders["oceanFrequencyCS"]->GetBufferSize()
+	};
+	oceanFrequencyPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateComputePipelineState(
+			&oceanFrequencyPSO, IID_PPV_ARGS(&mPSOs["oceanFrequency"])
 		)
 	);
 }

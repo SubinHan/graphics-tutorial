@@ -657,5 +657,7 @@
     <FxCompile Include="24Ocean\Shaders\Complex.hlsl" />
     <FxCompile Include="24Ocean\Shaders\OceanDebug.hlsl" />
     <FxCompile Include="24Ocean\Shaders\OceanBasis.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\Fft.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\OceanFrequency.hlsl" />
   </ItemGroup>
 </Project>

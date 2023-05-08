@@ -35,7 +35,7 @@ void OceanBasisCS(
 		gResolutionSize,
 		gWaveLength
 	);
-	
+
 	gHTilde0[dispatchThreadID.xy] = float4(hTilde0.xy, 0.0f, 0.0f);
 	gHTilde0Conj[dispatchThreadID.xy] = float4(beforeConj.yx, 0.0f, 0.0f);
 }

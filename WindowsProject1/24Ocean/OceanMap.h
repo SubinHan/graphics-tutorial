@@ -10,6 +10,19 @@ struct OceanBasisConstants
 	float WaveLength;
 };
 
+struct FrequencyConstants
+{
+	UINT ResolutionSize;
+	float WaveLength;
+	float WavveTime;
+};
+
+struct FftConstants
+{
+	UINT ResolutionSize;
+	BOOL WaveLength;
+};
+
 class OceanMap
 {
 public:
@@ -31,13 +44,32 @@ public:
 	void BuildOceanBasis(
 		ID3D12GraphicsCommandList* cmdList, ID3D12RootSignature* rootSig, ID3D12PipelineState* oceanBasisPSO
 	);
+	void ComputeOceanFrequency(ID3D12GraphicsCommandList* cmdList, ID3D12RootSignature* rootSig,
+	                           ID3D12PipelineState* oceanFrequencyPSO, float waveTime);
+	void ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList, ID3D12RootSignature* rootSig,
+	                              ID3D12PipelineState* oceanDisplacementPso);
 
-	UINT GetHTilde0SrvIndexRelative();
-	UINT GetHTilde0UavIndexRelative();
-	UINT GetHTilde0ConjSrvIndexRelative();
-	UINT GetHTilde0ConjUavIndexRelative();
-	UINT GetDisplacementMapSrvIndexRelative();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHTilde0Srv();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHTilde0Uav();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuHTilde0Srv();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuHTilde0Uav();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHTilde0ConjSrv();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHTilde0ConjUav();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuHTilde0ConjSrv();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuHTilde0ConjUav();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHTildeSrv();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHTildeUav();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuHTildeSrv();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuHTildeUav();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDisplacementMapSrv();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDisplacementMapUav();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDisplacementMapSrv();
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDisplacementMapUav();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorEnd();
+
 	UINT GetNumBasisConstants();
+	UINT GetNumFrequencyConstants();
+	UINT GetNumFftConstants();
 
 	static UINT GetNumDescriptors();
 	
@@ -63,23 +95,33 @@ private:
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuSrvHTilde0;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuUavHTilde0;
-
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuSrvHTilde0;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuUavHTilde0;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuSrvHTilde0Conj;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuUavHTilde0Conj;
-
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuSrvHTilde0Conj;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuUavHTilde0Conj;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuSrvDisplacementMap;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuUavDisplacementMap;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuSrvHTilde;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuUavHTilde;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuSrvHTilde;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuUavHTilde;
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuSrvDisplacementMap;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuUavDisplacementMap;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuSrvDisplacementMap0;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuUavDisplacementMap0;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuSrvDisplacementMap0;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuUavDisplacementMap0;
+
+	// for ping-pong
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuSrvDisplacementMap1;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuUavDisplacementMap1;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuSrvDisplacementMap1;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuUavDisplacementMap1;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> mHTilde0;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mHTilde0Conj;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mDisplacementMap;
+	Microsoft::WRL::ComPtr<ID3D12Resource> mHTilde;
+	Microsoft::WRL::ComPtr<ID3D12Resource> mDisplacementMap0;
+	Microsoft::WRL::ComPtr<ID3D12Resource> mDisplacementMap1;
 };
