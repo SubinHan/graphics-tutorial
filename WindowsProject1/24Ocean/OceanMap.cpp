@@ -182,13 +182,13 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
 	cmdList->SetComputeRootDescriptorTable(1, mhGpuUavDisplacementMap0);
 	cmdList->SetComputeRootDescriptorTable(2, mhGpuUavDisplacementMap1);
 
-	const auto numGroupsX = static_cast<UINT>(ceilf(mWidth / 256.0f));
-	const auto numGroupsY = mHeight;
-	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+	//const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
+	//const auto numGroupsY = mHeight;
+	//cmdList->Dispatch(numGroupsX, numGroupsY, 1);
 
-	// discrete fourier transform 사용 시
-	//const auto numGroupsY = static_cast<UINT>(ceilf(mHeight / 256.0f));
-	//cmdList->Dispatch(mWidth, numGroupsY, 1);
+	 //discrete fourier transform 사용 시
+	const auto numGroupsY = static_cast<UINT>(ceilf(mHeight / 256.0f));
+	cmdList->Dispatch(mWidth, numGroupsY, 1);
 
 	{
 		const auto barrierDisplacementMap0ToSrv = CD3DX12_RESOURCE_BARRIER::Transition(

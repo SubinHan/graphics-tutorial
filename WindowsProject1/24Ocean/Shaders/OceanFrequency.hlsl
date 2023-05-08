@@ -19,8 +19,8 @@ void HTildeCS(
 	int3 groupThreadID : SV_GroupThreadID,
 	int3 dispatchThreadID : SV_DispatchThreadID)
 {
-	const float2 hTilde0 = gHTilde0[dispatchThreadID.xy].xy;
-	const float2 hTilde0Conj = gHTilde0Conj[dispatchThreadID.xy].xy;
+	float2 hTilde0 = gHTilde0[dispatchThreadID.xy].xy;
+	float2 hTilde0Conj = gHTilde0Conj[dispatchThreadID.xy].xy;
 
 	float omegat = 
 		Dispersion(dispatchThreadID.x, dispatchThreadID.y, gResolutionSize, gWaveLength) * gTime * 0.1f;
@@ -31,5 +31,6 @@ void HTildeCS(
 	float2 c0 = { cos_, sin_ };
 	float2 c1 = { cos_, -sin_ };
 
-	gHTilde[dispatchThreadID.xy] = float4(hTilde0 * c0 + hTilde0Conj * c1, 0.0f, 0.0f);
+	float2 res = ComplexMul(hTilde0, c0) + ComplexMul(hTilde0Conj, c1);
+	gHTilde[dispatchThreadID.xy] = float4(res, 0.0f, 0.0f);
 }

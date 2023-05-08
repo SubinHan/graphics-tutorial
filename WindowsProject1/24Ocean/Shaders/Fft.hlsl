@@ -98,21 +98,21 @@ void Fft2dCS(
 	int3 groupThreadID : SV_GroupThreadID,
 	int3 dispatchThreadID : SV_DispatchThreadID)
 {
-	BitReversal(dispatchThreadID.y);
-	FastFourierTransform1d(dispatchThreadID.y);
-	DeviceMemoryBarrierWithGroupSync();
-	Transpose(dispatchThreadID.y);
-	DeviceMemoryBarrierWithGroupSync();
-	BitReversal(dispatchThreadID.y);
-	FastFourierTransform1d(dispatchThreadID.y);
+	//BitReversal(dispatchThreadID.y);
+	//FastFourierTransform1d(dispatchThreadID.y);
+	//DeviceMemoryBarrierWithGroupSync();
+	//Transpose(dispatchThreadID.y);
+	//DeviceMemoryBarrierWithGroupSync();
+	//BitReversal(dispatchThreadID.y);
+	//FastFourierTransform1d(dispatchThreadID.y);
 
-	for (int i = 0; i < gSize; ++i)
-	{
-		gOutput[uint2(i, dispatchThreadID.y)] *= 50.0f;
-	}
+	//for (int i = 0; i < gSize; ++i)
+	//{
+	//	gOutput[uint2(i, dispatchThreadID.y)] *= 50.0f;
+	//}
 
 
-	//DiscreteFourierTransform(dispatchThreadID.x, dispatchThreadID.y);
+	DiscreteFourierTransform(dispatchThreadID.x, dispatchThreadID.y);
 
-	//gOutput[dispatchThreadID.xy] *= 50.0f;
+	gOutput[dispatchThreadID.xy] *= 50.0f;
 }

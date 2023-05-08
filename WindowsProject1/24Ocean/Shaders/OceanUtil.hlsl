@@ -35,10 +35,10 @@ float Phillips(int n, int m, float amp, float2 wind, int res, float len)
 	float wlen = length(wind);
 	float l = wlen * wlen / G;
 	float l2 = l * l;
-	float damping = 0.01;
+	float damping = 0.001;
 	float L2 = l2 * damping * damping;
 
-	return amp * exp(-1 / (kLen2 * l2)) / kLen4 * kDotW2; // * exp(-kLen2 * L2)
+	return amp * exp(-1 / (kLen2 * l2)) / kLen4 * kDotW2 * exp(-kLen2 * L2);
 }
 
 float mod(float x, float y)
