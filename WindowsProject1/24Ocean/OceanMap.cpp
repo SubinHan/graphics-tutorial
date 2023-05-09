@@ -215,8 +215,8 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
 			D3D12_RESOURCE_STATE_COPY_DEST,
 			D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		cmdList->ResourceBarrier(1, &barrierDisplacementMap0ToSrc);
-		cmdList->ResourceBarrier(1, &barrierDisplacementMap1ToDest);
+		cmdList->ResourceBarrier(1, &barrierDisplacementMap0ToUav);
+		cmdList->ResourceBarrier(1, &barrierDisplacementMap1ToUav);
 	}
 
 	BitReversal(cmdList, bitReversalCsPso, c);

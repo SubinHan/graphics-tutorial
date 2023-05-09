@@ -64,7 +64,7 @@ void Transpose(uint2 xy)
 
 void Shift(uint2 xy)
 {
-	const int sizeHalf = gSize / 2;
+	const uint sizeHalf = gSize / 2;
 	if (xy.y < sizeHalf)
 	{
 		if (xy.x < sizeHalf)
