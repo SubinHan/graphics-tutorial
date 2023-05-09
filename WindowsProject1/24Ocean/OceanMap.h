@@ -46,8 +46,18 @@ public:
 	);
 	void ComputeOceanFrequency(ID3D12GraphicsCommandList* cmdList, ID3D12RootSignature* rootSig,
 	                           ID3D12PipelineState* oceanFrequencyPSO, float waveTime);
-	void ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList, ID3D12RootSignature* rootSig,
-	                              ID3D12PipelineState* oceanDisplacementPso);
+	
+	void ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
+	                              ID3D12RootSignature* rootSig,
+	                              ID3D12PipelineState* shiftCsPso,
+	                              ID3D12PipelineState* bitReversalCsPso,
+	                              ID3D12PipelineState* fft1dCsPso,
+	                              ID3D12PipelineState* transposeCsPso);
+
+	void Shift(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* shiftCsPso, FftConstants& c);
+	void BitReversal(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* bitReversalCsPso, FftConstants& c);
+	void Fft1d(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* fft1dCsPso, FftConstants& c);
+	void Transpose(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* transposeCsPso, FftConstants& c);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHTilde0Srv();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHTilde0Uav();

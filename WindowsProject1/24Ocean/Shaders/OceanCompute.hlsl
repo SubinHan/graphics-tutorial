@@ -15,7 +15,7 @@ groupshared int rev;
 
 void BitReversal(int row)
 {
-	for(int i = 0; i < gSize; ++i)
+	for (int i = 0; i < gSize; ++i)
 	{
 		gOutput[int2(i, row)] = gInput[int2(i, row)];
 	}
@@ -37,6 +37,22 @@ void BitReversal(int row)
 	}
 }
 
+void BitReversal(uint2 xy)
+{
+	int rev = 0;
+	for (int j = 1, target = xy.x; j < gSize; j <<= 1, target >>= 1)
+	{
+		rev = (rev << 1) + (target & 1);
+	}
+	if (xy.x < rev)
+	{
+		// swap
+		float4 temp = gOutput[xy];
+		gOutput[xy] = gOutput[uint2(rev, xy.y)];
+		gOutput[uint2(rev, xy.y)] = temp;
+	}
+}
+
 void FastFourierTransform1d(int row)
 {
 	static const float PI = 3.141592f;
@@ -55,9 +71,9 @@ void FastFourierTransform1d(int row)
 				float2 even = gOutput[int2(cur, row)];
 				float2 odd = gOutput[int2(cur + lenHalf, row)];
 
-				gOutput[int2(cur, row)] = 
+				gOutput[int2(cur, row)] =
 					float4(even + ComplexMul(wk, odd), 0.0f, 0.0f);
-				gOutput[int2(cur + lenHalf, row)] = 
+				gOutput[int2(cur + lenHalf, row)] =
 					float4(even - ComplexMul(wk, odd), 0.0f, 0.0f);
 			}
 		}
@@ -72,20 +88,55 @@ void FastFourierTransform1d(int row)
 	}
 }
 
+void FastFourierTransform1d(uint2 xy)
+{
+	static const float PI = 3.141592f;
+
+	for (int len = 2, lenHalf = 1; len <= gSize; len <<= 1, lenHalf <<= 1)
+	{
+		int j = xy.x % len;
+
+		if (j < lenHalf)
+		{
+			float theta = 2.0f * PI * j / len * (gIsInverse ? -1 : 1);
+			float2 wk = { cos(theta), sin(theta) };
+
+			float2 even = gOutput[xy];
+			float2 odd = gOutput[uint2(xy.x + lenHalf, xy.y)];
+
+			gOutput[xy] =
+				float4(even + ComplexMul(wk, odd), 0.0f, 0.0f);
+			gOutput[uint2(xy.x + lenHalf, xy.y)] =
+				float4(even - ComplexMul(wk, odd), 0.0f, 0.0f);
+		}
+		AllMemoryBarrierWithGroupSync();
+	}
+
+	if (gIsInverse)
+	{
+		gOutput[xy] /= gSize;
+	}
+}
+
 void Transpose(int row)
 {
-	for(int i = 0; i < gSize; ++i)
+	for (int i = 0; i < gSize; ++i)
 	{
 		gInput[uint2(i, row)] = gOutput[uint2(row, i)];
 	}
 }
 
+void Transpose(uint2 xy)
+{
+	gInput[xy] = gOutput[xy.yx];
+}
+
 void DiscreteFourierTransform(int col, int row)
 {
 	const int sizeHalf = gSize / 2;
-	if(row < sizeHalf)
+	if (row < sizeHalf)
 	{
-		if(col < sizeHalf)
+		if (col < sizeHalf)
 		{
 			gOutput[uint2(col, row)] = gInput[uint2(col + sizeHalf, row + sizeHalf)];
 		}
@@ -106,9 +157,9 @@ void DiscreteFourierTransform(int col, int row)
 		}
 	}
 
-	DeviceMemoryBarrier();
+	GroupMemoryBarrierWithGroupSync();
 	gInput[uint2(col, row)] = gOutput[uint2(col, row)];
-	DeviceMemoryBarrier();
+	GroupMemoryBarrierWithGroupSync();
 
 	static const float PI = 3.141592f;
 
@@ -136,7 +187,7 @@ void DiscreteFourierTransform(int col, int row)
 void Shift(int row)
 {
 	const int sizeHalf = gSize / 2;
-	if(row < sizeHalf)
+	if (row < sizeHalf)
 	{
 		for (int i = 0; i < sizeHalf; ++i)
 		{
@@ -149,7 +200,7 @@ void Shift(int row)
 	}
 	else
 	{
-		for(int i = 0; i < sizeHalf; ++i)
+		for (int i = 0; i < sizeHalf; ++i)
 		{
 			gOutput[uint2(i, row)] = gInput[uint2(i + sizeHalf, row - sizeHalf)];
 		}
@@ -158,38 +209,60 @@ void Shift(int row)
 			gOutput[uint2(i, row)] = gInput[uint2(i - sizeHalf, row - sizeHalf)];
 		}
 	}
-	DeviceMemoryBarrier();
-	for(int i = 0; i < gSize; ++i)
+
+	for (int i = 0; i < gSize; ++i)
 	{
 		gInput[uint2(i, row)] = gOutput[uint2(i, row)];
 	}
 }
 
-[numthreads(1, N, 1)]
-void Fft2dCS(
-	int3 groupThreadID : SV_GroupThreadID,
-	int3 dispatchThreadID : SV_DispatchThreadID)
+void Shift(uint2 xy)
 {
-	// 가운데가 중심이므로 0,0이 중심이 되도록 shift해야 함!
-	Shift(dispatchThreadID.y);
-	DeviceMemoryBarrier();
-
-	BitReversal(dispatchThreadID.y);
-	FastFourierTransform1d(dispatchThreadID.y);
-	DeviceMemoryBarrier();
-	Transpose(dispatchThreadID.y);
-	DeviceMemoryBarrier();
-	BitReversal(dispatchThreadID.y);
-	FastFourierTransform1d(dispatchThreadID.y);
-	DeviceMemoryBarrier();
-	Transpose(dispatchThreadID.y);
-	DeviceMemoryBarrier();
-
-	for (int i = 0; i < gSize; ++i)
+	const int sizeHalf = gSize / 2;
+	if (xy.y < sizeHalf)
 	{
-		gOutput[uint2(i, dispatchThreadID.y)] *= 10.0f;
+		if (xy.x < sizeHalf)
+		{
+			gOutput[xy] = gInput[uint2(xy.x + sizeHalf, xy.y + sizeHalf)];
+		}
+		else
+		{
+			gOutput[xy] = gInput[uint2(xy.x - sizeHalf, xy.y + sizeHalf)];
+		}
 	}
+	else
+	{
+		if (xy.x < sizeHalf)
+		{
+			gOutput[xy] = gInput[uint2(xy.x + sizeHalf, xy.y - sizeHalf)];
+		}
+		else
+		{
+			gOutput[xy] = gInput[uint2(xy.x - sizeHalf, xy.y - sizeHalf)];
+		}
+	}
+}
 
-	//DiscreteFourierTransform(dispatchThreadID.x, dispatchThreadID.y);
-	//gOutput[dispatchThreadID.xy] *= 10.0f;
+[numthreads(N, 1, 1)]
+void ShiftCS(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	Shift(dispatchThreadID.xy);
+}
+
+[numthreads(N, 1, 1)]
+void BitReversalCS(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	BitReversal(dispatchThreadID.xy);
+}
+
+[numthreads(N, 1, 1)]
+void Fft1dCS(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	FastFourierTransform1d(dispatchThreadID.xy);
+}
+
+[numthreads(N, 1, 1)]
+void TransposeCS(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	Transpose(dispatchThreadID.xy);
 }

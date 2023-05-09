@@ -170,7 +170,10 @@ void OceanApp::Draw(const GameTimer& gt)
 	mOceanMap->ComputeOceanDisplacement(
 		commandList.Get(),
 		mOceanDisplacementRootSignature.Get(),
-		mPSOs["oceanDisplacement"].Get());
+		mPSOs["oceanShift"].Get(),
+		mPSOs["oceanBitReversal"].Get(),
+		mPSOs["oceanFft1d"].Get(),
+		mPSOs["oceanTranspose"].Get());
 
 	commandList->SetGraphicsRootSignature(mRootSignature.Get());
 
@@ -1040,7 +1043,11 @@ void OceanApp::BuildShadersAndInputLayout()
 
 	mShaders["oceanBasisCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanBasis.hlsl", nullptr, "OceanBasisCS", "cs_5_1");
 	mShaders["oceanFrequencyCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanFrequency.hlsl", nullptr, "HTildeCS", "cs_5_1");
-	mShaders["oceanDisplacementCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Fft.hlsl", nullptr, "Fft2dCS", "cs_5_1");
+
+	mShaders["oceanShiftCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "ShiftCS", "cs_5_1");
+	mShaders["oceanBitReversalCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "BitReversalCS", "cs_5_1");
+	mShaders["oceanFft1dCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "Fft1dCS", "cs_5_1");
+	mShaders["oceanTransposeCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "TransposeCS", "cs_5_1");
 
 	mInputLayout =
 	{
@@ -1400,20 +1407,61 @@ void OceanApp::BuildPSOs()
 	};
 	ThrowIfFailed(device->GetD3DDevice()->CreateGraphicsPipelineState(&skyPsoDesc, IID_PPV_ARGS(&mPSOs["sky"])));
 
-	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanPSO = {};
-	oceanPSO.pRootSignature = mOceanDisplacementRootSignature.Get();
-	oceanPSO.CS =
+	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanShiftPSO = {};
+	oceanShiftPSO.pRootSignature = mOceanDisplacementRootSignature.Get();
+	oceanShiftPSO.CS =
 	{
-		reinterpret_cast<BYTE*>(mShaders["oceanDisplacementCS"]->GetBufferPointer()),
-		mShaders["oceanDisplacementCS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["oceanShiftCS"]->GetBufferPointer()),
+		mShaders["oceanShiftCS"]->GetBufferSize()
 	};
-	oceanPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	oceanShiftPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	ThrowIfFailed(
 		device->GetD3DDevice()->CreateComputePipelineState(
-			&oceanPSO, IID_PPV_ARGS(&mPSOs["oceanDisplacement"])
+			&oceanShiftPSO, IID_PPV_ARGS(&mPSOs["oceanShift"])
 		)
 	);
 
+	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanBitReversalPSO = {};
+	oceanBitReversalPSO.pRootSignature = mOceanDisplacementRootSignature.Get();
+	oceanBitReversalPSO.CS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["oceanBitReversalCS"]->GetBufferPointer()),
+		mShaders["oceanBitReversalCS"]->GetBufferSize()
+	};
+	oceanBitReversalPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateComputePipelineState(
+			&oceanBitReversalPSO, IID_PPV_ARGS(&mPSOs["oceanBitReversal"])
+		)
+	);
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanFft1dPSO = {};
+	oceanFft1dPSO.pRootSignature = mOceanDisplacementRootSignature.Get();
+	oceanFft1dPSO.CS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["oceanFft1dCS"]->GetBufferPointer()),
+		mShaders["oceanFft1dCS"]->GetBufferSize()
+	};
+	oceanFft1dPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateComputePipelineState(
+			&oceanFft1dPSO, IID_PPV_ARGS(&mPSOs["oceanFft1d"])
+		)
+	);
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanTransposePSO = {};
+	oceanTransposePSO.pRootSignature = mOceanDisplacementRootSignature.Get();
+	oceanTransposePSO.CS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["oceanTransposeCS"]->GetBufferPointer()),
+		mShaders["oceanTransposeCS"]->GetBufferSize()
+	};
+	oceanTransposePSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateComputePipelineState(
+			&oceanTransposePSO, IID_PPV_ARGS(&mPSOs["oceanTranspose"])
+		)
+	);
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanBasisPSO = {};
 	oceanBasisPSO.pRootSignature = mOceanBasisRootSignature.Get();

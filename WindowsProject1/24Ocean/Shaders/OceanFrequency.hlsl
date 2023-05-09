@@ -34,7 +34,7 @@ void HTildeCS(
 	float2 res = ComplexMul(hTilde0, c0) + ComplexMul(hTilde0Conj, c1);
 
 	// for convenience, product e^ikx before fourier transform.
-	// original result of htilde is 'res'.
+	// Afters are not original result of htilde.
 
 	float kx = 2 * PI * (dispatchThreadID.x - gResolutionSize / 2.0f);
 	float kz = 2 * PI * (dispatchThreadID.y - gResolutionSize / 2.0f);
