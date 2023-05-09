@@ -53,7 +53,7 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 	ID3D12PipelineState* oceanBasisPSO
 	)
 {
-	OceanBasisConstants c = { 1000000000.0f, DirectX::XMFLOAT2{5.0f, 0.5f}, 256, 1.0f };
+	OceanBasisConstants c = { 100.0f, DirectX::XMFLOAT2{1.0f, 0.5f}, 256, 2.0f };
 
 	cmdList->SetComputeRootSignature(rootSig);
 
@@ -182,13 +182,13 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
 	cmdList->SetComputeRootDescriptorTable(1, mhGpuUavDisplacementMap0);
 	cmdList->SetComputeRootDescriptorTable(2, mhGpuUavDisplacementMap1);
 
-	//const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
-	//const auto numGroupsY = mHeight;
-	//cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+	const auto numGroupsX = 1;
+	const auto numGroupsY = static_cast<UINT>(ceilf(static_cast<float>(mHeight) / 256.0f));
+	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
 
-	 //discrete fourier transform 사용 시
-	const auto numGroupsY = static_cast<UINT>(ceilf(mHeight / 256.0f));
-	cmdList->Dispatch(mWidth, numGroupsY, 1);
+	// //discrete fourier transform 사용 시
+	//const auto numGroupsY = static_cast<UINT>(ceilf(mHeight / 256.0f));
+	//cmdList->Dispatch(mWidth, numGroupsY, 1);
 
 	{
 		const auto barrierDisplacementMap0ToSrv = CD3DX12_RESOURCE_BARRIER::Transition(

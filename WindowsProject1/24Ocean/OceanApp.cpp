@@ -1059,7 +1059,7 @@ void OceanApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 	GeometryGenerator::MeshData quadSsao = geoGen.CreateQuad(0.5f, 0.0f, 0.5f, 0.5f, 0.0f);
-	GeometryGenerator::MeshData quadOcean = geoGen.CreateQuad(-1.0f, 1.0f, 1.0f, 1.0f, 0.0f);
+	GeometryGenerator::MeshData quadOcean = geoGen.CreateQuad(-1.0f, 1.0f, 2.0f, 2.0f, 0.0f);
 
 	//
 	// We are concatenating all the geometry into one big vertex/index buffer.  So

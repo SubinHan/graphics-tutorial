@@ -32,5 +32,20 @@ void HTildeCS(
 	float2 c1 = { cos_, -sin_ };
 
 	float2 res = ComplexMul(hTilde0, c0) + ComplexMul(hTilde0Conj, c1);
+
+	// for convenience, product e^ikx before fourier transform.
+	// original result of htilde is 'res'.
+
+	float kx = 2 * PI * (dispatchThreadID.x - gResolutionSize / 2.0f);
+	float kz = 2 * PI * (dispatchThreadID.y - gResolutionSize / 2.0f);
+	float2 k = { kx, kz };
+	float2 x =
+	{
+	dispatchThreadID.x / gResolutionSize - 0.5f,
+	dispatchThreadID.y / gResolutionSize - 0.5f
+	};
+
+	res = ComplexMul(res, dot(k, x));
 	gHTilde[dispatchThreadID.xy] = float4(res, 0.0f, 0.0f);
+
 }
