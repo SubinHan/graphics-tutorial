@@ -178,6 +178,9 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
 		cmdList->ResourceBarrier(1, &barrierDisplacementMap1ToUav);
 	}
 
+	cmdList->SetComputeRoot32BitConstants(0, 2, &c, 0);
+	cmdList->SetComputeRootDescriptorTable(1, mhGpuUavDisplacementMap0);
+	cmdList->SetComputeRootDescriptorTable(2, mhGpuUavDisplacementMap1);
 
 	Shift(cmdList, shiftCsPso, c);
 	BitReversal(cmdList, bitReversalCsPso, c);
@@ -241,52 +244,35 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
 	
 }
 
-void OceanMap::Shift(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* shiftCsPso, FftConstants& c)
+void OceanMap::Dispatch(ID3D12GraphicsCommandList* cmdList)
 {
-	cmdList->SetPipelineState(shiftCsPso);
-
-	cmdList->SetComputeRoot32BitConstants(0, 2, &c, 0);
-	cmdList->SetComputeRootDescriptorTable(1, mhGpuUavDisplacementMap0);
-	cmdList->SetComputeRootDescriptorTable(2, mhGpuUavDisplacementMap1);
 	const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
 	const auto numGroupsY = mHeight;
 	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+}
+
+void OceanMap::Shift(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* shiftCsPso, FftConstants& c)
+{
+	cmdList->SetPipelineState(shiftCsPso);
+	Dispatch(cmdList);
 }
 
 void OceanMap::BitReversal(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* bitReversalCsPso, FftConstants& c)
 {
 	cmdList->SetPipelineState(bitReversalCsPso);
-
-	cmdList->SetComputeRoot32BitConstants(0, 2, &c, 0);
-	cmdList->SetComputeRootDescriptorTable(1, mhGpuUavDisplacementMap0);
-	cmdList->SetComputeRootDescriptorTable(2, mhGpuUavDisplacementMap1);
-	const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
-	const auto numGroupsY = mHeight;
-	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+	Dispatch(cmdList);
 }
 
 void OceanMap::Fft1d(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* fft1dCsPso, FftConstants& c)
 {
 	cmdList->SetPipelineState(fft1dCsPso);
-
-	cmdList->SetComputeRoot32BitConstants(0, 2, &c, 0);
-	cmdList->SetComputeRootDescriptorTable(1, mhGpuUavDisplacementMap0);
-	cmdList->SetComputeRootDescriptorTable(2, mhGpuUavDisplacementMap1);
-	const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
-	const auto numGroupsY = mHeight;
-	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+	Dispatch(cmdList);
 }
 
 void OceanMap::Transpose(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* transposeCsPso, FftConstants& c)
 {
 	cmdList->SetPipelineState(transposeCsPso);
-
-	cmdList->SetComputeRoot32BitConstants(0, 2, &c, 0);
-	cmdList->SetComputeRootDescriptorTable(1, mhGpuUavDisplacementMap0);
-	cmdList->SetComputeRootDescriptorTable(2, mhGpuUavDisplacementMap1);
-	const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
-	const auto numGroupsY = mHeight;
-	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+	Dispatch(cmdList);
 }
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuHTilde0Srv()

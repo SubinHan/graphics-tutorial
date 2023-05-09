@@ -53,6 +53,7 @@ public:
 	                              ID3D12PipelineState* bitReversalCsPso,
 	                              ID3D12PipelineState* fft1dCsPso,
 	                              ID3D12PipelineState* transposeCsPso);
+	void Dispatch(ID3D12GraphicsCommandList* cmdList);
 
 	void Shift(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* shiftCsPso, FftConstants& c);
 	void BitReversal(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* bitReversalCsPso, FftConstants& c);
