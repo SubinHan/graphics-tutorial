@@ -263,129 +263,30 @@ void OceanApp::Draw(const GameTimer& gt)
 	skyTexDescriptor.Offset(mSkyTexHeapIndex, device->GetCbvSrvUavDescriptorSize());
 	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE, skyTexDescriptor);
 
-	auto oceanDisplacementDescriptor = mOceanMap->GetGpuDisplacementMapSrv();
-	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_OCEAN_TABLE, oceanDisplacementDescriptor);
-
 	commandList->SetPipelineState(mPSOs["opaque"].Get());
 	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Opaque]);
 
-	//commandList->SetPipelineState(mPSOs["debugSsao"].Get());
-	//DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugSsao]);
+	commandList->SetPipelineState(mPSOs["debugSsao"].Get());
+	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugSsao]);
 
 	commandList->SetPipelineState(mPSOs["sky"].Get());
 	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Sky]);
 
-	commandList->SetGraphicsRootSignature(mOceanDebugRootSignature.Get());
+	auto oceanDisplacementDescriptor = mOceanMap->GetGpuDisplacementMapSrv();
+	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_OCEAN_TABLE, oceanDisplacementDescriptor);
 
-	struct DebugConstants
+	if(mIsWireframe)
 	{
-		DirectX::XMFLOAT2 Pos;
-		float TexZ;
-		float Gain;
-	};
+		commandList->SetPipelineState(mPSOs["oceanWireframe"].Get());
+	}
+	else
+	{
+		commandList->SetPipelineState(mPSOs["ocean"].Get());
+	}
 
-	DebugConstants c = { {0.0f, 0.0f} , 0.0f, 1000.0f };
-	const int NUM_32_BITS = sizeof(DebugConstants) / 4;
-	const float SIZE_Y = 0.666f;
+	DrawRenderItems(commandList.Get(), mRitemLayer[(int)RenderLayer::Ocean]);
 
-	// Draw htilde0, htilde0*
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	auto oceanDebugDescriptor = mOceanMap->GetGpuHTilde0Srv();
-	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV, oceanDebugDescriptor);
-	
-	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV, oceanDisplacementDescriptor);
-
-	commandList->SetPipelineState(mPSOs["debugOcean"].Get());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-	c.Pos.x = 0.5f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuHTilde0ConjSrv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-	
-	c.Pos.y = SIZE_Y * -1;
-	c.TexZ = 0.4f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuHTilde0ConjSrv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-	c.Pos.x = 0.0f;
-	c.TexZ = 0.4f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuHTilde0Srv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-	c.Pos.y = SIZE_Y * -2;
-	c.TexZ = 0.7f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuHTilde0Srv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-	c.Pos.x = 0.5f;
-	c.TexZ = 0.7f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuHTilde0ConjSrv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-	// draw htilde
-	c.Pos.x = 1.0f;
-	c.Gain = 100.0f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuHTildeSrv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-	
-	c.Pos.y = SIZE_Y * -1;
-	c.TexZ = 0.4f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuHTildeSrv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-	c.Pos.y = SIZE_Y * 0;
-	c.TexZ = 0.0f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuHTildeSrv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-	// draw htilde spatial domain
-	c.Pos.x = 1.5f;
-	c.Gain = 1000.0f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuDisplacementMapSrv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-	c.Pos.y = SIZE_Y * -1;
-	c.TexZ = 0.4f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuDisplacementMapSrv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
-
-	c.Pos.y = SIZE_Y * -2;
-	c.TexZ = 0.0f;
-	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
-	commandList->SetGraphicsRootDescriptorTable(
-		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuDisplacementMapSrv());
-	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+	//DrawDebugThings(commandList.Get());
 
 	auto barrierDraw = CD3DX12_RESOURCE_BARRIER::Transition(
 		currentBackBuffer,
@@ -414,6 +315,120 @@ void OceanApp::Draw(const GameTimer& gt)
 	// set until the GPU finishes processing all the commands prior to this Signal().
 	commandQueue->Signal(device->GetFence().Get(), device->GetCurrentFence());
 }
+
+
+void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
+{
+	commandList->SetGraphicsRootSignature(mOceanDebugRootSignature.Get());
+
+	struct DebugConstants
+	{
+		DirectX::XMFLOAT2 Pos;
+		float TexZ;
+		float Gain;
+	};
+
+	DebugConstants c = { {0.0f, 0.0f} , 0.0f, 1000.0f };
+	const int NUM_32_BITS = sizeof(DebugConstants) / 4;
+
+	// Draw htilde0, htilde0*
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	auto oceanDebugDescriptor = mOceanMap->GetGpuHTilde0Srv();
+	commandList->SetGraphicsRootDescriptorTable(OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV, oceanDebugDescriptor);
+
+	commandList->SetPipelineState(mPSOs["debugOcean"].Get());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	c.Pos.x = 0.5f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuHTilde0ConjSrv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	c.Pos.y = DBEUG_SIZE_Y * -1;
+	c.TexZ = 0.4f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuHTilde0ConjSrv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	c.Pos.x = 0.0f;
+	c.TexZ = 0.4f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuHTilde0Srv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	c.Pos.y = DBEUG_SIZE_Y * -2;
+	c.TexZ = 0.7f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuHTilde0Srv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	c.Pos.x = 0.5f;
+	c.TexZ = 0.7f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuHTilde0ConjSrv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	// draw htilde
+	c.Pos.x = 1.0f;
+	c.Gain = 100.0f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuHTildeSrv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	c.Pos.y = DBEUG_SIZE_Y * -1;
+	c.TexZ = 0.4f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuHTildeSrv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	c.Pos.y = DBEUG_SIZE_Y * 0;
+	c.TexZ = 0.0f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuHTildeSrv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	// draw htilde spatial domain
+	c.Pos.x = 1.5f;
+	c.Gain = 1000.0f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuDisplacementMapSrv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	c.Pos.y = DBEUG_SIZE_Y * -1;
+	c.TexZ = 0.4f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuDisplacementMapSrv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+
+	c.Pos.y = DBEUG_SIZE_Y * -2;
+	c.TexZ = 0.0f;
+	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
+	commandList->SetGraphicsRootDescriptorTable(
+		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
+		mOceanMap->GetGpuDisplacementMapSrv());
+	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
+}
+
 
 void OceanApp::OnMouseLeftDown(int x, int y, short keyState)
 {
@@ -459,6 +474,9 @@ void OceanApp::OnKeyboardInput(const GameTimer& gt)
 
 	if (GetAsyncKeyState('D') & 0x8000)
 		mCamera.Strafe(10.0f * dt);
+
+	if (GetAsyncKeyState('I') & 0x8000)
+		mIsWireframe = !mIsWireframe;
 
 	mCamera.UpdateViewMatrix();
 }
@@ -682,6 +700,7 @@ void OceanApp::LoadTextures()
 		"bricksNormalMap",
 		"tileDiffuseMap",
 		"tileNormalMap",
+		"waterDiffuseMap",
 		"defaultDiffuseMap",
 		"defaultNormalMap",
 		"skyCubeMap"
@@ -693,6 +712,7 @@ void OceanApp::LoadTextures()
 		L"Textures/bricks2_nmap.dds",
 		L"Textures/tile.dds",
 		L"Textures/tile_nmap.dds",
+		L"Textures/water.dds",
 		L"Textures/white1x1.dds",
 		L"Textures/default_nmap.dds",
 		L"Textures/sunsetcube1024.dds"
@@ -731,7 +751,7 @@ void OceanApp::BuildRootSignature()
 	slotRootParameter[MAIN_ROOT_SLOT_PASS_CB].InitAsConstantBufferView(1);
 	slotRootParameter[MAIN_ROOT_SLOT_MATERIAL_SRV].InitAsShaderResourceView(0, 1);
 	slotRootParameter[MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE].InitAsDescriptorTable(1, &cubeShadowSsaoTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[MAIN_ROOT_SLOT_OCEAN_TABLE].InitAsDescriptorTable(1, &oceanTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[MAIN_ROOT_SLOT_OCEAN_TABLE].InitAsDescriptorTable(1, &oceanTable, D3D12_SHADER_VISIBILITY_DOMAIN);
 	slotRootParameter[MAIN_ROOT_SLOT_TEXTURE_TABLE].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = DxUtil::GetStaticSamplersWithShadowSampler();
@@ -1152,6 +1172,11 @@ void OceanApp::BuildShadersAndInputLayout()
 	mShaders["oceanFft1dCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "Fft1dCS", "cs_5_1");
 	mShaders["oceanTransposeCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "TransposeCS", "cs_5_1");
 
+	mShaders["tessVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Tessellation.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["tessHS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Tessellation.hlsl", nullptr, "HS", "hs_5_1");
+	mShaders["tessDS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Tessellation.hlsl", nullptr, "DS", "ds_5_1");
+	mShaders["tessPS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Tessellation.hlsl", nullptr, "PS", "ps_5_1");
+
 	mInputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -1169,7 +1194,7 @@ void OceanApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 	GeometryGenerator::MeshData quadSsao = geoGen.CreateQuad(0.5f, 0.0f, 0.5f, 0.5f, 0.0f);
-	GeometryGenerator::MeshData quadOcean = geoGen.CreateQuad(-1.0f, 1.0f, 0.5f, 0.6666f, 0.0f);
+	GeometryGenerator::MeshData quadOcean = geoGen.CreateQuad(-1.0f, 1.0f, 0.5f, DBEUG_SIZE_Y, 0.0f);
 
 	//
 	// We are concatenating all the geometry into one big vertex/index buffer.  So
@@ -1593,6 +1618,39 @@ void OceanApp::BuildPSOs()
 			&oceanFrequencyPSO, IID_PPV_ARGS(&mPSOs["oceanFrequency"])
 		)
 	);
+
+	auto oceanPsoDesc = opaquePsoDesc;
+	oceanPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+	oceanPsoDesc.VS =
+	{
+	reinterpret_cast<BYTE*>(mShaders["tessVS"]->GetBufferPointer()),
+	mShaders["tessVS"]->GetBufferSize()
+	};
+	oceanPsoDesc.HS =
+	{
+	reinterpret_cast<BYTE*>(mShaders["tessHS"]->GetBufferPointer()),
+	mShaders["tessHS"]->GetBufferSize()
+	};
+	oceanPsoDesc.DS =
+	{
+	reinterpret_cast<BYTE*>(mShaders["tessDS"]->GetBufferPointer()),
+	mShaders["tessDS"]->GetBufferSize()
+	};
+	oceanPsoDesc.PS =
+	{
+	reinterpret_cast<BYTE*>(mShaders["tessPS"]->GetBufferPointer()),
+	mShaders["tessPS"]->GetBufferSize()
+	};
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateGraphicsPipelineState(
+			&oceanPsoDesc, IID_PPV_ARGS(&mPSOs["ocean"])));
+
+
+	auto wireframePsoDesc = oceanPsoDesc;
+	wireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateGraphicsPipelineState(
+			&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["oceanWireframe"])));
 }
 
 void OceanApp::BuildFrameResources()
@@ -1651,11 +1709,21 @@ void OceanApp::BuildMaterials()
 	sky->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	sky->Roughness = 1.0f;
 
+	auto waterMat = std::make_unique<Material>();
+	waterMat->Name = "waterMat";
+	waterMat->MatCBIndex = 5;
+	waterMat->NormalSrvHeapIndex = 7;
+	waterMat->DiffuseSrvHeapIndex = 4;
+	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.07f, 0.15f, 0.8f);
+	waterMat->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
+	waterMat->Roughness = 0.1f;
+
 	mMaterials["bricks0"] = std::move(bricks0);
 	mMaterials["tile0"] = std::move(tile0);
 	mMaterials["mirror0"] = std::move(mirror0);
 	mMaterials["skullMat"] = std::move(skullMat);
 	mMaterials["sky"] = std::move(sky);
+	mMaterials["waterMat"] = std::move(waterMat);
 }
 
 void OceanApp::BuildRenderItems()
@@ -1717,17 +1785,17 @@ void OceanApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(boxRitem));
 
 	auto gridRitem = std::make_unique<RenderItem>();
-	gridRitem->World = MathHelper::Identity4x4();
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(8.0f, 8.0f, 1.0f));
+	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f));
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(.0f, 8.0f, 1.0f));
 	gridRitem->ObjCBIndex = 3;
-	gridRitem->Mat = mMaterials["tile0"].get();
+	gridRitem->Mat = mMaterials["waterMat"].get();
 	gridRitem->Geo = mGeometries["shapeGeo"].get();
-	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 
-	mRitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
+	mRitemLayer[(int)RenderLayer::Ocean].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
 }
 

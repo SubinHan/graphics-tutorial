@@ -49,6 +49,7 @@ enum class RenderLayer : int
 	DebugSsao,
 	DebugOcean,
 	Sky,
+	Ocean,
 	Count
 };
 
@@ -95,6 +96,7 @@ private:
 	void DrawOceanDebug(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	void DrawSceneToShadowMap();
 	void DrawNormalsAndDepth();
+	void DrawDebugThings(ComPtr<ID3D12GraphicsCommandList> commandList);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrv(int index)const;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrv(int index)const;
@@ -137,6 +139,8 @@ private:
 	static constexpr int OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV = 1;
 	static constexpr int OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV = 2;
 
+	static constexpr float DBEUG_SIZE_Y = 0.5f;
+
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrFrameResource = nullptr;
 	int mCurrFrameResourceIndex = 0;
@@ -175,6 +179,8 @@ private:
 	UINT mNullCubeSrvIndex = 0;
 	UINT mNullTexSrvIndex1 = 0;
 	UINT mNullTexSrvIndex2 = 0;
+
+	bool mIsWireframe;
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mNullSrv;
 

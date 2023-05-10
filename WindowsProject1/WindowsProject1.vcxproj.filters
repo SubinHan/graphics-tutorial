@@ -659,5 +659,6 @@
     <FxCompile Include="24Ocean\Shaders\OceanBasis.hlsl" />
     <FxCompile Include="24Ocean\Shaders\OceanCompute.hlsl" />
     <FxCompile Include="24Ocean\Shaders\OceanFrequency.hlsl" />
+    <FxCompile Include="24Ocean\Shaders\Tessellation.hlsl" />
   </ItemGroup>
 </Project>
