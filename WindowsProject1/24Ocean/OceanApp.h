@@ -133,8 +133,9 @@ private:
 	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_HTILDE_UAV = 1;
 	static constexpr int OCEAN_DISPLACEMENT_ROOT_SLOT_DISPLACEMENT_UAV = 2;
 
-	static constexpr int OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV = 0;
-	static constexpr int OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV = 1;
+	static constexpr int OCEAN_DEBUG_ROOT_SLOT_PASS_CB = 0;
+	static constexpr int OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV = 1;
+	static constexpr int OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV = 2;
 
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrFrameResource = nullptr;

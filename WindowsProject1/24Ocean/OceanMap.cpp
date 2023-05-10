@@ -78,7 +78,8 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 
 	const auto numGroupsX = static_cast<UINT>(ceilf(mWidth / 16.0f));
 	const auto numGroupsY = static_cast<UINT>(ceilf(mHeight / 16.0f));
-	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+	constexpr UINT numGroupsZ = NUM_OCEAN_BASIS; // x, y, z
+	cmdList->Dispatch(numGroupsX, numGroupsY, numGroupsZ);
 
 	const auto barrierHTilde0ToSrv = CD3DX12_RESOURCE_BARRIER::Transition(
 		mHTilde0.Get(),
@@ -120,7 +121,8 @@ void OceanMap::ComputeOceanFrequency(ID3D12GraphicsCommandList* cmdList,
 
 	const auto numGroupsX = static_cast<UINT>(ceilf(mWidth / 256.0f));
 	const auto numGroupsY = mHeight;
-	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+	const UINT numGroupsZ = NUM_OCEAN_BASIS;
+	cmdList->Dispatch(numGroupsX, numGroupsY, numGroupsZ);
 
 	const auto barrierHTildeToSrv = CD3DX12_RESOURCE_BARRIER::Transition(
 		mHTilde.Get(),
@@ -222,11 +224,7 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
 	BitReversal(cmdList, bitReversalCsPso, c);
 	Fft1d(cmdList, fft1dCsPso, c);
 	Transpose(cmdList, transposeCsPso, c);
-
-	// //discrete fourier transform »ç¿ë ½Ã
-	//const auto numGroupsY = static_cast<UINT>(ceilf(mHeight / 256.0f));
-	//cmdList->Dispatch(mWidth, numGroupsY, 1);
-
+	
 	{
 		const auto barrierDisplacementMap0ToSrv = CD3DX12_RESOURCE_BARRIER::Transition(
 			mDisplacementMap0.Get(),
@@ -248,7 +246,8 @@ void OceanMap::Dispatch(ID3D12GraphicsCommandList* cmdList)
 {
 	const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
 	const auto numGroupsY = mHeight;
-	cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+	const auto numGroupsZ = NUM_OCEAN_BASIS;
+	cmdList->Dispatch(numGroupsX, numGroupsY, numGroupsZ);
 }
 
 void OceanMap::Shift(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* shiftCsPso, FftConstants& c)
@@ -392,15 +391,18 @@ void OceanMap::BuildDescriptors()
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = mBasisFormat;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+	srvDesc.Texture3D.MipLevels = 1;
+	srvDesc.Texture3D.MostDetailedMip = 0;
+	srvDesc.Texture3D.ResourceMinLODClamp = 0.0f;
 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 
 	uavDesc.Format = mBasisFormat;
-	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-	uavDesc.Texture2D.MipSlice = 0;
+	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+	uavDesc.Texture3D.FirstWSlice = 0;
+	uavDesc.Texture3D.MipSlice = 0;
+	uavDesc.Texture3D.WSize = 3; // x, y, z
 
 	mD3dDevice->CreateShaderResourceView(mHTilde0.Get(), &srvDesc, mhCpuSrvHTilde0);
 	mD3dDevice->CreateUnorderedAccessView(mHTilde0.Get(), nullptr, &uavDesc, mhCpuUavHTilde0);
@@ -422,11 +424,11 @@ void OceanMap::BuildResource()
 {
 	D3D12_RESOURCE_DESC texDesc;
 	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
-	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
 	texDesc.Alignment = 0;
 	texDesc.Width = mWidth;
 	texDesc.Height = mHeight;
-	texDesc.DepthOrArraySize = 1;
+	texDesc.DepthOrArraySize = 3;
 	texDesc.MipLevels = 1;
 	texDesc.Format = mDisplacementMapFormat;
 	texDesc.SampleDesc.Count = 1;

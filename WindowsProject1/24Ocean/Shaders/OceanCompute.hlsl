@@ -6,46 +6,46 @@ cbuffer cbFftConstants : register(b0)
 	bool gIsInverse;
 }
 
-RWTexture2D<float4> gInput : register(u0);
-RWTexture2D<float4> gOutput : register(u1);
+RWTexture3D<float4> gInput : register(u0);
+RWTexture3D<float4> gOutput : register(u1);
 
 #define N 256
 
-void BitReversal(uint2 xy)
+void BitReversal(uint3 xyz)
 {
 	int rev = 0;
-	for (int j = 1, target = xy.x; j < gSize; j <<= 1, target >>= 1)
+	for (int j = 1, target = xyz.x; j < gSize; j <<= 1, target >>= 1)
 	{
 		rev = (rev << 1) + (target & 1);
 	}
-	if (xy.x < rev)
+	if (xyz.x < rev)
 	{
 		// swap
-		float4 temp = gOutput[xy];
-		gOutput[xy] = gOutput[uint2(rev, xy.y)];
-		gOutput[uint2(rev, xy.y)] = temp;
+		float4 temp = gOutput[xyz];
+		gOutput[xyz] = gOutput[uint3(rev, xyz.y, xyz.z)];
+		gOutput[uint3(rev, xyz.y, xyz.z)] = temp;
 	}
 }
 
-void FastFourierTransform1d(uint2 xy)
+void FastFourierTransform1d(uint3 xyz)
 {
 	static const float PI = 3.141592f;
 
 	for (int len = 2, lenHalf = 1; len <= gSize; len <<= 1, lenHalf <<= 1)
 	{
-		int j = xy.x % len;
+		int j = xyz.x % len;
 
 		if (j < lenHalf)
 		{
 			float theta = 2.0f * PI * j / len * (gIsInverse ? -1 : 1);
 			float2 wk = { cos(theta), sin(theta) };
 
-			float2 even = gOutput[xy];
-			float2 odd = gOutput[uint2(xy.x + lenHalf, xy.y)];
+			float2 even = gOutput[xyz];
+			float2 odd = gOutput[uint3(xyz.x + lenHalf, xyz.y, xyz.z)];
 
-			gOutput[xy] =
+			gOutput[xyz] =
 				float4(even + ComplexMul(wk, odd), 0.0f, 0.0f);
-			gOutput[uint2(xy.x + lenHalf, xy.y)] =
+			gOutput[uint3(xyz.x + lenHalf, xyz.y, xyz.z)] =
 				float4(even - ComplexMul(wk, odd), 0.0f, 0.0f);
 		}
 		AllMemoryBarrierWithGroupSync();
@@ -53,38 +53,38 @@ void FastFourierTransform1d(uint2 xy)
 
 	if (gIsInverse)
 	{
-		gOutput[xy] /= gSize;
+		gOutput[xyz] /= gSize;
 	}
 }
 
-void Transpose(uint2 xy)
+void Transpose(uint3 xyz)
 {
-	gInput[xy] = gOutput[xy.yx];
+	gInput[xyz] = gOutput[xyz.yxz];
 }
 
-void Shift(uint2 xy)
+void Shift(uint3 xyz)
 {
 	const uint sizeHalf = gSize / 2;
-	if (xy.y < sizeHalf)
+	if (xyz.y < sizeHalf)
 	{
-		if (xy.x < sizeHalf)
+		if (xyz.x < sizeHalf)
 		{
-			gOutput[xy] = gInput[uint2(xy.x + sizeHalf, xy.y + sizeHalf)];
+			gOutput[xyz] = gInput[uint3(xyz.x + sizeHalf, xyz.y + sizeHalf, xyz.z)];
 		}
 		else
 		{
-			gOutput[xy] = gInput[uint2(xy.x - sizeHalf, xy.y + sizeHalf)];
+			gOutput[xyz] = gInput[uint3(xyz.x - sizeHalf, xyz.y + sizeHalf, xyz.z)];
 		}
 	}
 	else
 	{
-		if (xy.x < sizeHalf)
+		if (xyz.x < sizeHalf)
 		{
-			gOutput[xy] = gInput[uint2(xy.x + sizeHalf, xy.y - sizeHalf)];
+			gOutput[xyz] = gInput[uint3(xyz.x + sizeHalf, xyz.y - sizeHalf, xyz.z)];
 		}
 		else
 		{
-			gOutput[xy] = gInput[uint2(xy.x - sizeHalf, xy.y - sizeHalf)];
+			gOutput[xyz] = gInput[uint3(xyz.x - sizeHalf, xyz.y - sizeHalf, xyz.z)];
 		}
 	}
 }
@@ -92,23 +92,23 @@ void Shift(uint2 xy)
 [numthreads(N, 1, 1)]
 void ShiftCS(int3 dispatchThreadID : SV_DispatchThreadID)
 {
-	Shift(dispatchThreadID.xy);
+	Shift(dispatchThreadID.xyz);
 }
 
 [numthreads(N, 1, 1)]
 void BitReversalCS(int3 dispatchThreadID : SV_DispatchThreadID)
 {
-	BitReversal(dispatchThreadID.xy);
+	BitReversal(dispatchThreadID.xyz);
 }
 
 [numthreads(N, 1, 1)]
 void Fft1dCS(int3 dispatchThreadID : SV_DispatchThreadID)
 {
-	FastFourierTransform1d(dispatchThreadID.xy);
+	FastFourierTransform1d(dispatchThreadID.xyz);
 }
 
 [numthreads(N, 1, 1)]
 void TransposeCS(int3 dispatchThreadID : SV_DispatchThreadID)
 {
-	Transpose(dispatchThreadID.xy);
+	Transpose(dispatchThreadID.xyz);
 }

@@ -46,19 +46,19 @@ float mod(float x, float y)
 	return x - y * floor(x / y);
 }
 
-float Rand(float2 uv)
+float Rand(float2 uv, float randSeed)
 {
-	float result = sin(mod(12345678.f, dot(uv, float2(12.9898, 78.233) * 2.0))) * 43758.5453;
+	float result = sin(mod(12345678.f, dot(uv, float2(12.9898, 78.233) * 2.0))) * (43758.5453 + randSeed);
 	result = frac(result);
 	return result;
 }
 
-float2 RandNegative1ToPositive1(float2 uv)
+float2 RandNegative1ToPositive1(float2 uv, float randSeed)
 {
 	float2 r;
-	float2 isNegative = Rand(float2(uv.x, uv.y));
-	r.x = Rand(float2(uv.x + 31.2452, uv.y + 27.6354));
-	r.y = Rand(float2(uv.x + 11.67834, uv.y + 51.3214));
+	float2 isNegative = Rand(float2(uv.x, uv.y), randSeed);
+	r.x = Rand(float2(uv.x + 31.2452, uv.y + 27.6354), randSeed);
+	r.y = Rand(float2(uv.x + 11.67834, uv.y + 51.3214), randSeed);
 
 	if (isNegative.x > 0.5f)
 		r.x = -r.x;
@@ -67,7 +67,7 @@ float2 RandNegative1ToPositive1(float2 uv)
 
 	return float2(r.x, r.y);
 }
-float2 HTilde0(int n, int m, float amp, float2 wind, int res, float len)
+float2 HTilde0(int n, int m, float amp, float2 wind, int res, float len, float randSeed)
 {
-	return ComplexMul(RandNegative1ToPositive1(float2(n, m)), sqrt(Phillips(n, m, amp, wind, res, len) / 2.0f));
+	return ComplexMul(RandNegative1ToPositive1(float2(n, m), randSeed), sqrt(Phillips(n, m, amp, wind, res, len) / 2.0f));
 }

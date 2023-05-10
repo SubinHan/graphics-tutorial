@@ -34,7 +34,9 @@ public:
 	OceanMap& operator=(const OceanMap& other) = delete;
 	OceanMap& operator=(OceanMap&& other) noexcept = default;
 	~OceanMap() = default;
-	
+
+	static constexpr UINT NUM_OCEAN_BASIS = 3; // x, y, z
+
 	ID3D12Resource* Output() const;
 
 	void BuildDescriptors(
