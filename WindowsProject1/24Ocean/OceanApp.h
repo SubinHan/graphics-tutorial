@@ -139,7 +139,7 @@ private:
 	static constexpr int OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV = 1;
 	static constexpr int OCEAN_DEBUG_ROOT_SLOT_DISPLACEMENT_SRV = 2;
 
-	static constexpr float DBEUG_SIZE_Y = 0.5f;
+	static constexpr float DEBUG_SIZE_Y = 0.5f;
 
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrFrameResource = nullptr;
@@ -181,6 +181,9 @@ private:
 	UINT mNullTexSrvIndex2 = 0;
 
 	bool mIsWireframe;
+	bool mIsDebugging;
+	float mWireframeChangedTime;
+	float mDebuggingChangedTime;
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mNullSrv;
 

@@ -36,6 +36,7 @@ public:
 	~OceanMap() = default;
 
 	static constexpr UINT NUM_OCEAN_BASIS = 3; // x, y, z
+	static constexpr UINT NUM_OCEAN_FREQUENCY = 9; // x, y, z, slopex(x, y, z), slopez(x, y, z)
 
 	ID3D12Resource* Output() const;
 
