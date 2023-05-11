@@ -73,7 +73,6 @@ PatchTess ConstantHS(InputPatch<VertexOut, 3> patch, uint patchID : SV_Primitive
 	const float d1 = 50.0f;
 
 	float tess = 1.0f + 7.0f * saturate((d1 - d) / (d1 - d0));
-	tess = 1.0f;
 	pt.EdgeTess[0] = tess;
 	pt.EdgeTess[1] = tess;
 	pt.EdgeTess[2] = tess;
@@ -198,7 +197,7 @@ DomainOut DS(PatchTess patchTess,
 
 	float3 slopeZ = { slopeZX.x, slopeZY.x, slopeZZ.x };
 
-	float3 normalL = cross(normalize(slopeX), normalize(slopeZ));
+	float3 normalL = normalize(cross(slopeX, slopeZ));
 
 
 	float3 tangentU = normalize(
@@ -239,9 +238,8 @@ float4 PS(DomainOut pin) : SV_Target
 
 	// Interpolating normal can unnormalize it, so renormalize it.
 	pin.NormalW = normalize(pin.NormalW);
-
-	float4 normalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
-	float3 bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
+	
+	float3 bumpedNormalW = pin.NormalW;
 
 	//float4 normalMapSample1 = gTextureMaps[normalMapIndex1].Sample(
 	//	gsamAnisotropicWrap, pin.TexC1);
@@ -263,7 +261,7 @@ float4 PS(DomainOut pin) : SV_Target
 	// Light terms.
 	float4 ambient = gAmbientLight * diffuseAlbedo;
 
-	const float shininess = (1.0f - roughness) * normalMapSample.a;
+	const float shininess = (1.0f - roughness);
 	Material mat = { diffuseAlbedo, fresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
 	float4 directLight = ComputeLighting(gLights, mat, pin.PosW,

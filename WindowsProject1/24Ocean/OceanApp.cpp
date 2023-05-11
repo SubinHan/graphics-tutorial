@@ -1760,8 +1760,8 @@ void OceanApp::BuildMaterials()
 	waterMat->MatCBIndex = 5;
 	waterMat->NormalSrvHeapIndex = 7;
 	waterMat->DiffuseSrvHeapIndex = 4;
-	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.07f, 0.15f, 0.8f);
-	waterMat->FresnelR0 = XMFLOAT3(0.2f, 0.2f, 0.2f);
+	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.07f, 0.15f, 1.0f);
+	waterMat->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	waterMat->Roughness = 0.5f;
 
 	mMaterials["bricks0"] = std::move(bricks0);

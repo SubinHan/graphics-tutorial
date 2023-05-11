@@ -55,18 +55,16 @@ void HTildeCS(
 
 	float delta = 1.f / 256.0f;
 	float2 dx = { delta, delta };
-	float2 ik = { 0.f, dot(k, dx) };
-
-	float2 ikComplex = sin(ik.y);
+	float2 ik = { 0.f, sin(dot(k, dx)) };
 
 	// calculate slope
 	if(dispatchThreadID.z > 5)
 	{
-		res = ComplexMul(res, ikComplex) - res;
+		res = ComplexMul(res, ik) - res;
 	}
 	else if(dispatchThreadID.z > 2)
 	{
-		res = ComplexMul(res, ikComplex) - res;
+		res = ComplexMul(res, ik) - res;
 	}
 
 	gHTilde[dispatchThreadID.xyz] = float4(res, 0.0f, 0.0f);

@@ -239,7 +239,8 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
 		cmdList->ResourceBarrier(1, &barrierDisplacementMap0ToSrv);
 		cmdList->ResourceBarrier(1, &barrierDisplacementMap1ToSrv);
 	}
-	
+
+
 }
 
 void OceanMap::Dispatch(ID3D12GraphicsCommandList* cmdList)

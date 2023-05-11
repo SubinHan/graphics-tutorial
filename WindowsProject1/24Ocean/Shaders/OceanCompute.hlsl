@@ -89,6 +89,20 @@ void Shift(uint3 xyz)
 	}
 }
 
+void MakeDisplacement(int3 xyz)
+{
+	gOutput[uint3(xyz.xy, 0)] = float4(
+		gInput[uint3(xyz.xy, 0)].x,
+		gInput[uint3(xyz.xy, 1)].x,
+		gInput[uint3(xyz.xy, 2)].x,
+		0.0f);
+}
+
+void CalculateNormal(int3 xyz)
+{
+	
+}
+
 [numthreads(N, 1, 1)]
 void ShiftCS(int3 dispatchThreadID : SV_DispatchThreadID)
 {
@@ -111,4 +125,17 @@ void Fft1dCS(int3 dispatchThreadID : SV_DispatchThreadID)
 void TransposeCS(int3 dispatchThreadID : SV_DispatchThreadID)
 {
 	Transpose(dispatchThreadID.xyz);
+}
+
+
+[numthreads(N, 1, 1)]
+void MakeDisplacementCS(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	MakeDisplacement(dispatchThreadID.xyz);
+}
+
+[numthreads(N, 1, 1)]
+void CalculateNormalCS(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	CalculateNormal(dispatchThreadID.xyz);
 }
