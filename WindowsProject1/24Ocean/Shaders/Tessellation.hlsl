@@ -138,12 +138,67 @@ DomainOut DS(PatchTess patchTess,
 
 	float3 displacement = float3(
 		displacementX.x, 
-		displacementY.x, 
-		displacementZ.x);
+		displacementY.x * 400.f, 
+		displacementZ.x * 400.f);
 
-	pos += displacement * 50.0f;
+	pos += displacement * 100.f;
 
-	float3 normalL = normalize(gOceanNormalMap.SampleLevel(gsamAnisotropicWrap, float3(texC, 0.0f), 0));
+	//float4 slopeXX0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXX), 0);
+	//float4 slopeXY0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXY), 0);
+	//float4 slopeXZ0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXZ), 0);
+
+	//float4 slopeXX1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeXX), 0);
+	//float4 slopeXY1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeXY), 0);
+	//float4 slopeXZ1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeXZ), 0);
+
+	//float4 slopeXX2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeXX), 0);
+	//float4 slopeXY2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeXY), 0);
+	//float4 slopeXZ2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeXZ), 0);
+
+	//float3 slopeX0 = { slopeXX0.x, slopeXY0.x, slopeXZ0.x };
+	//float3 slopeX1 = { slopeXX1.x, slopeXY1.x, slopeXZ1.x };
+	//float3 slopeX2 = { slopeXX2.x, slopeXY2.x, slopeXZ2.x };
+
+	//float4 slopeZX0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeZX), 0);
+	//float4 slopeZY0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeZY), 0);
+	//float4 slopeZZ0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeZZ), 0);
+
+	//float4 slopeZX1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeZX), 0);
+	//float4 slopeZY1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeZY), 0);
+	//float4 slopeZZ1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeZZ), 0);
+
+	//float4 slopeZX2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeZX), 0);
+	//float4 slopeZY2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeZY), 0);
+	//float4 slopeZZ2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeZZ), 0);
+
+	//float3 slopeZ0 = { slopeZX0.x, slopeZY0.x, slopeZZ0.x };
+	//float3 slopeZ1 = { slopeZX1.x, slopeZY1.x, slopeZZ1.x };
+	//float3 slopeZ2 = { slopeZX2.x, slopeZY2.x, slopeZZ2.x };
+
+	//float3 normalL0 = cross(normalize(slopeX0), normalize(slopeZ0));
+	//float3 normalL1 = cross(normalize(slopeX1), normalize(slopeZ1));
+	//float3 normalL2 = cross(normalize(slopeX2), normalize(slopeZ2));
+
+	//float3 normalL = normalize(
+	//	normalL0 * uvw[0] +
+	//	normalL1 * uvw[1] +
+	//	normalL2 * uvw[2]
+	//);
+
+	float4 slopeXX = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeXX), 0);
+	float4 slopeXY = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeXY), 0);
+	float4 slopeXZ = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeXZ), 0);
+
+	float4 slopeZX = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeZX), 0);
+	float4 slopeZY = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeZY), 0);
+	float4 slopeZZ = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeZZ), 0);
+
+	float3 slopeX = { slopeXX.x, slopeXY.x, slopeXZ.x };
+
+	float3 slopeZ = { slopeZX.x, slopeZY.x, slopeZZ.x };
+
+	float3 normalL = normalize(cross(slopeX, slopeZ));
+
 
 	float3 tangentU = normalize(
 		triPatch[0].TangentU * uvw[0] +
@@ -210,7 +265,7 @@ float4 PS(DomainOut pin) : SV_Target
 	Material mat = { diffuseAlbedo, fresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
 	float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
-		pin.NormalW, toEyeW, shadowFactor);
+		bumpedNormalW, toEyeW, shadowFactor);
 
 	float4 litColor = ambient + directLight;
 
@@ -227,5 +282,5 @@ float4 PS(DomainOut pin) : SV_Target
 	// Common convention to take alpha from diffuse material.
 	litColor.a = diffuseAlbedo.a;
 
-	return float4(pin.NormalW, 1.0f);
+	return litColor;
 }

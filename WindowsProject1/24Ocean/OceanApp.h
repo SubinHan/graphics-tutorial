@@ -114,8 +114,7 @@ private:
 	static constexpr int MAIN_ROOT_SLOT_MATERIAL_SRV = 2;
 	static constexpr int MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE = 3;
 	static constexpr int MAIN_ROOT_SLOT_OCEAN_TABLE = 4;
-	static constexpr int MAIN_ROOT_SLOT_OCEAN_NORMAL_TABLE = 5;
-	static constexpr int MAIN_ROOT_SLOT_TEXTURE_TABLE = 6;
+	static constexpr int MAIN_ROOT_SLOT_TEXTURE_TABLE = 5;
 
 	static constexpr int SSAO_ROOT_SLOT_PASS_CB = 0;
 	static constexpr int SSAO_ROOT_SLOT_CONSTANTS = 1;
