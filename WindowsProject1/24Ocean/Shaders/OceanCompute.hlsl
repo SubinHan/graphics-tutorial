@@ -100,7 +100,25 @@ void MakeDisplacement(int3 xyz)
 
 void CalculateNormal(int3 xyz)
 {
-	
+	float4 fK = gOutput[uint3(xyz.xy, 0)];
+
+	float4 fDx = gOutput[uint3(xyz.x + 1, xyz.y, 0)];
+	float4 fDz = gOutput[uint3(xyz.x, xyz.y + 1, 0)];
+
+	float delta = 1.0 / 1000.0f;
+
+	//float3 dx = (fDx - fK).xyz;
+	//float3 dz = (fDz - fK).xyz;
+
+	float3 dx = (fDx - fK).xyz + float3(delta, 0.0f, 0.0f);
+	float3 dz = (fDz - fK).xyz + float3(0.0f, 0.0f, delta);
+
+	float3 normal = normalize(cross(normalize(dx), normalize(dz)));
+
+	if (length(normal) < 0.1f)
+		normal = float3(0.0f, 1.0f, 0.0f);
+
+	gInput[uint3(xyz.xy, 0)] = float4(normal, 0.0f);
 }
 
 [numthreads(N, 1, 1)]

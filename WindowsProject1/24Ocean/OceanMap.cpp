@@ -53,7 +53,7 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 	ID3D12PipelineState* oceanBasisPSO
 	)
 {
-	OceanBasisConstants c = { 100.0f, DirectX::XMFLOAT2{1.0f, 0.5f}, 256, 2.0f };
+	OceanBasisConstants c = { 1000000000.0f, DirectX::XMFLOAT2{1.0f, 0.5f}, 256, 1.0f };
 
 	cmdList->SetComputeRootSignature(rootSig);
 
@@ -136,7 +136,9 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
                                         ID3D12PipelineState* shiftCsPso,
                                         ID3D12PipelineState* bitReversalCsPso,
                                         ID3D12PipelineState* fft1dCsPso,
-                                        ID3D12PipelineState* transposeCsPso
+                                        ID3D12PipelineState* transposeCsPso,
+                                        ID3D12PipelineState* makeDisplacementPso,
+                                        ID3D12PipelineState* calculateNormalPso
 )
 {
 	FftConstants c = { mWidth, 1 };
@@ -224,7 +226,10 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
 	BitReversal(cmdList, bitReversalCsPso, c);
 	Fft1d(cmdList, fft1dCsPso, c);
 	Transpose(cmdList, transposeCsPso, c);
-	
+
+	MakeDisplacement(cmdList, makeDisplacementPso, c);
+	CalculateNormal(cmdList, calculateNormalPso, c);
+
 	{
 		const auto barrierDisplacementMap0ToSrv = CD3DX12_RESOURCE_BARRIER::Transition(
 			mDisplacementMap0.Get(),
@@ -273,6 +278,26 @@ void OceanMap::Transpose(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState
 {
 	cmdList->SetPipelineState(transposeCsPso);
 	Dispatch(cmdList);
+}
+
+void OceanMap::MakeDisplacement(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* makeDisplacementPso,
+	FftConstants& c)
+{
+	cmdList->SetPipelineState(makeDisplacementPso);
+	const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
+	const auto numGroupsY = mHeight;
+	const auto numGroupsZ = 1;
+	cmdList->Dispatch(numGroupsX, numGroupsY, numGroupsZ);
+}
+
+void OceanMap::CalculateNormal(ID3D12GraphicsCommandList* cmdList, ID3D12PipelineState* calculateNormalPso,
+	FftConstants& c)
+{
+	cmdList->SetPipelineState(calculateNormalPso);
+	const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
+	const auto numGroupsY = mHeight;
+	const auto numGroupsZ = 1;
+	cmdList->Dispatch(numGroupsX, numGroupsY, numGroupsZ);
 }
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuHTilde0Srv()
@@ -354,6 +379,12 @@ CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuDisplacementMapUav()
 {
 	return mhGpuUavDisplacementMap1;
 }
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE OceanMap::GetGpuNormalMapSrv()
+{
+	return mhGpuSrvDisplacementMap0;
+}
+
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE OceanMap::GetCpuDescriptorEnd()
 {

@@ -54,16 +54,18 @@ void HTildeCS(
 	res = ComplexMul(res, kDotXComplex);
 
 	float delta = 1.f / 256.0f;
-	float2 dx = { delta, delta };
-	float2 ik = { 0.f, sin(dot(k, dx)) };
+	float2 dx = { delta, 0.0f };
+	float2 dz = { 0.0f, delta };
 
 	// calculate slope
 	if(dispatchThreadID.z > 5)
 	{
+		float2 ik = { 0.f, sin(dot(k, dz)) };
 		res = ComplexMul(res, ik) - res;
 	}
 	else if(dispatchThreadID.z > 2)
 	{
+		float2 ik = { 0.f, sin(dot(k, dz)) };
 		res = ComplexMul(res, ik) - res;
 	}
 

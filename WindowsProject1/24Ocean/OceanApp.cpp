@@ -173,7 +173,10 @@ void OceanApp::Draw(const GameTimer& gt)
 		mPSOs["oceanShift"].Get(),
 		mPSOs["oceanBitReversal"].Get(),
 		mPSOs["oceanFft1d"].Get(),
-		mPSOs["oceanTranspose"].Get());
+		mPSOs["oceanTranspose"].Get(),
+		mPSOs["oceanMakeDisplacement"].Get(),
+		mPSOs["oceanCalculateNormal"].Get()
+		);
 
 	commandList->SetGraphicsRootSignature(mRootSignature.Get());
 
@@ -274,6 +277,7 @@ void OceanApp::Draw(const GameTimer& gt)
 
 	auto oceanDisplacementDescriptor = mOceanMap->GetGpuDisplacementMapSrv();
 	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_OCEAN_TABLE, oceanDisplacementDescriptor);
+	commandList->SetGraphicsRootDescriptorTable(MAIN_ROOT_SLOT_OCEAN_NORMAL_TABLE, mOceanMap->GetGpuNormalMapSrv());
 
 	if(mIsWireframe)
 	{
@@ -384,7 +388,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 
 	// draw htilde
 	c.Pos.x = 1.0f;
-	c.Gain = 1000.0f;
+	c.Gain = 1.0f;
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
 	commandList->SetGraphicsRootDescriptorTable(
 		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
@@ -409,7 +413,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 
 	// draw htilde spatial domain
 	c.Pos.x = 1.5f;
-	c.Gain = 100000.0f;
+	c.Gain = 100.0f;
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
 	commandList->SetGraphicsRootDescriptorTable(
 		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
@@ -434,7 +438,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 
 	c.Pos.y = DEBUG_SIZE_Y * -3;
 	c.TexZ = Z_INDEX_GAP * 6;
-	c.Gain = 100000.f;
+	c.Gain = 100.f;
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
 	commandList->SetGraphicsRootDescriptorTable(
 		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
@@ -452,11 +456,12 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
 
 	c.Pos.x = 0.0f;
-	c.TexZ = Z_INDEX_GAP * 6;
+	c.TexZ = Z_INDEX_GAP * 0;
+	c.Gain = 1.0f;
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
 	commandList->SetGraphicsRootDescriptorTable(
 		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
-		mOceanMap->GetGpuHTildeSrv());
+		mOceanMap->GetGpuNormalMapSrv());
 	DrawOceanDebug(commandList.Get(), mRitemLayer[(int)RenderLayer::DebugOcean]);
 }
 
@@ -786,11 +791,14 @@ void OceanApp::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE oceanTable;
 	oceanTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3, 0);
 
+	CD3DX12_DESCRIPTOR_RANGE oceanNormalTable;
+	oceanNormalTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4, 0);
+
 	CD3DX12_DESCRIPTOR_RANGE texTable1;
 	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 10, 4, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[6];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[7];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[MAIN_ROOT_SLOT_OBJECT_CB].InitAsConstantBufferView(0);
@@ -798,6 +806,7 @@ void OceanApp::BuildRootSignature()
 	slotRootParameter[MAIN_ROOT_SLOT_MATERIAL_SRV].InitAsShaderResourceView(0, 1);
 	slotRootParameter[MAIN_ROOT_SLOT_CUBE_SHADOW_SSAO_TABLE].InitAsDescriptorTable(1, &cubeShadowSsaoTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[MAIN_ROOT_SLOT_OCEAN_TABLE].InitAsDescriptorTable(1, &oceanTable, D3D12_SHADER_VISIBILITY_DOMAIN);
+	slotRootParameter[MAIN_ROOT_SLOT_OCEAN_NORMAL_TABLE].InitAsDescriptorTable(1, &oceanNormalTable, D3D12_SHADER_VISIBILITY_DOMAIN);
 	slotRootParameter[MAIN_ROOT_SLOT_TEXTURE_TABLE].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = DxUtil::GetStaticSamplersWithShadowSampler();
@@ -1217,6 +1226,8 @@ void OceanApp::BuildShadersAndInputLayout()
 	mShaders["oceanBitReversalCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "BitReversalCS", "cs_5_1");
 	mShaders["oceanFft1dCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "Fft1dCS", "cs_5_1");
 	mShaders["oceanTransposeCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "TransposeCS", "cs_5_1");
+	mShaders["oceanMakeDisplacementCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "MakeDisplacementCS", "cs_5_1");
+	mShaders["oceanCalculateNormalCS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\OceanCompute.hlsl", nullptr, "CalculateNormalCS", "cs_5_1");
 
 	mShaders["tessVS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Tessellation.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["tessHS"] = DxUtil::CompileShader(L"24Ocean\\Shaders\\Tessellation.hlsl", nullptr, "HS", "hs_5_1");
@@ -1637,6 +1648,34 @@ void OceanApp::BuildPSOs()
 		)
 	);
 
+	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanMakeDisplacementPSO = {};
+	oceanMakeDisplacementPSO.pRootSignature = mOceanDisplacementRootSignature.Get();
+	oceanMakeDisplacementPSO.CS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["oceanMakeDisplacementCS"]->GetBufferPointer()),
+		mShaders["oceanMakeDisplacementCS"]->GetBufferSize()
+	};
+	oceanMakeDisplacementPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateComputePipelineState(
+			&oceanMakeDisplacementPSO, IID_PPV_ARGS(&mPSOs["oceanMakeDisplacement"])
+		)
+	);
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanCalculateNormalPSO = {};
+	oceanCalculateNormalPSO.pRootSignature = mOceanDisplacementRootSignature.Get();
+	oceanCalculateNormalPSO.CS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["oceanCalculateNormalCS"]->GetBufferPointer()),
+		mShaders["oceanCalculateNormalCS"]->GetBufferSize()
+	};
+	oceanCalculateNormalPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(
+		device->GetD3DDevice()->CreateComputePipelineState(
+			&oceanCalculateNormalPSO, IID_PPV_ARGS(&mPSOs["oceanCalculateNormal"])
+		)
+	);
+
 	D3D12_COMPUTE_PIPELINE_STATE_DESC oceanBasisPSO = {};
 	oceanBasisPSO.pRootSignature = mOceanBasisRootSignature.Get();
 	oceanBasisPSO.CS =
@@ -1664,7 +1703,6 @@ void OceanApp::BuildPSOs()
 			&oceanFrequencyPSO, IID_PPV_ARGS(&mPSOs["oceanFrequency"])
 		)
 	);
-
 	auto oceanPsoDesc = opaquePsoDesc;
 	oceanPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
 	oceanPsoDesc.VS =
@@ -1759,10 +1797,10 @@ void OceanApp::BuildMaterials()
 	waterMat->Name = "waterMat";
 	waterMat->MatCBIndex = 5;
 	waterMat->NormalSrvHeapIndex = 7;
-	waterMat->DiffuseSrvHeapIndex = 4;
-	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.07f, 0.15f, 1.0f);
-	waterMat->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	waterMat->Roughness = 0.5f;
+	waterMat->DiffuseSrvHeapIndex = 5;
+	waterMat->DiffuseAlbedo = XMFLOAT4(0.1f, 0.2f, 0.5f, 1.0f);
+	waterMat->FresnelR0 = XMFLOAT3(0.9f, 0.9f, 0.9f);
+	waterMat->Roughness = 0.99f;
 
 	mMaterials["bricks0"] = std::move(bricks0);
 	mMaterials["tile0"] = std::move(tile0);
