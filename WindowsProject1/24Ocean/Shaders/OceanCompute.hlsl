@@ -9,7 +9,7 @@ cbuffer cbFftConstants : register(b0)
 RWTexture3D<float4> gInput : register(u0);
 RWTexture3D<float4> gOutput : register(u1);
 
-#define N 256
+#define N 512
 
 void BitReversal(uint3 xyz)
 {

@@ -53,7 +53,7 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 	ID3D12PipelineState* oceanBasisPSO
 	)
 {
-	OceanBasisConstants c = { 100.0f, DirectX::XMFLOAT2{1.0f, 0.5f}, 256, 2.0f };
+	OceanBasisConstants c = { 100.0f, DirectX::XMFLOAT2{3.0f, 0.5f}, mWidth, 1.0f };
 
 	cmdList->SetComputeRootSignature(rootSig);
 
@@ -101,7 +101,7 @@ void OceanMap::ComputeOceanFrequency(ID3D12GraphicsCommandList* cmdList,
 	float waveTime
 )
 {
-	FrequencyConstants c = { 256u, 1.0f, waveTime };
+	FrequencyConstants c = { mWidth, 1.0f, waveTime };
 
 	cmdList->SetComputeRootSignature(rootSig);
 
@@ -119,7 +119,7 @@ void OceanMap::ComputeOceanFrequency(ID3D12GraphicsCommandList* cmdList,
 	cmdList->SetComputeRootDescriptorTable(2, mhGpuSrvHTilde0Conj);
 	cmdList->SetComputeRootDescriptorTable(3, mhGpuUavHTilde);
 
-	const auto numGroupsX = static_cast<UINT>(ceilf(mWidth / 256.0f));
+	const auto numGroupsX = static_cast<UINT>(ceilf(mWidth / 512.0f));
 	const auto numGroupsY = mHeight;
 	const UINT numGroupsZ = NUM_OCEAN_FREQUENCY;
 	cmdList->Dispatch(numGroupsX, numGroupsY, numGroupsZ);
@@ -245,7 +245,7 @@ void OceanMap::ComputeOceanDisplacement(ID3D12GraphicsCommandList* cmdList,
 
 void OceanMap::Dispatch(ID3D12GraphicsCommandList* cmdList)
 {
-	const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 256.0f));
+	const auto numGroupsX = static_cast<UINT>(ceilf(static_cast<float>(mWidth) / 512.0f));
 	const auto numGroupsY = mHeight;
 	const auto numGroupsZ = NUM_OCEAN_FREQUENCY;
 	cmdList->Dispatch(numGroupsX, numGroupsY, numGroupsZ);

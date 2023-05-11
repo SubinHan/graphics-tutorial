@@ -48,8 +48,8 @@ bool OceanApp::Initialize()
 
 	mOceanMap = std::make_unique<OceanMap>(
 		device->GetD3DDevice().Get(),
-		256,
-		256
+		512,
+		512
 		);
 
 	LoadTextures();

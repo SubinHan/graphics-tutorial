@@ -132,16 +132,16 @@ DomainOut DS(PatchTess patchTess,
 	const float textureSlopeZY = 0.777f;
 	const float textureSlopeZZ = 0.888f;
 
-	float4 displacementX = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureDepthX), 0);
-	float4 displacementY = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureDepthY), 0);
-	float4 displacementZ = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureDepthZ), 0);
+	float4 displacementX = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureDepthX), 0);
+	float4 displacementY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureDepthY), 0);
+	float4 displacementZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureDepthZ), 0);
 
 	float3 displacement = float3(
 		displacementX.x, 
 		displacementY.x * 400.f, 
 		displacementZ.x * 400.f);
 
-	pos += displacement * 150.f;
+	pos += displacement * 1500.f;
 
 	//float4 slopeXX0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXX), 0);
 	//float4 slopeXY0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXY), 0);
@@ -185,13 +185,13 @@ DomainOut DS(PatchTess patchTess,
 	//	normalL2 * uvw[2]
 	//);
 
-	float4 slopeXX = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeXX), 0);
-	float4 slopeXY = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeXY), 0);
-	float4 slopeXZ = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeXZ), 0);
+	float4 slopeXX = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXX), 0);
+	float4 slopeXY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXY), 0);
+	float4 slopeXZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXZ), 0);
 
-	float4 slopeZX = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeZX), 0);
-	float4 slopeZY = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeZY), 0);
-	float4 slopeZZ = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC, textureSlopeZZ), 0);
+	float4 slopeZX = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZX), 0);
+	float4 slopeZY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZY), 0);
+	float4 slopeZZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZZ), 0);
 
 	float3 slopeX = { slopeXX.x, slopeXY.x, slopeXZ.x };
 
@@ -268,6 +268,5 @@ float4 PS(DomainOut pin) : SV_Target
 
 	// Common convention to take alpha from diffuse material.
 	litColor.a = diffuseAlbedo.a;
-
 	return litColor;
 }
