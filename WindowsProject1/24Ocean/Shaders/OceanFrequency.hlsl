@@ -53,17 +53,49 @@ void HTildeCS(
 
 	res = ComplexMul(res, kDotXComplex);
 
-	float delta = 1.f / 256.0f;
-	float2 dx = { delta, delta };
-	float2 ik = { 0.f, sin(dot(k, dx)) };
+	float delta = 1.f / gResolutionSize;
+	float2 dx = { delta, 0.0f };
+	float2 dz = { 0.0f, delta };
+
+	float len = length(k);
+
+	if (basisIndex.z == 0)
+	{
+		if (len < 0.00001f)
+		{
+			res = float2(0.0f, 0.0f);
+		}
+		else
+		{
+			const float2 ikk = { 0.0f, kx / length(k) };
+			res = ComplexMul(res, ikk);
+		}
+	}
+
+	if (basisIndex.z == 2)
+	{
+		if (len < 0.00001f)
+		{
+			res = float2(0.0f, 0.0f);
+		}
+		else
+		{
+			const float2 ikk = { 0.0f, kz / length(k) };
+			res = ComplexMul(res, ikk);
+		}
+	}
 
 	// calculate slope
 	if(dispatchThreadID.z > 5)
 	{
+		const float kDotDz = dot(k, dz);
+		float2 ik = { cos(kDotDz), sin(kDotDz)};
 		res = ComplexMul(res, ik) - res;
 	}
 	else if(dispatchThreadID.z > 2)
 	{
+		const float kDotDx = dot(k, dx);
+		float2 ik = { cos(kDotDx), sin(kDotDx)};
 		res = ComplexMul(res, ik) - res;
 	}
 

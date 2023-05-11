@@ -434,7 +434,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 
 	c.Pos.y = DEBUG_SIZE_Y * -3;
 	c.TexZ = Z_INDEX_GAP * 6;
-	c.Gain = 100000.f;
+	c.Gain = 1000000.f;
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
 	commandList->SetGraphicsRootDescriptorTable(
 		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
@@ -1085,7 +1085,7 @@ void OceanApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 26;
+	srvHeapDesc.NumDescriptors = 27;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(device->GetD3DDevice()->CreateDescriptorHeap(
@@ -1103,7 +1103,8 @@ void OceanApp::BuildDescriptorHeaps()
 		mTextures["tileDiffuseMap"]->Resource,
 		mTextures["tileNormalMap"]->Resource,
 		mTextures["defaultDiffuseMap"]->Resource,
-		mTextures["defaultNormalMap"]->Resource
+		mTextures["defaultNormalMap"]->Resource,
+		mTextures["waterDiffuseMap"]->Resource
 	};
 
 	auto skyCubeMap = mTextures["skyCubeMap"]->Resource;
@@ -1760,9 +1761,9 @@ void OceanApp::BuildMaterials()
 	waterMat->MatCBIndex = 5;
 	waterMat->NormalSrvHeapIndex = 7;
 	waterMat->DiffuseSrvHeapIndex = 4;
-	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.07f, 0.15f, 1.0f);
-	waterMat->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	waterMat->Roughness = 0.5f;
+	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.4f, 0.5f, 1.0f);
+	waterMat->FresnelR0 = XMFLOAT3(0.99f, 0.99f, 0.99f);
+	waterMat->Roughness = 0.8f;
 
 	mMaterials["bricks0"] = std::move(bricks0);
 	mMaterials["tile0"] = std::move(tile0);

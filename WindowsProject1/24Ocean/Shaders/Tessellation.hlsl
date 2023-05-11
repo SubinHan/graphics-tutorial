@@ -72,7 +72,7 @@ PatchTess ConstantHS(InputPatch<VertexOut, 3> patch, uint patchID : SV_Primitive
 	const float d0 = 0.0f;
 	const float d1 = 50.0f;
 
-	float tess = 1.0f + 7.0f * saturate((d1 - d) / (d1 - d0));
+	float tess = 2.0f + 7.0f * saturate((d1 - d) / (d1 - d0));
 	pt.EdgeTess[0] = tess;
 	pt.EdgeTess[1] = tess;
 	pt.EdgeTess[2] = tess;
@@ -141,7 +141,7 @@ DomainOut DS(PatchTess patchTess,
 		displacementY.x * 400.f, 
 		displacementZ.x * 400.f);
 
-	pos += displacement * 100.f;
+	pos += displacement * 150.f;
 
 	//float4 slopeXX0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXX), 0);
 	//float4 slopeXY0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXY), 0);
@@ -197,7 +197,7 @@ DomainOut DS(PatchTess patchTess,
 
 	float3 slopeZ = { slopeZX.x, slopeZY.x, slopeZZ.x };
 
-	float3 normalL = normalize(cross(slopeX, slopeZ));
+	float3 normalL = cross(normalize(slopeX), normalize(slopeZ));
 
 
 	float3 tangentU = normalize(
@@ -228,7 +228,6 @@ float4 PS(DomainOut pin) : SV_Target
 	float3 fresnelR0 = matData.FresnelR0;
 	float roughness = matData.Roughness;
 	uint diffuseMapIndex = matData.DiffuseMapIndex;
-	uint normalMapIndex = matData.NormalMapIndex;
 
 	diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
 
@@ -240,19 +239,7 @@ float4 PS(DomainOut pin) : SV_Target
 	pin.NormalW = normalize(pin.NormalW);
 	
 	float3 bumpedNormalW = pin.NormalW;
-
-	//float4 normalMapSample1 = gTextureMaps[normalMapIndex1].Sample(
-	//	gsamAnisotropicWrap, pin.TexC1);
-	//float3 bumpedNormalW1 = NormalSampleToWorldSpace(
-	//	normalMapSample1.rgb, pin.NormalW, pin.TangentW);
-
-	//float4 normalMapSample2 = gTextureMaps[normalMapIndex2].Sample(
-	//	gsamAnisotropicWrap, pin.TexC2);
-	//float3 bumpedNormalW2 = NormalSampleToWorldSpace(
-	//	normalMapSample2.rgb, pin.NormalW, pin.TangentW);
-
-	//float3 bumpedNormalW = normalize(bumpedNormalW1 * 0.8f + bumpedNormalW2);
-
+	
 	// Vector from point being lit to eye. 
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
