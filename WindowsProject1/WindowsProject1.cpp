@@ -30,8 +30,7 @@
 #include "24Ocean/OceanApp.h"
 #include "Common/DxDebug.h"
 
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
-{
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow){
     try {
         //InitApp win(hInstance);
         //BoxApp win(hInstance);

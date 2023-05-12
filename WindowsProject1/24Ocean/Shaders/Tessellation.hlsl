@@ -115,7 +115,7 @@ DomainOut DS(PatchTess patchTess,
 		triPatch[0].PosL * uvw[0] + triPatch[1].PosL * uvw[1] + triPatch[2].PosL * uvw[2];
 
 	MaterialData matData = gMaterialData[gMaterialIndex];
-	
+
 	float2 texC0 = triPatch[0].TexC;
 	float2 texC1 = triPatch[1].TexC;
 	float2 texC2 = triPatch[2].TexC;
@@ -137,8 +137,8 @@ DomainOut DS(PatchTess patchTess,
 	float4 displacementZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureDepthZ), 0);
 
 	float3 displacement = float3(
-		displacementX.x, 
-		displacementY.x * 400.f, 
+		displacementX.x,
+		displacementY.x * 400.f,
 		displacementZ.x * 400.f);
 
 	pos += displacement * 1500.f;
@@ -189,16 +189,24 @@ DomainOut DS(PatchTess patchTess,
 	float4 slopeXY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXY), 0);
 	float4 slopeXZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXZ), 0);
 
+	//slopeXX.x = abs(slopeXX.x);
+
 	float4 slopeZX = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZX), 0);
 	float4 slopeZY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZY), 0);
 	float4 slopeZZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZZ), 0);
+	
+	//slopeZZ.x = abs(slopeZZ.x);
 
-	float3 slopeX = { slopeXX.x, slopeXY.x, slopeXZ.x };
+	//float3 slopeX = { slopeXX.x, slopeXY.x, slopeXZ.x };
 
-	float3 slopeZ = { slopeZX.x, slopeZY.x, slopeZZ.x };
+	//float3 slopeZ = { slopeZX.x, slopeZY.x, slopeZZ.x };
 
+	//float3 normalL = normalize(float3(0.0f + slopeXY.x * 15000000.f, 1.0f, 0.0f + slopeZY.x * 15000000.f));
+
+	float3 slopeX = { 0.00000015f, slopeXY.x, slopeXZ.x };
+	float3 slopeZ = { slopeZX.x, slopeZY.x, 0.00000015f };
 	float3 normalL = cross(normalize(slopeX), normalize(slopeZ));
-
+	normalL.y = abs(normalL.y);
 
 	float3 tangentU = normalize(
 		triPatch[0].TangentU * uvw[0] +
@@ -223,50 +231,48 @@ DomainOut DS(PatchTess patchTess,
 
 float4 PS(DomainOut pin) : SV_Target
 {
+	// Fetch the material data.
 	MaterialData matData = gMaterialData[gMaterialIndex];
 	float4 diffuseAlbedo = matData.DiffuseAlbedo;
-	float3 fresnelR0 = matData.FresnelR0;
-	float roughness = matData.Roughness;
 	uint diffuseMapIndex = matData.DiffuseMapIndex;
 
-	diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
-
-#ifdef ALPHA_TEST
-	clip(diffuseAlbedo.a - 0.1f);
-#endif
-
-	// Interpolating normal can unnormalize it, so renormalize it.
 	pin.NormalW = normalize(pin.NormalW);
-	
-	float3 bumpedNormalW = pin.NormalW;
 	
 	// Vector from point being lit to eye. 
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye;
+	
+	float3 sky = { 0.69f, 0.84f, 1.0f };
+	float3 upwelling = { 0.0f, 0.2f, 0.3f };
+	float nSnell = 1.34f;
 
-	// Light terms.
-	float4 ambient = gAmbientLight * diffuseAlbedo;
+	float reflectivity;
+	float3 nI = normalize(toEyeW);
+	float3 nN = normalize(pin.NormalW);
+	float costhetai = dot(nI, nN) ;
+	float thetai = acos(costhetai);
+	float sinthetat = sin(thetai) / nSnell;
+	float thetat = asin(sinthetat);
 
-	const float shininess = (1.0f - roughness);
-	Material mat = { diffuseAlbedo, fresnelR0, shininess };
-	float3 shadowFactor = 1.0f;
-	float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
-		bumpedNormalW, toEyeW, shadowFactor);
+	if(thetai == 0.0f)
+	{
+		reflectivity = (nSnell - 1) / (nSnell + 1);
+		reflectivity *= reflectivity;
+	}
+	else
+	{
+		float fs = sin(thetat - thetai) / sin(thetat + thetai);
+		float ts = tan(thetat - thetai) / tan(thetat + thetai);
+		reflectivity = 0.5f * (fs * fs + ts * ts);
+	}
+	reflectivity = clamp(reflectivity, 0.0f, 1.0f);
 
-	float4 litColor = ambient + directLight;
+	diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
+	float3 r = reflect(-toEyeW, pin.NormalW);
 
-#ifdef FOG
-	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
-	litColor = lerp(litColor, gFogColor, fogAmount);
-#endif
-
-	float3 r = reflect(-toEyeW, bumpedNormalW);
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, r);
-	float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, r);
-	litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
-
-	// Common convention to take alpha from diffuse material.
-	litColor.a = diffuseAlbedo.a;
-	return litColor;
+	float3 Ci = (reflectivity * reflectionColor + (1 - reflectivity) * diffuseAlbedo);
+	
+	return float4(Ci, 1.0f);
 }

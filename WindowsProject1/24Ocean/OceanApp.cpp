@@ -434,7 +434,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 
 	c.Pos.y = DEBUG_SIZE_Y * -3;
 	c.TexZ = Z_INDEX_GAP * 6;
-	c.Gain = 1000000.f;
+	c.Gain = 1000000000.f;
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
 	commandList->SetGraphicsRootDescriptorTable(
 		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
@@ -1761,7 +1761,7 @@ void OceanApp::BuildMaterials()
 	waterMat->MatCBIndex = 5;
 	waterMat->NormalSrvHeapIndex = 7;
 	waterMat->DiffuseSrvHeapIndex = 4;
-	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.4f, 0.5f, 1.0f);
+	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.3f, 1.0f);
 	waterMat->FresnelR0 = XMFLOAT3(0.99f, 0.99f, 0.99f);
 	waterMat->Roughness = 0.8f;
 
