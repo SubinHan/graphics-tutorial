@@ -332,7 +332,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 		float Gain;
 	};
 
-	DebugConstants c = { {0.0f, 0.0f} , 0.0f, 1000.0f };
+	DebugConstants c = { {0.0f, 0.0f} , 0.0f, 10000.0f };
 	const int NUM_32_BITS = sizeof(DebugConstants) / 4;
 	const float Z_INDEX_GAP = 1.0f / mOceanMap->NUM_OCEAN_FREQUENCY + 0.01f;
 
@@ -384,7 +384,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 
 	// draw htilde
 	c.Pos.x = 1.0f;
-	c.Gain = 1000.0f;
+	c.Gain = 100000.0f;
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
 	commandList->SetGraphicsRootDescriptorTable(
 		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
@@ -409,7 +409,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 
 	// draw htilde spatial domain
 	c.Pos.x = 1.5f;
-	c.Gain = 100000.0f;
+	c.Gain = 1000000.0f;
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
 	commandList->SetGraphicsRootDescriptorTable(
 		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,
@@ -434,7 +434,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 
 	c.Pos.y = DEBUG_SIZE_Y * -3;
 	c.TexZ = Z_INDEX_GAP * 6;
-	c.Gain = 1000000000.f;
+	c.Gain = 100000000000.f;
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
 	commandList->SetGraphicsRootDescriptorTable(
 		OCEAN_DEBUG_ROOT_SLOT_HTILDE0_SRV,

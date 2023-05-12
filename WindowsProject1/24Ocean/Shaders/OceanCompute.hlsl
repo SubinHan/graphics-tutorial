@@ -48,7 +48,7 @@ void FastFourierTransform1d(uint3 xyz)
 			gOutput[uint3(xyz.x + lenHalf, xyz.y, xyz.z)] =
 				float4(even - ComplexMul(wk, odd), 0.0f, 0.0f);
 		}
-		AllMemoryBarrierWithGroupSync();
+		DeviceMemoryBarrierWithGroupSync();
 	}
 
 	if (gIsInverse)

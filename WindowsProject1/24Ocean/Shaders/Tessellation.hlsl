@@ -70,9 +70,9 @@ PatchTess ConstantHS(InputPatch<VertexOut, 3> patch, uint patchID : SV_Primitive
 	float d = distance(centerW, gEyePosW);
 
 	const float d0 = 0.0f;
-	const float d1 = 50.0f;
+	const float d1 = 70.0f;
 
-	float tess = 2.0f + 7.0f * saturate((d1 - d) / (d1 - d0));
+	float tess = 2.0f + 6.0f * saturate((d1 - d) / (d1 - d0));
 	pt.EdgeTess[0] = tess;
 	pt.EdgeTess[1] = tess;
 	pt.EdgeTess[2] = tess;
@@ -143,66 +143,14 @@ DomainOut DS(PatchTess patchTess,
 
 	pos += displacement * 1500.f;
 
-	//float4 slopeXX0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXX), 0);
-	//float4 slopeXY0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXY), 0);
-	//float4 slopeXZ0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeXZ), 0);
-
-	//float4 slopeXX1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeXX), 0);
-	//float4 slopeXY1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeXY), 0);
-	//float4 slopeXZ1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeXZ), 0);
-
-	//float4 slopeXX2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeXX), 0);
-	//float4 slopeXY2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeXY), 0);
-	//float4 slopeXZ2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeXZ), 0);
-
-	//float3 slopeX0 = { slopeXX0.x, slopeXY0.x, slopeXZ0.x };
-	//float3 slopeX1 = { slopeXX1.x, slopeXY1.x, slopeXZ1.x };
-	//float3 slopeX2 = { slopeXX2.x, slopeXY2.x, slopeXZ2.x };
-
-	//float4 slopeZX0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeZX), 0);
-	//float4 slopeZY0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeZY), 0);
-	//float4 slopeZZ0 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC0, textureSlopeZZ), 0);
-
-	//float4 slopeZX1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeZX), 0);
-	//float4 slopeZY1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeZY), 0);
-	//float4 slopeZZ1 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC1, textureSlopeZZ), 0);
-
-	//float4 slopeZX2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeZX), 0);
-	//float4 slopeZY2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeZY), 0);
-	//float4 slopeZZ2 = gOceanMap.SampleLevel(gsamAnisotropicWrap, float3(texC2, textureSlopeZZ), 0);
-
-	//float3 slopeZ0 = { slopeZX0.x, slopeZY0.x, slopeZZ0.x };
-	//float3 slopeZ1 = { slopeZX1.x, slopeZY1.x, slopeZZ1.x };
-	//float3 slopeZ2 = { slopeZX2.x, slopeZY2.x, slopeZZ2.x };
-
-	//float3 normalL0 = cross(normalize(slopeX0), normalize(slopeZ0));
-	//float3 normalL1 = cross(normalize(slopeX1), normalize(slopeZ1));
-	//float3 normalL2 = cross(normalize(slopeX2), normalize(slopeZ2));
-
-	//float3 normalL = normalize(
-	//	normalL0 * uvw[0] +
-	//	normalL1 * uvw[1] +
-	//	normalL2 * uvw[2]
-	//);
-
 	float4 slopeXX = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXX), 0);
 	float4 slopeXY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXY), 0);
 	float4 slopeXZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXZ), 0);
-
-	//slopeXX.x = abs(slopeXX.x);
 
 	float4 slopeZX = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZX), 0);
 	float4 slopeZY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZY), 0);
 	float4 slopeZZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZZ), 0);
 	
-	//slopeZZ.x = abs(slopeZZ.x);
-
-	//float3 slopeX = { slopeXX.x, slopeXY.x, slopeXZ.x };
-
-	//float3 slopeZ = { slopeZX.x, slopeZY.x, slopeZZ.x };
-
-	//float3 normalL = normalize(float3(0.0f + slopeXY.x * 15000000.f, 1.0f, 0.0f + slopeZY.x * 15000000.f));
-
 	float3 slopeX = { 0.00000015f, slopeXY.x, slopeXZ.x };
 	float3 slopeZ = { slopeZX.x, slopeZY.x, 0.00000015f };
 	float3 normalL = cross(normalize(slopeX), normalize(slopeZ));
@@ -243,8 +191,6 @@ float4 PS(DomainOut pin) : SV_Target
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye;
 	
-	float3 sky = { 0.69f, 0.84f, 1.0f };
-	float3 upwelling = { 0.0f, 0.2f, 0.3f };
 	float nSnell = 1.34f;
 
 	float reflectivity;
@@ -271,7 +217,10 @@ float4 PS(DomainOut pin) : SV_Target
 	diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
 	float3 r = reflect(-toEyeW, pin.NormalW);
 
+
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, r);
+
+	//reflectionColor.xyz = float3(0.69f, 0.84f, 1.0f);
 	float3 Ci = (reflectivity * reflectionColor + (1 - reflectivity) * diffuseAlbedo);
 	
 	return float4(Ci, 1.0f);

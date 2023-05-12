@@ -39,5 +39,5 @@ void OceanBasisCS(
 	);
 
 	gHTilde0[dispatchThreadID.xyz] = float4(hTilde0.xy, 0.0f, 0.0f);
-	gHTilde0Conj[dispatchThreadID.xyz] = float4(beforeConj.yx, 0.0f, 0.0f);
+	gHTilde0Conj[dispatchThreadID.xyz] = float4(beforeConj.xy, 0.0f, 0.0f);
 }

@@ -53,7 +53,7 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 	ID3D12PipelineState* oceanBasisPSO
 	)
 {
-	OceanBasisConstants c = { 100.0f, DirectX::XMFLOAT2{3.0f, 0.5f}, mWidth, 1.0f };
+	OceanBasisConstants c = { 100.0f, DirectX::XMFLOAT2{1.0f, 0.5f}, mWidth, 1.0f };
 
 	cmdList->SetComputeRootSignature(rootSig);
 

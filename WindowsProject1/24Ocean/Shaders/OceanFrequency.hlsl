@@ -12,7 +12,7 @@ Texture3D<float4> gHTilde0Conj : register(t1);
 
 RWTexture3D<float4> gHTilde : register(u0);
 
-#define N 256
+#define N 512
 
 [numthreads(N, 1, 1)]
 void HTildeCS(
@@ -61,16 +61,26 @@ void HTildeCS(
 
 	if (basisIndex.z == 0)
 	{
+		if (len < 0.00001f) // 너무 작은 수로 나누면서 문제가 발생하는 듯..
 		{
-			const float2 ikk = { 0.0f, kx / len };
+			res = float2(0.0f, 0.0f);
+		}
+		else
+		{
+			const float2 ikk = { 0.0f, -kx / len };
 			res = ComplexMul(res, ikk);
 		}
 	}
 
 	if (basisIndex.z == 2)
 	{
+		if (len < 0.00001f)
 		{
-			const float2 ikk = { 0.0f, kz / len };
+			res = float2(0.0f, 0.0f);
+		}
+		else
+		{
+			const float2 ikk = { 0.0f, -kz / len };
 			res = ComplexMul(res, ikk);
 		}
 	}
