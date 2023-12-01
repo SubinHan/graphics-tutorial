@@ -25,7 +25,7 @@ void HTildeCS(
 	float2 hTilde0Conj = gHTilde0Conj[basisIndex].xy;
 
 	float omegat = 
-		Dispersion(dispatchThreadID.x, dispatchThreadID.y, gResolutionSize, gWaveLength) * gTime * 0.1f;
+		Dispersion(dispatchThreadID.x, dispatchThreadID.y, gResolutionSize, gWaveLength) * gTime * 0.002f;
 
 	const float cos_ = cos(omegat);
 	const float sin_ = sin(omegat);
@@ -51,7 +51,7 @@ void HTildeCS(
 	const float sinKDotX = sin(kDotX);
 	const float2 kDotXComplex = { cosKDotX, sinKDotX };
 
-	res = ComplexMul(res, kDotXComplex);
+	float2 hTilde = ComplexMul(res, kDotXComplex);
 
 	float delta = 1.f / gResolutionSize;
 	float2 dx = { delta, 0.0f };
@@ -59,48 +59,78 @@ void HTildeCS(
 
 	float len = length(k);
 
-	if (basisIndex.z == 0)
-	{
-		if (len < 0.00001f) // 너무 작은 수로 나누면서 문제가 발생하는 듯..
-		{
-			res = float2(0.0f, 0.0f);
-		}
-		else
-		{
-			const float2 ikk = { 0.0f, -kx / len };
-			res = ComplexMul(res, ikk);
-		}
-	}
+	//if (basisIndex.z == 0)
+	//{
+	//	if (len < 0.00001f) // 너무 작은 수로 나누면서 문제가 발생하는 듯..
+	//	{
+	//		res = float2(0.0f, 0.0f);
+	//	}
+	//	else
+	//	{
+	//		const float2 ikk = { 0.0f, -kx / len };
+	//		res = ComplexMul(hTilde, ikk);
+	//	}
+	//}
 
-	if (basisIndex.z == 2)
-	{
-		if (len < 0.00001f)
-		{
-			res = float2(0.0f, 0.0f);
-		}
-		else
-		{
-			const float2 ikk = { 0.0f, -kz / len };
-			res = ComplexMul(res, ikk);
-		}
-	}
+	//if (basisIndex.z == 2)
+	//{
+	//	if (len < 0.00001f)
+	//	{
+	//		res = float2(0.0f, 0.0f);
+	//	}
+	//	else
+	//	{
+	//		const float2 ikk = { 0.0f, -kz / len };
+	//		res = ComplexMul(hTilde, ikk);
+	//	}
+	//}
 
-	// calculate slope
-	if (dispatchThreadID.z > 5)
-	{
-		const float kDotDz = dot(k, dz);
-		float2 ik = { cos(kDotDz), sin(kDotDz) };
-		res = ComplexMul(res, ik) - res;
-		//res = ComplexMul(res, float2(0.0f, kz));
-	}
-	else if (dispatchThreadID.z > 2)
+	////calculate slope
+	//if (dispatchThreadID.z > 5)
+	//{
+	//	//const float kDotDz = dot(k, dz);
+	//	//float2 ik = float2(cos(kDotDz), sin(kDotDz)) - float2(1.0f, 0.0f);
+	//	//res = ComplexMul(res, ik);
+
+	//	res = ComplexMul(res, float2(0.0f, kz));
+	//}
+	//else if (dispatchThreadID.z > 2)
+	//{
+	//	//const float kDotDx = dot(k, dx);
+	//	//float2 ik = float2(cos(kDotDx), sin(kDotDx)) - float2(1.0f, 0.0f);
+	//	//res = ComplexMul(res, ik);
+
+	//	res = ComplexMul(res, float2(0.0f, kx));
+	//}
+	//else
+	//{
+	//}
+
+	if (dispatchThreadID.z == 3)
 	{
 		const float kDotDx = dot(k, dx);
-		float2 ik = { cos(kDotDx), sin(kDotDx) };
-		res = ComplexMul(res, ik) - res;
-		//res = ComplexMul(res, float2(0.0f, kx));
+		float2 ik = float2(cos(kDotDx), sin(kDotDx)) - float2(1.0f, 0.0f);
+		ik = float2(0.0f, kx);
+		res = ComplexMul(hTilde, ik);
 	}
-
-
+	else if (dispatchThreadID.z == 6)
+	{
+		const float kDotDz = dot(k, dz);
+		float2 ik = float2(cos(kDotDz), sin(kDotDz)) - float2(1.0f, 0.0f);
+		ik = float2(0.0f, kz);
+		res = ComplexMul(hTilde, ik);
+	}
+	else if (
+		dispatchThreadID.z == 1 ||
+		dispatchThreadID.z == 2 ||
+		//dispatchThreadID.z == 4 || 
+		//dispatchThreadID.z == 5 ||
+		//dispatchThreadID.z == 7 ||
+		dispatchThreadID.z == 8
+		)
+	{
+		gHTilde[dispatchThreadID.xyz] = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		return;
+	}
 	gHTilde[dispatchThreadID.xyz] = float4(res, 0.0f, 0.0f);
 }

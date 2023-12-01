@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Windows.h>
-#include "../../inlcude/directx/d3dx12.h"
+#include "d3dx12.h"
 #include <dxgi1_6.h>
 #include <d3d12.h>
 #include <windows.foundation.h>

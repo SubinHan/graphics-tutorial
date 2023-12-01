@@ -25,7 +25,7 @@
 #include <fstream>
 #include <sstream>
 #include <cassert>
-#include "../../inlcude/directx/d3dx12.h"
+#include "d3dx12.h"
 #include "MathHelper.h"
 #include "DxDebug.h"
 

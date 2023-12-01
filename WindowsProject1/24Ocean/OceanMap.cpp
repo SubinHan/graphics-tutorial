@@ -53,7 +53,7 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 	ID3D12PipelineState* oceanBasisPSO
 	)
 {
-	OceanBasisConstants c = { 100.0f, DirectX::XMFLOAT2{1.0f, 0.5f}, mWidth, 1.0f };
+	OceanBasisConstants c = { 5e+14f, DirectX::XMFLOAT2{0.3f, 0.5f}, mWidth, 0.5f };
 
 	cmdList->SetComputeRootSignature(rootSig);
 
@@ -78,7 +78,7 @@ void OceanMap::BuildOceanBasis(ID3D12GraphicsCommandList* cmdList,
 
 	const auto numGroupsX = static_cast<UINT>(ceilf(mWidth / 16.0f));
 	const auto numGroupsY = static_cast<UINT>(ceilf(mHeight / 16.0f));
-	constexpr UINT numGroupsZ = NUM_OCEAN_BASIS; // x, y, z
+	constexpr UINT numGroupsZ = 1; // x, y, z
 	cmdList->Dispatch(numGroupsX, numGroupsY, numGroupsZ);
 
 	const auto barrierHTilde0ToSrv = CD3DX12_RESOURCE_BARRIER::Transition(

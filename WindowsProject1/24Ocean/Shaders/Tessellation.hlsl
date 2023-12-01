@@ -123,38 +123,40 @@ DomainOut DS(PatchTess patchTess,
 	float2 texC = texC0 * uvw[0] + texC1 * uvw[1] + texC2 * uvw[2];
 
 	const float textureDepthX = 0.0f;
-	const float textureDepthY = 0.1f;
-	const float textureDepthZ = 0.2f;
-	const float textureSlopeXX = 0.333f;
-	const float textureSlopeXY = 0.444f;
-	const float textureSlopeXZ = 0.555f;
-	const float textureSlopeZX = 0.666f;
-	const float textureSlopeZY = 0.777f;
-	const float textureSlopeZZ = 0.888f;
+	const float textureDepthY =		1.0 / 9.0;
+	const float textureDepthZ = 	2.0 / 9.0;
+	const float textureSlopeXX = 	3.0 / 9.0;
+	const float textureSlopeXY = 	4.0 / 9.0;
+	const float textureSlopeXZ = 	5.0 / 9.0;
+	const float textureSlopeZX = 	6.0 / 9.0;
+	const float textureSlopeZY = 	7.0 / 9.0;
+	const float textureSlopeZZ = 	8.0 / 9.0;
 
-	float4 displacementX = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureDepthX), 0);
-	float4 displacementY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureDepthY), 0);
-	float4 displacementZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureDepthZ), 0);
+	float4 displacementX = gOceanMap.SampleLevel(gsamAnisotropicClamp, float3(texC, textureDepthX), 0);
+	float4 displacementY = gOceanMap.SampleLevel(gsamAnisotropicClamp, float3(texC, textureDepthY), 0);
+	float4 displacementZ = gOceanMap.SampleLevel(gsamAnisotropicClamp, float3(texC, textureDepthZ), 0);
 
 	float3 displacement = float3(
+		0.0f,
 		displacementX.x,
-		displacementY.x * 400.f,
-		displacementZ.x * 400.f);
+		0.0f);
 
-	pos += displacement * 1500.f;
+	pos += displacement;
 
-	float4 slopeXX = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXX), 0);
-	float4 slopeXY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXY), 0);
-	float4 slopeXZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeXZ), 0);
+	float4 slopeXX = gOceanMap.SampleLevel(gsamAnisotropicClamp, float3(texC, textureSlopeXX), 0);
+	//float4 slopeXY = gOceanMap.SampleLevel(gsamAnisotropicClamp, float3(texC, textureSlopeXY), 0);
+	//float4 slopeXZ = gOceanMap.SampleLevel(gsamAnisotropicClamp, float3(texC, textureSlopeXZ), 0);
 
-	float4 slopeZX = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZX), 0);
-	float4 slopeZY = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZY), 0);
-	float4 slopeZZ = gOceanMap.SampleLevel(gsamPointWrap, float3(texC, textureSlopeZZ), 0);
+	float4 slopeZX = gOceanMap.SampleLevel(gsamAnisotropicClamp, float3(texC, textureSlopeZX), 0);
+	//float4 slopeZY = gOceanMap.SampleLevel(gsamAnisotropicClamp, float3(texC, textureSlopeZY), 0);
+	//float4 slopeZZ = gOceanMap.SampleLevel(gsamAnisotropicClamp, float3(texC, textureSlopeZZ), 0);
 	
-	float3 slopeX = { 0.00000015f, slopeXY.x, slopeXZ.x };
-	float3 slopeZ = { slopeZX.x, slopeZY.x, 0.00000015f };
-	float3 normalL = cross(normalize(slopeX), normalize(slopeZ));
-	normalL.y = abs(normalL.y);
+	float slopeScale = 0.5f;
+
+	float3 slopeX = { 1.0f, slopeXX.x * slopeScale, 0.0f };
+	float3 slopeZ = { 0.0f, slopeZX.x * slopeScale, 1.0f };
+	float3 normalL = normalize(cross(slopeZ, slopeX));
+	//normalL = normalize(float3(slopeXX.x, 1.0f, slopeZX.x));
 
 	float3 tangentU = normalize(
 		triPatch[0].TangentU * uvw[0] +
@@ -170,7 +172,7 @@ DomainOut DS(PatchTess patchTess,
 	dout.TexC = mul(texC, matData.MatTransform).xy;
 	dout.SsaoPosH = mul(posW, gViewProjTex);
 	dout.ShadowPosH = mul(posW, gShadowTransform);
-	dout.NormalW = mul(normalL, (float3x3)world);
+	dout.NormalW = mul(normalL, (float3x3)gWorld);
 	dout.TangentW = mul(tangentU, (float3x3)world);
 	dout.PosH = mul(posW, gViewProj);
 
@@ -181,27 +183,27 @@ float4 PS(DomainOut pin) : SV_Target
 {
 	// Fetch the material data.
 	MaterialData matData = gMaterialData[gMaterialIndex];
-	float4 diffuseAlbedo = matData.DiffuseAlbedo;
+	float4 diffuseAlbedo = matData.DiffuseAlbedo * 1.0;
 	uint diffuseMapIndex = matData.DiffuseMapIndex;
 
 	pin.NormalW = normalize(pin.NormalW);
-	
+
 	// Vector from point being lit to eye. 
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye;
-	
+
 	float nSnell = 1.34f;
 
 	float reflectivity;
 	float3 nI = normalize(toEyeW);
-	float3 nN = normalize(pin.NormalW);
-	float costhetai = dot(nI, nN) ;
+	float3 nN = pin.NormalW;
+	float costhetai = dot(nI, nN);
 	float thetai = acos(costhetai);
 	float sinthetat = sin(thetai) / nSnell;
 	float thetat = asin(sinthetat);
 
-	if(thetai == 0.0f)
+	if (thetai == 0.0f)
 	{
 		reflectivity = (nSnell - 1) / (nSnell + 1);
 		reflectivity *= reflectivity;
@@ -212,16 +214,47 @@ float4 PS(DomainOut pin) : SV_Target
 		float ts = tan(thetat - thetai) / tan(thetat + thetai);
 		reflectivity = 0.5f * (fs * fs + ts * ts);
 	}
-	reflectivity = clamp(reflectivity, 0.0f, 1.0f);
 
-	diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
 	float3 r = reflect(-toEyeW, pin.NormalW);
 
+	//reflectivity = (exp(reflectivity) - 1) / exp(1);
+	float3 lightDir = normalize(float3(1.0f, -1.0f, 1.0f));
+	float sunColor = pow(max(0.0, dot(r, lightDir)), 720.0) * 210.0;
 
-	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, r);
+	float4 reflectionColor = gCubeMap.Sample(gsamAnisotropicClamp, r);
 
-	//reflectionColor.xyz = float3(0.69f, 0.84f, 1.0f);
-	float3 Ci = (reflectivity * reflectionColor + (1 - reflectivity) * diffuseAlbedo);
-	
-	return float4(Ci, 1.0f);
+	float3 Ci = ((reflectivity * reflectionColor.xyz + (1 - reflectivity) * diffuseAlbedo.xyz));
+	//Ci = float3(reflectivity, reflectivity, reflectivity);
+
+
+	//float power = 8.0;
+	//float distortion = 0.2;
+	//float scatterStrength = 0.5;
+	//float3 scatterColor = float3(0.05, 0.8, 0.7);
+
+	//float3 sunLightColor = float3(1.0f, 1.0f, 1.0f);
+	//float a = (nSnell - 1) / (nSnell + 1);
+	//a = a * a;
+	//float3 b = float3(a, a, a);
+	//float3 sunLightReflectivity = SchlickFresnel(float3(0.05, 0.05, 0.05), pin.NormalW, r);
+	//float3 sunLight = sunLightReflectivity * sunLightColor;
+
+	//Ci += sunLight;
+
+	//float3 h = normalize(-lightDir + pin.NormalW * distortion);
+	//float vDotH = pow(saturate(dot(-toEyeW, -h)), power) * 0.4f;
+
+	//Ci += scatterStrength * pow((1.0 - distToEye / 400), 4.0) * 2.0f * vDotH * scatterColor;
+
+	//Ci = dist * ((sunLightReflectivity * reflectionColor.xyz + (1 - sunLightReflectivity) * diffuseAlbedo.xyz)) + (1 - dist) * float3(0.1f, 0.1f, 0.1f);
+
+	//float fresnel = (0.04 + (1.0 - 0.04) * (pow(1.0 - max(0.0, dot(pin.NormalW, toEyeW)), 5.0)));
+
+	//float3 reflection = reflectionColor.xyz + float3(sunColor.xxx);
+
+	//Ci = fresnel * reflection + (1.0f - fresnel) * diffuseAlbedo.xyz;
+
+	//return float4(Ci, 1.0f);
+	return float4(reflectivity.xxx, 1.0f);
+	//return float4(pin.NormalW.x, pin.NormalW.y * 1.0f, pin.NormalW.z, 1.0f);
 }

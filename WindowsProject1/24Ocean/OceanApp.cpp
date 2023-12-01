@@ -761,7 +761,7 @@ void OceanApp::LoadTextures()
 		L"Textures/water.dds",
 		L"Textures/white1x1.dds",
 		L"Textures/default_nmap.dds",
-		L"Textures/sunsetcube1024.dds"
+		L"Textures/cubemap.dds"
 	};
 
 	for (int i = 0; i < (int)texNames.size(); ++i)
@@ -1237,7 +1237,7 @@ void OceanApp::BuildShapeGeometry()
 {
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
-	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 20.0f, 40, 40);
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 	GeometryGenerator::MeshData quadSsao = geoGen.CreateQuad(0.5f, 0.0f, 0.5f, 0.5f, 0.0f);
@@ -1745,7 +1745,7 @@ void OceanApp::BuildMaterials()
 	skullMat->NormalSrvHeapIndex = 5;
 	skullMat->DiffuseAlbedo = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
 	skullMat->FresnelR0 = XMFLOAT3(0.6f, 0.6f, 0.6f);
-	skullMat->Roughness = 0.2f;
+	skullMat->Roughness = 0.01f;
 
 	auto sky = std::make_unique<Material>();
 	sky->Name = "sky";
@@ -1761,7 +1761,7 @@ void OceanApp::BuildMaterials()
 	waterMat->MatCBIndex = 5;
 	waterMat->NormalSrvHeapIndex = 7;
 	waterMat->DiffuseSrvHeapIndex = 4;
-	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.3f, 1.0f);
+	waterMat->DiffuseAlbedo = XMFLOAT4(0.1f, 0.16f, 0.36f, 1.0f);
 	waterMat->FresnelR0 = XMFLOAT3(0.99f, 0.99f, 0.99f);
 	waterMat->Roughness = 0.8f;
 
@@ -1833,7 +1833,7 @@ void OceanApp::BuildRenderItems()
 
 	auto gridRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(.0f, 8.0f, 1.0f));
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 	gridRitem->ObjCBIndex = 3;
 	gridRitem->Mat = mMaterials["waterMat"].get();
 	gridRitem->Geo = mGeometries["shapeGeo"].get();

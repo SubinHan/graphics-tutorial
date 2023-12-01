@@ -42,7 +42,7 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 sampled = gOceanHTilde0.Sample(gsamPointWrap, float3(pin.TexC, gTexZ));
+	float4 sampled = gOceanHTilde0.Sample(gsamLinearWrap, float3(pin.TexC, gTexZ));
 	sampled *= gGain;
 	sampled = clamp(sampled, 0.1f, 1.0f);
 

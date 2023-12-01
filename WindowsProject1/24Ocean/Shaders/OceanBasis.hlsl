@@ -15,9 +15,12 @@ RWTexture3D<float4> gHTilde0Conj : register(u1);
 
 [numthreads(N, N, 1)]
 void OceanBasisCS(
-	int3 groupThreadID : SV_GroupThreadID,
-	int3 dispatchThreadID : SV_DispatchThreadID)
+	uint3 groupThreadID : SV_GroupThreadID,
+	uint3 dispatchThreadID : SV_DispatchThreadID)
 {
+	if (dispatchThreadID.z > 1)
+		return;
+
 	float2 hTilde0 = HTilde0(
 		dispatchThreadID.x,
 		dispatchThreadID.y,

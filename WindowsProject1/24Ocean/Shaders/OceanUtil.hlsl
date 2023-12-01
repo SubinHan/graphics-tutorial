@@ -6,10 +6,17 @@ static const float G = 9.81f;
 
 float Dispersion(int n, int m, int res, float len)
 {
-	float w = 2.0f * PI / len;
 	float kx = PI * (2 * n - res) / len;
 	float kz = PI * (2 * m - res) / len;
-	return floor(sqrt(G * sqrt(kx * kx + kz * kz)) / w) * w;
+	float k2 = kx * kx + kz * kz;
+	float k = sqrt(k2);
+	float unit = 5e-3f;
+	float unit2 = unit * unit;
+	//float w2 = G * k * (1 + k2 * unit2);
+	float w2 = G * k;
+	float w = sqrt(w2);
+	float w0 = 2.0f * PI / len;
+	return floor(w / w0) * w0;
 }
 
 // 0 <= n, m < res
@@ -35,10 +42,10 @@ float Phillips(int n, int m, float amp, float2 wind, int res, float len)
 	float wlen = length(wind);
 	float l = wlen * wlen / G;
 	float l2 = l * l;
-	float damping = 0.001;
-	float L2 = l2 * damping * damping;
+	float damping = 0.001f;
+	float damping2 = damping * damping;
 
-	return amp * exp(-1 / (kLen2 * l2)) / kLen4 * kDotW2 * exp(-kLen2 * L2);
+	return amp * exp(-1.0f / (kLen2 * l2)) / kLen4 * kDotW2 * exp(-kLen2 * damping2);
 }
 
 float mod(float x, float y)
@@ -69,5 +76,5 @@ float2 RandNegative1ToPositive1(float2 uv, float randSeed)
 }
 float2 HTilde0(int n, int m, float amp, float2 wind, int res, float len, float randSeed)
 {
-	return ComplexMul(RandNegative1ToPositive1(float2(n, m), randSeed), sqrt(Phillips(n, m, amp, wind, res, len) / 2.0f));
+	return ComplexMul(RandNegative1ToPositive1(float2(n, m), randSeed), sqrt(Phillips(n, m, amp, wind, res, len) * 0.5f));
 }

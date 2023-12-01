@@ -310,12 +310,12 @@ void DxDevice::CreateDevice()
 #if defined(DEBUG) || defined(_DEBUG) 
     // Enable the D3D12 debug layer.
     {
-        ComPtr<ID3D12Debug> debugController;
-        ComPtr<ID3D12Debug1> debugController1;
-        ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
-        debugController->QueryInterface(IID_PPV_ARGS(&debugController1));
-        debugController->EnableDebugLayer();
-        debugController1->SetEnableGPUBasedValidation(true);
+        //ComPtr<ID3D12Debug> debugController;
+        //ComPtr<ID3D12Debug1> debugController1;
+        //ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+        //debugController->QueryInterface(IID_PPV_ARGS(&debugController1));
+        //debugController->EnableDebugLayer();
+        //debugController1->SetEnableGPUBasedValidation(true);
 
     }
 #endif
