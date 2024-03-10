@@ -8,8 +8,8 @@ cbuffer cbBasisConstants : register(b0)
 	float gWaveLength;
 }
 
-RWTexture3D<float4> gHTilde0 : register(u0);
-RWTexture3D<float4> gHTilde0Conj : register(u1);
+RWTexture2DArray<float4> gHTilde0 : register(u0);
+RWTexture2DArray<float4> gHTilde0Conj : register(u1);
 
 #define N 16
 

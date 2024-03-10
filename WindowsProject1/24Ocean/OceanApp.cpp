@@ -334,7 +334,7 @@ void OceanApp::DrawDebugThings(ComPtr<ID3D12GraphicsCommandList>  commandList)
 
 	DebugConstants c = { {0.0f, 0.0f} , 0.0f, 10000.0f };
 	const int NUM_32_BITS = sizeof(DebugConstants) / 4;
-	const float Z_INDEX_GAP = 1.0f / mOceanMap->NUM_OCEAN_FREQUENCY + 0.01f;
+	const float Z_INDEX_GAP = 1.0f;
 
 	// Draw htilde0, htilde0*
 	commandList->SetGraphicsRoot32BitConstants(OCEAN_DEBUG_ROOT_SLOT_PASS_CB, NUM_32_BITS, &c, 0);
@@ -1761,9 +1761,9 @@ void OceanApp::BuildMaterials()
 	waterMat->MatCBIndex = 5;
 	waterMat->NormalSrvHeapIndex = 7;
 	waterMat->DiffuseSrvHeapIndex = 4;
-	waterMat->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.3f, 1.0f);
+	waterMat->DiffuseAlbedo = XMFLOAT4(0.06f, 0.1f, 0.23f, 1.0f);
 	waterMat->FresnelR0 = XMFLOAT3(0.99f, 0.99f, 0.99f);
-	waterMat->Roughness = 0.8f;
+	waterMat->Roughness = 0.5f;
 
 	mMaterials["bricks0"] = std::move(bricks0);
 	mMaterials["tile0"] = std::move(tile0);
@@ -1775,10 +1775,12 @@ void OceanApp::BuildMaterials()
 
 void OceanApp::BuildRenderItems()
 {
+	UINT objCBIndex = 0;
+
 	auto skyRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&skyRitem->World, XMMatrixScaling(5000.0f, 5000.0f, 5000.0f));
 	skyRitem->TexTransform = MathHelper::Identity4x4();
-	skyRitem->ObjCBIndex = 0;
+	skyRitem->ObjCBIndex = objCBIndex++;
 	skyRitem->Mat = mMaterials["sky"].get();
 	skyRitem->Geo = mGeometries["shapeGeo"].get();
 	skyRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -1792,7 +1794,7 @@ void OceanApp::BuildRenderItems()
 	auto quadRitem = std::make_unique<RenderItem>();
 	quadRitem->World = MathHelper::Identity4x4();
 	quadRitem->TexTransform = MathHelper::Identity4x4();
-	quadRitem->ObjCBIndex = 1;
+	quadRitem->ObjCBIndex = objCBIndex++;
 	quadRitem->Mat = mMaterials["bricks0"].get();
 	quadRitem->Geo = mGeometries["shapeGeo"].get();
 	quadRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -1806,7 +1808,7 @@ void OceanApp::BuildRenderItems()
 	auto quadOceanRitem = std::make_unique<RenderItem>();
 	quadOceanRitem->World = MathHelper::Identity4x4();
 	quadOceanRitem->TexTransform = MathHelper::Identity4x4();
-	quadOceanRitem->ObjCBIndex = 1;
+	quadOceanRitem->ObjCBIndex = objCBIndex++;
 	quadOceanRitem->Mat = mMaterials["bricks0"].get();
 	quadOceanRitem->Geo = mGeometries["shapeGeo"].get();
 	quadOceanRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -1816,34 +1818,70 @@ void OceanApp::BuildRenderItems()
 
 	mRitemLayer[(int)RenderLayer::DebugOcean].push_back(quadOceanRitem.get());
 	mAllRitems.push_back(std::move(quadOceanRitem));
+	
+	{
+		auto gridRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		gridRitem->ObjCBIndex = objCBIndex++;
+		gridRitem->Mat = mMaterials["waterMat"].get();
+		gridRitem->Geo = mGeometries["shapeGeo"].get();
+		gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+		gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
+		gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+		gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 
-	auto boxRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
-	XMStoreFloat4x4(&boxRitem->TexTransform, XMMatrixScaling(1.0f, 0.5f, 1.0f));
-	boxRitem->ObjCBIndex = 2;
-	boxRitem->Mat = mMaterials["bricks0"].get();
-	boxRitem->Geo = mGeometries["shapeGeo"].get();
-	boxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
-	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
-	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::Ocean].push_back(gridRitem.get());
+		mAllRitems.push_back(std::move(gridRitem));
+	}
 
-	mRitemLayer[(int)RenderLayer::Opaque].push_back(boxRitem.get());
-	mAllRitems.push_back(std::move(boxRitem));
+	{
+		auto gridRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&gridRitem->World, XMMatrixTranslation(20.0f, 0.0f, 0.0f));
+		XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		gridRitem->ObjCBIndex = objCBIndex++;
+		gridRitem->Mat = mMaterials["waterMat"].get();
+		gridRitem->Geo = mGeometries["shapeGeo"].get();
+		gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+		gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
+		gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+		gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 
-	auto gridRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(.0f, 8.0f, 1.0f));
-	gridRitem->ObjCBIndex = 3;
-	gridRitem->Mat = mMaterials["waterMat"].get();
-	gridRitem->Geo = mGeometries["shapeGeo"].get();
-	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
-	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
-	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
-	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::Ocean].push_back(gridRitem.get());
+		mAllRitems.push_back(std::move(gridRitem));
+	}
+	
+	{
+		auto gridRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&gridRitem->World, XMMatrixTranslation(20.0f, 0.0f, 30.0f));
+		XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		gridRitem->ObjCBIndex = objCBIndex++;
+		gridRitem->Mat = mMaterials["waterMat"].get();
+		gridRitem->Geo = mGeometries["shapeGeo"].get();
+		gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+		gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
+		gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+		gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 
-	mRitemLayer[(int)RenderLayer::Ocean].push_back(gridRitem.get());
-	mAllRitems.push_back(std::move(gridRitem));
+		mRitemLayer[(int)RenderLayer::Ocean].push_back(gridRitem.get());
+		mAllRitems.push_back(std::move(gridRitem));
+	}
+	
+	{
+		auto gridRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&gridRitem->World, XMMatrixTranslation(0.0f, 0.0f, 30.0f));
+		XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		gridRitem->ObjCBIndex = objCBIndex++;
+		gridRitem->Mat = mMaterials["waterMat"].get();
+		gridRitem->Geo = mGeometries["shapeGeo"].get();
+		gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+		gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
+		gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+		gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
+
+		mRitemLayer[(int)RenderLayer::Ocean].push_back(gridRitem.get());
+		mAllRitems.push_back(std::move(gridRitem));
+	}
 }
 
 

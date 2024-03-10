@@ -1,5 +1,5 @@
-Texture3D gOceanHTilde0   : register(t0);
-Texture3D gOceanDisplacement   : register(t1);
+Texture2DArray gOceanHTilde0   : register(t0);
+Texture2DArray gOceanDisplacement   : register(t1);
 
 SamplerState gsamPointWrap        : register(s0);
 SamplerState gsamPointClamp       : register(s1);

@@ -7,10 +7,10 @@ cbuffer cbFrequencyConstants : register(b0)
 	float gTime;
 }
 
-Texture3D<float4> gHTilde0 : register(t0);
-Texture3D<float4> gHTilde0Conj : register(t1);
+Texture2DArray<float4> gHTilde0 : register(t0);
+Texture2DArray<float4> gHTilde0Conj : register(t1);
 
-RWTexture3D<float4> gHTilde : register(u0);
+RWTexture2DArray<float4> gHTilde : register(u0);
 
 #define N 512
 
@@ -61,7 +61,7 @@ void HTildeCS(
 
 	if (basisIndex.z == 0)
 	{
-		if (len < 0.00001f) // ³Ê¹« ÀÛÀº ¼ö·Î ³ª´©¸é¼­ ¹®Á¦°¡ ¹ß»ýÇÏ´Â µí..
+		if (len < 0.00001f) // ï¿½Ê¹ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½é¼­ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½..
 		{
 			res = float2(0.0f, 0.0f);
 		}
